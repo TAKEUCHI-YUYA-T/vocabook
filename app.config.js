@@ -10,19 +10,27 @@ export default {
     scheme: "myapp",
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
+    owner: "y.takeuchi",
     ios: {
-      supportsTablet: true
+      supportsTablet: true,
+      bundleIdentifier: "com.y.takeuchi.vocabook",
+      icon: "./assets/images/app-icon-ios.png"
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: "./assets/images/adaptive-icon.png",
+        foregroundImage: "/assets/images/app-icon-android.png",
         backgroundColor: "#ffffff"
-      }
+      },
+      package: "com.takeuchi.vocabook",
+      icon: "./assets/images/app-icon-android.png"
     },
     web: {
       bundler: "metro",
       output: "static",
-      favicon: "./assets/images/favicon.png"
+      favicon: "./assets/images/favicon.png",
+      devServer: {
+        "port": 8080
+      }
     },
     plugins: [
       "expo-router",
@@ -51,8 +59,6 @@ export default {
     updates: {
       url: "https://u.expo.dev/66976257-69db-4ccf-82f5-ff53bc6c8c70",
     },
-    runtimeVersion: {
-      policy: "appVersion",
-    }
+    runtimeVersion: "1.0.0"
   }
 };

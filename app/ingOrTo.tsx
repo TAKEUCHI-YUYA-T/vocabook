@@ -1,17 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity} from "react-native";
 import { useRouter } from "expo-router";
-
-export const fetchSpreadsheetData = async (sheetType: string) => {
-  try {
-    const response = await fetch(`http://192.168.100.102:3001/api/google-sheets/${sheetType}`);
-    const json = await response.json();
-    return json.data || [];
-  } catch (error) {
-    console.error(`Google Sheets API エラー (${sheetType}):`, error);
-    return [];
-  }
-};
+import { fetchSpreadsheetData } from "./fetchSpreadsheetData";
 
 export default function LearnScreen() {
   const router = useRouter();
@@ -23,15 +13,23 @@ export default function LearnScreen() {
     setIsLoading(true);
     setIsAnswerVisible(false);
 
-    const sheetTypes = ["ingOrTo"];
-    const promises = sheetTypes.map(type => fetchSpreadsheetData(type));
-    const results = await Promise.all(promises);
+    const sheetNames = ["ingOrTo"]; // シート名の配列
 
-    const combinedData = results.flatMap(data => data.slice(1));
+    try {
+      // 各シート名に対して fetchSpreadsheetData を呼び出し、結果を Promise.all で待機
+      const results = await fetchSpreadsheetData(sheetNames);
 
-    if (combinedData.length > 0) {
-      const randomIndex = Math.floor(Math.random() * combinedData.length);
-      setRandomRow(combinedData[randomIndex]);
+      // results は [{ sheetType: string, data: any[] }] という形式なので、data を取り出して結合
+      const combinedData = results.flatMap((result) => result.data.slice(1)); // 各 result から 'data' プロパティを抽出
+      if (combinedData.length > 0) {
+        const randomIndex = Math.floor(Math.random() * combinedData.length);
+        setRandomRow(combinedData[randomIndex]); // randomRow を設定
+      } else {
+        throw new Error("データが空です");
+      }
+    } catch (error) {
+      console.error("データ取得エラー:", error);
+      setRandomRow(null); // データが取得できなかった場合は null を設定
     }
 
     setIsLoading(false);
@@ -71,7 +69,7 @@ export default function LearnScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity style={[styles.button, styles.nextButton]} onPress={getRandomRow}>
-            <Text style={styles.buttonText}>次へ</Text>
+            <Text style={styles.nextButtonText}>次へ</Text>
           </TouchableOpacity>
         </>
       )}
@@ -83,29 +81,71 @@ export default function LearnScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#fff" },
-  wordContainer: { width: "80%", alignItems: "flex-start", paddingHorizontal: 10, marginBottom: 10 },
-  textRow: { flexDirection: "row", alignItems: "center" }, // 🔹 A列とB列を横並びに
-  cellData: { fontSize: 18, color: "black", marginBottom: 0 }, // 🔹 余白をなくす
-  cellDataBold: { fontSize: 18, color: "black", fontWeight: "bold", marginBottom: 0 }, // 🔹 余白をなくす
-  button: { backgroundColor: "gray", padding: 15, borderRadius: 10, marginVertical: 5, width: "80%", alignItems: "center" },
-  nextButton: { backgroundColor: "green" },
-  backButton: { backgroundColor: "red" },
-  buttonText: { color: "white", fontSize: 18, fontWeight: "bold" },
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fffeef"
+  },
+  wordContainer: {
+    width: "80%",
+    alignItems: "flex-start",
+    paddingHorizontal: 10,
+    marginBottom: 10
+  },
+  textRow: {
+    flexDirection: "row",
+    alignItems: "center"
+  },
+  cellData: {
+    fontSize: 18,
+    color: "black",
+    marginBottom: 0
+  },
+  cellDataBold: {
+    fontSize: 18,
+    color: "black",
+    fontWeight: "bold",
+    marginBottom: 0
+  },
+  button: {
+    backgroundColor: "gray",
+    padding: 15,
+    borderRadius: 10,
+    marginVertical: 5,
+    width: "80%",
+    alignItems: "center"
+  },
+  nextButton: {
+    backgroundColor: "#9fd700"
+  },
+  nextButtonText: {
+    color: "#446158",
+    fontSize: 18,
+    fontWeight: "bold"
+  },
+  backButton: {
+    backgroundColor: "#ff5757"
+  },
+  buttonText: {
+    color: "white",
+    fontSize: 18,
+    fontWeight: "bold"
+  },
   underlined: {
     borderBottomWidth: 2,
-    borderBottomColor: "green",
-    paddingBottom: 2, // 文字と下線がくっつかないようにする
-    minWidth: 50, // 🔹 下線の長さを確保（データが短い場合も考慮）
-    textAlign: "center", // 🔹 中央寄せで見た目を調整
+    borderBottomColor: "#446158",
+    paddingBottom: 2,
+    minWidth: 50,
+    textAlign: "center",
   },
   hiddenText: {
-    color: "transparent", // 🔹 最初は透明にして見えなくする
+    color: "transparent",
   },
   visibleText: {
-    color: "black", // 🔹 ボタン押下後に表示
+    color: "black", 
   },
   abColumnContainer: {
-    marginBottom: 10, // 🔹 A,B列とC～F列の間の余白を広げる
+    marginBottom: 10,
   }
 });

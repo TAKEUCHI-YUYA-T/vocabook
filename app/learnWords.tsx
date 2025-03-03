@@ -1,17 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Linking } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Linking, Animated, Dimensions } from "react-native";
 import { useRouter } from "expo-router";
-
-export const fetchSpreadsheetData = async (sheetType: string) => {
-  try {
-    const response = await fetch(`http://192.168.100.102:3001/api/google-sheets/${sheetType}`);
-    const json = await response.json();
-    return json.data || [];
-  } catch (error) {
-    console.error(`Google Sheets API エラー (${sheetType}):`, error);
-    return [];
-  }
-};
+import { fetchSpreadsheetData } from "./fetchSpreadsheetData";
 
 export default function LearnScreen() {
   const router = useRouter();
@@ -23,12 +13,13 @@ export default function LearnScreen() {
     setIsLoading(true); // データ取得開始
     setIsAnswerVisible(false); // 回答を非表示
 
-    const sheetTypes = ["noun", "verb", "adverb", "adjective", "preposition", "conjunction", "auxiliaryVerb", "idiom"];
-    const promises = sheetTypes.map(type => fetchSpreadsheetData(type));
-    const results = await Promise.all(promises);
+    const sheetNames = ["noun", "verb", "adverb", "adjective", "preposition", "conjunction", "auxiliaryVerb", "idiom"];
+    
+    // fetchSpreadsheetData はシート名の配列を受け取り、Promiseを返す
+    const results = await fetchSpreadsheetData(sheetNames);
 
-    // 取得したデータの1行目（ヘッダー）を除外
-    const combinedData = results.flatMap(data => data.slice(1));
+    // すべてのシートのデータを1つにまとめる
+    const combinedData = results.flatMap(sheet => sheet.data.slice(1)); // ヘッダー行を除去
 
     if (combinedData.length > 0) {
       const randomIndex = Math.floor(Math.random() * combinedData.length);
@@ -65,7 +56,7 @@ export default function LearnScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity style={[styles.button, styles.nextButton]} onPress={getRandomRow}>
-            <Text style={styles.buttonText}>次へ</Text>
+            <Text style={styles.nextButtonText}>次へ</Text>
           </TouchableOpacity>
         </>
       )}
@@ -78,13 +69,58 @@ export default function LearnScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#fff" },
-  wordContainer: { width: "80%", alignItems: "flex-start", paddingHorizontal: 10, marginBottom: 10 },
-  cellData: { fontSize: 18, color: "black", marginBottom: 5 },
-  cellDataBold: { fontSize: 18, color: "black", fontWeight: "bold", marginBottom: 5 },
-  linkText: { fontSize: 18, color: "blue", textDecorationLine: "underline" },
-  button: { backgroundColor: "gray", padding: 15, borderRadius: 10, marginVertical: 5, width: "80%", alignItems: "center" },
-  nextButton: { backgroundColor: "green" },
-  backButton: { backgroundColor: "red" },
-  buttonText: { color: "white", fontSize: 18, fontWeight: "bold" },
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fffeef"
+  },
+  wordContainer: {
+    width: "80%",
+    alignItems: "flex-start",
+    paddingHorizontal: 10,
+    marginBottom: 10
+  },
+  cellData: {
+    fontSize: 18,
+    color: "black",
+    marginBottom: 5
+  },
+  cellDataBold: {
+    fontSize: 18,
+    color: "black",
+    fontWeight: "bold",
+    marginBottom: 5
+  },
+  linkText: {
+    fontSize: 18,
+    color: "blue",
+    textDecorationLine: "underline"
+  },
+  button: {
+    backgroundColor: "gray",
+    padding: 15,
+    borderRadius: 10,
+    marginVertical: 5,
+    width: "80%",
+    alignItems: "center"
+  },
+  nextButton:{
+    backgroundColor: "#9fd700"
+  },
+  nextButtonText: {
+    color: "#446158",
+    fontSize: 18,
+    fontWeight: "bold"
+  },
+  backButton: {
+    backgroundColor: "#ff5757"
+    
+  },
+  buttonText: {
+    color: "white",
+    fontSize: 18,
+    fontWeight:
+    "bold"
+  }
 });

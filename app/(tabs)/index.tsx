@@ -1,17 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Linking, Animated, Dimensions } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Linking, Animated, Dimensions, Image } from "react-native";
 import { useRouter } from "expo-router";
-
-export const fetchSpreadsheetData = async (sheetType: string) => {
-  try {
-    const response = await fetch(`http://localhost:3001/api/google-sheets/${sheetType}`);
-    const json = await response.json();
-    return json.data ?? [];
-  } catch (error) {
-    console.error(`Google Sheets API エラー (${sheetType}):`, error);
-    return [];
-  }
-};
+import { fetchSpreadsheetData } from "../fetchSpreadsheetData";
 
 export default function App() {
   const router = useRouter();
@@ -24,15 +14,24 @@ export default function App() {
   useEffect(() => {
     const getData = async () => {
       setLoading(true);
-      const referenceData = await fetchSpreadsheetData("reference");
+      const sheetNames = ["reference"];
+      const response = await fetchSpreadsheetData(sheetNames);
 
-      if (Array.isArray(referenceData) && referenceData.length > 1) {
-        const filteredData = referenceData.slice(1).filter(row => row.length > 0 && row[0]?.trim() !== "");
-        const shuffledData = shuffleArray(filteredData);
-        setRows(shuffledData.slice(0, 1));
+      if (Array.isArray(response) && response.length > 0) {
+        // 'reference' シートのデータを取得
+        const referenceData = response.find(sheet => sheet.sheetType === "reference")?.data ?? [];
+
+        if (Array.isArray(referenceData) && referenceData.length > 1) {
+          const filteredData = referenceData.slice(1).filter(row => row.length > 0 && row[0]?.trim() !== "");
+          const shuffledData = shuffleArray(filteredData);
+          setRows(shuffledData.slice(0, 1));
+        } else {
+          console.warn("取得したデータが空、または無効です。");
+        }
       } else {
-        console.warn("取得したデータが空、または無効です。");
+        console.warn("API のレスポンスが無効です。");
       }
+
       setLoading(false);
     };
 
@@ -65,7 +64,8 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>単語帳アプリ（仮）</Text>
+      {/* ロゴ画像をタイトルの代わりに表示 */}
+      <Image source={require("../../assets/images/logo.png")} style={styles.logo} />
 
       {loading ? (
         <Text style={styles.cellData}>読み込み中...</Text>
@@ -76,11 +76,11 @@ export default function App() {
             {row[1] && <Text style={styles.cellData}>{row[1]}</Text>}
             {row[2] && (
               <TouchableOpacity onPress={() => Linking.openURL(row[2])}>
-                <Text style={styles.linkText}>{row[2]}</Text>
+                <Text style={styles.linkText}>外部リンク</Text>
               </TouchableOpacity>
             )}
           </View>
-        ))
+        ))      
       ) : (
         <Text style={styles.cellData}>データなし</Text>
       )}
@@ -112,13 +112,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: "#fffeef",
   },
-  title: {
-    fontSize: 30,
-    fontWeight: "bold",
+  logo: {
+    width: 180,
+    height: 80,
     marginBottom: 20,
-    color: "blue",
   },
   wordContainer: {
     width: "80%",
@@ -143,11 +142,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: "blue",
     textDecorationLine: "underline",
-    textAlign: "left",
-    width: "80%",
+    width: "auto",
+    alignSelf: "flex-start",
   },
   button: {
-    backgroundColor: "green",
+    backgroundColor: "#9fd700",
     padding: 15,
     borderRadius: 10,
     marginVertical: 5,
@@ -155,7 +154,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   buttonText: {
-    color: "white",
+    color: "#446158",
     fontSize: 18,
     fontWeight: "bold",
   },
