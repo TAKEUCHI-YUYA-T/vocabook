@@ -18,7 +18,7 @@ export default {
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: "/assets/images/app-icon-android.png",
+        foregroundImage: "./assets/images/app-icon-android.png",
         backgroundColor: "#ffffff"
       },
       package: "com.takeuchi.vocabook",
