@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity} from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import { fetchSpreadsheetData } from "./fetchSpreadsheetData";
 
@@ -13,23 +13,21 @@ export default function LearnScreen() {
     setIsLoading(true);
     setIsAnswerVisible(false);
 
-    const sheetNames = ["ingOrTo"]; // シート名の配列
+    const sheetNames = ["ingOrTo"];
 
     try {
-      // 各シート名に対して fetchSpreadsheetData を呼び出し、結果を Promise.all で待機
       const results = await fetchSpreadsheetData(sheetNames);
+      const combinedData = results.flatMap((result) => result.data.slice(1));
 
-      // results は [{ sheetType: string, data: any[] }] という形式なので、data を取り出して結合
-      const combinedData = results.flatMap((result) => result.data.slice(1)); // 各 result から 'data' プロパティを抽出
       if (combinedData.length > 0) {
         const randomIndex = Math.floor(Math.random() * combinedData.length);
-        setRandomRow(combinedData[randomIndex]); // randomRow を設定
+        setRandomRow(combinedData[randomIndex]);
       } else {
         throw new Error("データが空です");
       }
     } catch (error) {
       console.error("データ取得エラー:", error);
-      setRandomRow(null); // データが取得できなかった場合は null を設定
+      setRandomRow(null);
     }
 
     setIsLoading(false);
@@ -41,41 +39,47 @@ export default function LearnScreen() {
 
   return (
     <View style={styles.container}>
-      {isLoading ? (
-        <Text style={styles.cellData}>読み込み中...</Text>
-      ) : randomRow ? (
-        <View style={styles.wordContainer}>
-          {/* A列（常に表示） */}
-          <View style={[styles.textRow, styles.abColumnContainer]}>
-            <Text style={[styles.cellDataBold, { marginRight: 10 }]}>{randomRow[0]}</Text>
-            <Text style={[styles.cellData, styles.underlined, isAnswerVisible ? styles.visibleText : styles.hiddenText]}>
+      <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
+        {isLoading ? (
+          <Text style={styles.cellData}>読み込み中...</Text>
+        ) : randomRow ? (
+          <View style={styles.wordContainer}>
+            {/* A列（常に表示） */}
+            <View style={[styles.textRow, styles.abColumnContainer]}>
+              <Text style={[styles.cellDataBold, { marginRight: 10 }]}>{randomRow[0]}</Text>
+              <Text style={[styles.cellData, styles.underlined, isAnswerVisible ? styles.visibleText : styles.hiddenText]}>
                 {randomRow[1]}
-            </Text>
+              </Text>
+            </View>
+            {/* C列～F列 */}
+            <Text style={styles.cellData}>{randomRow[2]}</Text>
+            <Text style={styles.cellData}>{randomRow[3]}</Text>
+            {isAnswerVisible && <Text style={styles.cellData}>{randomRow[4]}</Text>}
+            {isAnswerVisible && <Text style={styles.cellData}>{randomRow[5]}</Text>}
           </View>
-          {/* C列～F列 */}
-          <Text style={styles.cellData}>{randomRow[2]}</Text>
-          <Text style={styles.cellData}>{randomRow[3]}</Text>
-          {isAnswerVisible && <Text style={styles.cellData}>{randomRow[4]}</Text>}
-          {isAnswerVisible && <Text style={styles.cellData}>{randomRow[5]}</Text>}
-        </View>
-      ) : (
-        <Text style={styles.cellData}>データなし</Text>
-      )}
+        ) : (
+          <Text style={styles.cellData}>データなし</Text>
+        )}
+      </ScrollView>
 
-      {!isLoading && (
-        <>
-          <TouchableOpacity style={styles.button} onPress={() => setIsAnswerVisible(true)}>
-            <Text style={styles.buttonText}>回答</Text>
-          </TouchableOpacity>
+      {/* ボタンを統一した配置に */}
+      <View style={styles.buttonContainer}>
+        {!isLoading && (
+          <>
+            <TouchableOpacity style={styles.button} onPress={() => setIsAnswerVisible(true)}>
+              <Text style={styles.buttonText}>回答</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.button, styles.nextButton]} onPress={getRandomRow}>
-            <Text style={styles.nextButtonText}>次へ</Text>
-          </TouchableOpacity>
-        </>
-      )}
-      <TouchableOpacity style={[styles.button, styles.backButton]} onPress={() => router.push("/")}>
-        <Text style={styles.buttonText}>トップに戻る</Text>
-      </TouchableOpacity>
+            <TouchableOpacity style={[styles.button, styles.nextButton]} onPress={getRandomRow}>
+              <Text style={styles.nextButtonText}>次へ</Text>
+            </TouchableOpacity>
+          </>
+        )}
+
+        <TouchableOpacity style={[styles.button, styles.backButton]} onPress={() => router.push("/")}>
+          <Text style={styles.buttonText}>トップに戻る</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -83,30 +87,39 @@ export default function LearnScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#fffeef",
+  },
+  scrollContainer: {
+    flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fffeef"
+    paddingVertical: 20,
   },
   wordContainer: {
     width: "80%",
     alignItems: "flex-start",
     paddingHorizontal: 10,
-    marginBottom: 10
+    marginBottom: 10,
   },
   textRow: {
     flexDirection: "row",
-    alignItems: "center"
+    alignItems: "center",
   },
   cellData: {
     fontSize: 18,
     color: "black",
-    marginBottom: 0
+    marginBottom: 5,
   },
   cellDataBold: {
     fontSize: 18,
     color: "black",
     fontWeight: "bold",
-    marginBottom: 0
+    marginBottom: 5,
+  },
+  buttonContainer: {
+    width: "100%",
+    alignItems: "center",
+    paddingBottom: 20,
   },
   button: {
     backgroundColor: "gray",
@@ -114,23 +127,23 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginVertical: 5,
     width: "80%",
-    alignItems: "center"
+    alignItems: "center",
   },
   nextButton: {
-    backgroundColor: "#9fd700"
+    backgroundColor: "#9fd700",
   },
   nextButtonText: {
     color: "#446158",
     fontSize: 18,
-    fontWeight: "bold"
+    fontWeight: "bold",
   },
   backButton: {
-    backgroundColor: "#ff5757"
+    backgroundColor: "#ff5757",
   },
   buttonText: {
     color: "white",
     fontSize: 18,
-    fontWeight: "bold"
+    fontWeight: "bold",
   },
   underlined: {
     borderBottomWidth: 2,
@@ -143,9 +156,9 @@ const styles = StyleSheet.create({
     color: "transparent",
   },
   visibleText: {
-    color: "black", 
+    color: "black",
   },
   abColumnContainer: {
     marginBottom: 10,
-  }
+  },
 });
