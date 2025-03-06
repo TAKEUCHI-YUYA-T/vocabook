@@ -68,8 +68,8 @@ export default function LearnScreen() {
           </>
         )}
 
-        <TouchableOpacity style={[styles.button, styles.backSelectSheetScreenButton]} onPress={() => router.push("/SelectSheetScreen")}>
-          <Text style={styles.backSelectSheetScreenButtonText}>シート選択に戻る</Text>
+        <TouchableOpacity style={[styles.button, styles.backSelectSheetScreenButton]} onPress={() => router.push("/selectSheetScreen")}>
+          <Text style={styles.backSelectSheetScreenButtonText}>品詞選択に戻る</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.button, styles.backButton]} onPress={() => router.push("/")}>
           <Text style={styles.topButtonText}>トップに戻る</Text>
