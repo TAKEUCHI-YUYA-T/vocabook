@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
-import { fetchSpreadsheetData } from "./fetchSpreadsheetData";
+import { fetchSpreadsheetData } from "../utils/fetchSpreadsheetData";
 
 export default function LearnScreen() {
   const router = useRouter();
@@ -62,7 +62,6 @@ export default function LearnScreen() {
         )}
       </ScrollView>
 
-      {/* ボタンを統一した配置に */}
       <View style={styles.buttonContainer}>
         {!isLoading && (
           <>
@@ -70,14 +69,14 @@ export default function LearnScreen() {
               <Text style={styles.buttonText}>回答</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={[styles.button, styles.nextButton]} onPress={getRandomRow}>
-              <Text style={styles.nextButtonText}>次へ</Text>
+            <TouchableOpacity style={styles.button} onPress={getRandomRow}>
+              <Text style={styles.buttonText}>次へ</Text>
             </TouchableOpacity>
           </>
         )}
 
         <TouchableOpacity style={[styles.button, styles.backButton]} onPress={() => router.push("/")}>
-          <Text style={styles.buttonText}>トップに戻る</Text>
+          <Text style={styles.topButtonText}>トップに戻る</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -122,28 +121,20 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   button: {
-    backgroundColor: "gray",
+    backgroundColor: "#9fd700",
     padding: 15,
     borderRadius: 10,
     marginVertical: 5,
     width: "80%",
     alignItems: "center",
   },
-  nextButton: {
-    backgroundColor: "#9fd700",
-  },
-  nextButtonText: {
+  buttonText: {
     color: "#446158",
     fontSize: 18,
     fontWeight: "bold",
   },
   backButton: {
     backgroundColor: "#ff5757",
-  },
-  buttonText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
   },
   underlined: {
     borderBottomWidth: 2,
@@ -161,4 +152,9 @@ const styles = StyleSheet.create({
   abColumnContainer: {
     marginBottom: 10,
   },
+  topButtonText: {
+    color: "white",
+    fontSize: 18,
+    fontWeight: "bold",
+  }
 });

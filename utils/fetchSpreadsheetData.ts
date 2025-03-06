@@ -23,3 +23,4 @@ export const fetchSpreadsheetData = async (sheetTypes: string[]) => {
   }
 };
 
+export default fetchSpreadsheetData;

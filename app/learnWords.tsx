@@ -1,10 +1,14 @@
+// pages/learn-words.tsx
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Linking, Animated, Dimensions, ScrollView } from "react-native";
-import { useRouter } from "expo-router";
-import { fetchSpreadsheetData } from "./fetchSpreadsheetData";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import { fetchSpreadsheetData } from "../utils/fetchSpreadsheetData";
 
 export default function LearnScreen() {
   const router = useRouter();
+  const { sheets } = useLocalSearchParams<{ sheets?: string }>();
+  const selectedSheets = sheets ? sheets.split(",") : [];
+
   const [randomRow, setRandomRow] = useState<string[] | null>(null);
   const [isAnswerVisible, setIsAnswerVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -13,8 +17,12 @@ export default function LearnScreen() {
     setIsLoading(true);
     setIsAnswerVisible(false);
 
-    const sheetNames = ["noun", "verb", "adverb", "adjective", "preposition", "conjunction", "auxiliaryVerb", "idiom"];
-    const results = await fetchSpreadsheetData(sheetNames);
+    if (selectedSheets.length === 0) {
+      setIsLoading(false);
+      return;
+    }
+
+    const results = await fetchSpreadsheetData(selectedSheets);
     const combinedData = results.flatMap(sheet => sheet.data.slice(1));
 
     if (combinedData.length > 0) {
@@ -27,7 +35,7 @@ export default function LearnScreen() {
 
   useEffect(() => {
     getRandomRow();
-  }, []);
+  }, [sheets]);
 
   return (
     <View style={styles.container}>
@@ -47,7 +55,6 @@ export default function LearnScreen() {
         )}
       </ScrollView>
 
-      {/* ボタンはスクロール外に配置 */}
       <View style={styles.buttonContainer}>
         {!isLoading && (
           <>
@@ -55,14 +62,17 @@ export default function LearnScreen() {
               <Text style={styles.buttonText}>回答</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={[styles.button, styles.nextButton]} onPress={getRandomRow}>
-              <Text style={styles.nextButtonText}>次へ</Text>
+            <TouchableOpacity style={styles.button} onPress={getRandomRow}>
+              <Text style={styles.buttonText}>次へ</Text>
             </TouchableOpacity>
           </>
         )}
 
+        <TouchableOpacity style={[styles.button, styles.backSelectSheetScreenButton]} onPress={() => router.push("/SelectSheetScreen")}>
+          <Text style={styles.backSelectSheetScreenButtonText}>シート選択に戻る</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={[styles.button, styles.backButton]} onPress={() => router.push("/")}>
-          <Text style={styles.buttonText}>トップに戻る</Text>
+          <Text style={styles.topButtonText}>トップに戻る</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -103,17 +113,14 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   button: {
-    backgroundColor: "gray",
+    backgroundColor: "#9fd700",
     padding: 15,
     borderRadius: 10,
     marginVertical: 5,
     width: "80%",
     alignItems: "center",
   },
-  nextButton: {
-    backgroundColor: "#9fd700",
-  },
-  nextButtonText: {
+  buttonText: {
     color: "#446158",
     fontSize: 18,
     fontWeight: "bold",
@@ -121,9 +128,17 @@ const styles = StyleSheet.create({
   backButton: {
     backgroundColor: "#ff5757",
   },
-  buttonText: {
+  backSelectSheetScreenButton: {
+    backgroundColor: "#446158",
+  },
+  backSelectSheetScreenButtonText: {
     color: "white",
     fontSize: 18,
     fontWeight: "bold",
   },
+  topButtonText: {
+    color: "white",
+    fontSize: 18,
+    fontWeight: "bold",
+  }
 });

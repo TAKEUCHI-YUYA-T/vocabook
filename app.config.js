@@ -32,18 +32,27 @@ export default {
         "port": 8080
       }
     },
+    splash: {  // ← `expo.splash` に直接記述
+      image: "./assets/images/splash-icon.png", // 画像のパスを確認
+      resizeMode: "contain",
+      backgroundColor: "#fffeef"
+    },
     plugins: [
       "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          image: "./assets/images/splash-icon.png",
-          imageWidth: 200,
-          resizeMode: "contain",
-          backgroundColor: "#ffffff"
-        }
-      ]
+      "expo-splash-screen" // ← ここは "expo-splash-screen" だけでOK
     ],
+    // plugins: [
+    //   "expo-router",
+    //   [
+    //     "expo-splash-screen",
+    //     {
+    //       image: "./assets/images/splash-icon.png",
+    //       imageWidth: 200,
+    //       resizeMode: "contain",
+    //       backgroundColor: "#ffffff"
+    //     }
+    //   ]
+    // ],
     experiments: {
       typedRoutes: true
     },

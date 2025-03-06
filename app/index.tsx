@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Linking, Animated, Dimensions, Image, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
-import { fetchSpreadsheetData } from "../fetchSpreadsheetData";
+import { fetchSpreadsheetData } from "../utils/fetchSpreadsheetData";
 
 export default function App() {
   const router = useRouter();
@@ -63,7 +63,7 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      <Image source={require("../../assets/images/logo.png")} style={styles.logo} />
+      <Image source={require("../assets/images/logo.png")} style={styles.logo} />
 
       <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
         <View style={styles.innerContainer}>
@@ -85,7 +85,7 @@ export default function App() {
             <Text style={styles.cellData}>データなし</Text>
           )}
 
-          <TouchableOpacity style={styles.button} onPress={() => router.push("/learnWords")}>
+          <TouchableOpacity style={styles.button} onPress={() => router.push("/selectSheetScreen")}>
             <Text style={styles.buttonText}>単語を覚える</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.button} onPress={() => router.push("/ingOrTo")}>
