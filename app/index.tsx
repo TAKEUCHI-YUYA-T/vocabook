@@ -100,11 +100,14 @@ export default function App() {
             // データがある場合
             rows.map((row, index) => (
               <View key={index} style={styles.wordContainer}>
-                <Text style={styles.cellDataBold}>{row[0]}</Text> {/* データの1列目 */}
-                {row[1] && <Text style={styles.cellData}>{row[1]}</Text>} {/* データの2列目 */}
-                {row[2] && (
+                {/* データの1列目 */}
+                <Text style={styles.cellDataBold}>{row[0]}</Text>
+                {/* データの2列目 */}
+                {!!row[1] && <Text style={styles.cellData}>{row[1]}</Text>}
+                {/* 外部リンクの表示 */}
+                {!!row[2] && (
                   <TouchableOpacity onPress={() => Linking.openURL(row[2])}>
-                    <Text style={styles.linkText}>外部リンク</Text> {/* 外部リンクの表示 */}
+                    <Text style={styles.linkText}>外部リンク</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -123,6 +126,11 @@ export default function App() {
           <TouchableOpacity style={styles.button} onPress={dropDog}>
             <Text style={styles.buttonText}>いぬ🐶</Text>
           </TouchableOpacity>
+          {__DEV__ && (
+            <TouchableOpacity style={styles.button} onPress={() => router.push("/dev/sheets-spike")}>
+              <Text style={styles.buttonText}>[開発] シート連携の検証</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
 
