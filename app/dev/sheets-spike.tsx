@@ -77,6 +77,17 @@ export default function SheetsSpikeScreen() {
       if (!result.accessToken) throw new Error("アクセストークンが返りませんでした");
       setToken(result.accessToken);
       log(`✓ 連携: 許可されたスコープ ${result.grantedScopes.join(", ")}`);
+
+      // 受け取ったトークンを Google に問い合わせて、有効かどうかを確かめる
+      const info = await fetch(
+        `https://oauth2.googleapis.com/tokeninfo?access_token=${encodeURIComponent(result.accessToken)}`
+      );
+      const infoJson = await info.json().catch(() => ({}));
+      log(
+        info.ok
+          ? `✓ トークン有効: 残り ${infoJson.expires_in} 秒`
+          : `✗ トークン無効: HTTP ${info.status} ${infoJson.error_description ?? ""}`
+      );
     });
 
   /** シートを作成し、見出し行を書き込む */
