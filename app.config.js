@@ -39,7 +39,9 @@ export default {
     },
     plugins: [
       "expo-router",
-      "expo-splash-screen"
+      "expo-splash-screen",
+      "expo-sqlite",
+      "expo-sharing"
     ],
     experiments: {
       typedRoutes: true
