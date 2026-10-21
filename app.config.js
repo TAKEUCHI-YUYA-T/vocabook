@@ -54,6 +54,8 @@ export default {
     updates: {
       url: "https://u.expo.dev/66976257-69db-4ccf-82f5-ff53bc6c8c70",
     },
-    runtimeVersion: "1.0.0"
+    runtimeVersion: {
+      policy: "fingerprint"
+    }
   }
 };
