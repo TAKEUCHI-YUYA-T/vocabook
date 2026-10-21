@@ -32,6 +32,9 @@ yarn-error.*
 # local env files
 .env
 local.properties
+
+# local expo modules build output
+modules/*/android/build/
 .env*.local
 
 # typescript
