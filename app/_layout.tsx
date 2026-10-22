@@ -3,6 +3,7 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 
+import { SelectedTextRouter } from '@/components/SelectedTextRouter';
 import { AppDatabase } from '@/db/AppDatabase';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
@@ -23,6 +24,7 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <AppDatabase>
+        <SelectedTextRouter />
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="index" />
           <Stack.Screen name="+not-found" />
