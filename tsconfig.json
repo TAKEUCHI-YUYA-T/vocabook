@@ -3,7 +3,7 @@
   "compilerOptions": {
     "jsx": "react-native",
     "strict": true,
-    "types": ["jest"],
+    "types": ["jest", "node"],
     "paths": {
       "@/*": [
         "./*"

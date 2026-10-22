@@ -6,10 +6,12 @@
  *   assets/presets/words.json      品詞別の単語・熟語カード
  *   assets/presets/ing-or-to.json  ing or to の問題
  *   assets/presets/tips.json       ヒント（reference シート）
+ *   assets/presets/version.json    内容から計算した版（変更の検出用）
  *   preset-source/report.txt       崩れた行・要確認の行の報告書（公開しない）
  *
  * 列は位置ではなく見出し名で探し、列の並びが変わっても壊れないようにしている
  */
+const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const ExcelJS = require("exceljs");
@@ -208,6 +210,9 @@ const buildTips = (workbook) => {
   write("words.json", words);
   write("ing-or-to.json", ingOrTo);
   write("tips.json", tips);
+  // 内容が変わったときだけ変わる版。アプリはこの値で、プリセットを DB に入れ直すか決める
+  const version = crypto.createHash("sha1").update(JSON.stringify([words, ingOrTo, tips])).digest("hex").slice(0, 12);
+  write("version.json", { version });
 
   const perPos = WORD_TABS.map((tab) => `${tab}: ${words.filter((w) => w.pos === tab).length}`).join(" / ");
   const summary = `単語カード ${words.length} 枚（${perPos}）、ing or to ${ingOrTo.length} 問、ヒント ${tips.length} 件`;

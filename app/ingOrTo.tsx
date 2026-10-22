@@ -1,116 +1,62 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
-import { fetchSpreadsheetData } from "../utils/fetchSpreadsheetData";
+import { useRepository } from "@/db/AppDatabase";
+import { nextQuestion, progress, startQuiz, type QuizState } from "@/db/quiz";
+import type { Card } from "@/db/types";
 
 /**
- * メインコンポーネント関数
- * 
- * @returns {JSX.Element} LearnScreenコンポーネント
+ * ing or to の画面
+ * 動詞のあとに ing と to のどちらが続くかを答える。問題は DB（標準の「ing or to」）から読む
  */
-export default function LearnScreen() {
+export default function IngOrToScreen() {
   const router = useRouter();
-  
-  /**
-   * 取得した全ての質問データを保持する状態
-   * @type {string[][]}
-   */
-  const [allQuestions, setAllQuestions] = useState<string[][]>([]);
-  
-  /**
-   * 現在の質問のインデックスを追跡する状態
-   * @type {number}
-   */
-  const [currentIndex, setCurrentIndex] = useState(0);
-  
-  /**
-   * 回答の表示・非表示を制御する状態
-   * @type {boolean}
-   */
+  const repository = useRepository();
+
+  const [quiz, setQuiz] = useState<QuizState<Card> | null>(null);
   const [isAnswerVisible, setIsAnswerVisible] = useState(false);
-  
-  /**
-   * データ読み込み中かどうかを制御する状態
-   * @type {boolean}
-   */
-  const [isLoading, setIsLoading] = useState(true);
-
-  /**
-   * 配列をシャッフルする関数
-   * 
-   * @param {string[][]} array シャッフル対象の2次元配列
-   * @returns {string[][]} シャッフルされた配列
-   */
-  const shuffleArray = (array: string[][]) => {
-    return array
-      .map((value) => ({ value, sort: Math.random() }))
-      .sort((a, b) => a.sort - b.sort)
-      .map(({ value }) => value);
-  };
-
-  /**
-   * スプレッドシートからデータを取得して状態を更新する非同期関数
-   * 
-   * @returns {Promise<void>} データ取得と状態更新の完了を表す非同期処理
-   */
-  const loadData = async () => {
-    setIsLoading(true);
-    setIsAnswerVisible(false);
-    try {
-      const sheetNames = ["ingOrTo"];
-      const results = await fetchSpreadsheetData(sheetNames);
-      const combinedData = results.flatMap((result) => result.data.slice(1));
-      const shuffledData = shuffleArray(combinedData);
-      setAllQuestions(shuffledData);
-      setCurrentIndex(0);
-    } catch (error) {
-      console.error("データ取得エラー:", error);
-    }
-    setIsLoading(false);
-  };
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    let active = true;
+    repository
+      .listIngOrToCards()
+      .then((cards) => active && setQuiz(startQuiz(cards)))
+      .catch(() => active && setError("問題を読み込めませんでした"));
+    return () => {
+      active = false;
+    };
+  }, [repository]);
 
-  /**
-   * 次の質問に進むための処理
-   * 質問が最後の場合は、シャッフルして最初に戻る
-   */
+  const current = quiz && quiz.order.length > 0 ? quiz.order[quiz.index] : null;
+  const status = quiz ? progress(quiz) : { current: 0, total: 0, percent: 0 };
+  const answerLabel = current?.answer === "ing" ? "～ing" : current?.answer === "to" ? "to～" : "";
+
   const handleNext = () => {
+    setQuiz((prev) => (prev ? nextQuestion(prev) : prev));
     setIsAnswerVisible(false);
-    if (currentIndex + 1 < allQuestions.length) {
-      setCurrentIndex(currentIndex + 1);
-    } else {
-      // 最後まで行ったら再シャッフルしてリスタート
-      const newQuestions = shuffleArray(allQuestions);
-      setAllQuestions(newQuestions);
-      setCurrentIndex(0);
-    }
   };
-
-  const currentRow = allQuestions[currentIndex] || null;
 
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-        {isLoading ? (
+        {error ? (
+          <Text style={styles.cellData}>{error}</Text>
+        ) : !quiz ? (
           <Text style={styles.cellData}>読み込み中...</Text>
-        ) : currentRow ? (
+        ) : current ? (
           <View style={styles.wordContainer}>
-            {/* A列（常に表示） */}
+            {/* 動詞と、答え（ing / to）の欄。答えは「回答」を押すまで隠す */}
             <View style={[styles.textRow, styles.abColumnContainer]}>
-              <Text style={[styles.cellDataBold, { marginRight: 10 }]}>{currentRow[0]}</Text>
+              <Text style={[styles.cellDataBold, { marginRight: 10 }]}>{current.term}</Text>
               <Text style={[styles.cellData, styles.underlined, isAnswerVisible ? styles.visibleText : styles.hiddenText]}>
-                {currentRow[1]}
+                {answerLabel}
               </Text>
             </View>
 
-            {/* C列～F列 */}
-            <Text style={styles.cellData}>{currentRow[2]}</Text>
-            <Text style={styles.cellData}>{currentRow[3]}</Text>
-            {isAnswerVisible && <Text style={styles.cellData}>{currentRow[4]}</Text>}
-            {isAnswerVisible && <Text style={styles.cellData}>{currentRow[5]}</Text>}
+            {!!current.meaning && <Text style={styles.cellData}>{current.meaning}</Text>}
+            {!!current.example && <Text style={styles.cellData}>{current.example}</Text>}
+            {isAnswerVisible && !!current.note && <Text style={styles.cellData}>{current.note}</Text>}
           </View>
         ) : (
           <Text style={styles.cellData}>データなし</Text>
@@ -120,16 +66,12 @@ export default function LearnScreen() {
       {/* 進捗表示エリア */}
       <View style={styles.progressContainer}>
         <Text style={styles.progressText}>
-          {allQuestions.length > 0
-            ? `問題 ${currentIndex + 1} / ${allQuestions.length}（${Math.round(
-                ((currentIndex + 1) / allQuestions.length) * 100
-              )}%）`
-            : ""}
+          {status.total > 0 ? `問題 ${status.current} / ${status.total}（${status.percent}%）` : ""}
         </Text>
       </View>
-    
+
       <View style={styles.buttonContainer}>
-        {!isLoading && (
+        {current && (
           <>
             <TouchableOpacity style={styles.button} onPress={() => setIsAnswerVisible(true)}>
               <Text style={styles.buttonText}>回答</Text>

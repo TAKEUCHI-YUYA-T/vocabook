@@ -1,67 +1,36 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Linking, Animated, Dimensions, Image, ScrollView } from "react-native";
-import { useRouter } from "expo-router";
-import { fetchSpreadsheetData } from "../utils/fetchSpreadsheetData";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useRepository } from "@/db/AppDatabase";
+import type { Tip } from "@/db/types";
 
 /**
- * メインコンポーネント
- * - スプレッドシートからデータを取得し、表示する
+ * ホーム画面
+ * - ヒント（標準で同梱）を1件、ランダムに表示する
+ * - 学習・単語帳・ing or to への入口を並べる
  * - 画面上にアニメーションを使った 絵文字を表示する
- *
- * @returns {JSX.Element} レンダリングされたコンポーネント
  */
-export default function App() {
+export default function Home() {
   const router = useRouter();
-  const [rows, setRows] = useState<string[][]>([]);
-  const [loading, setLoading] = useState(true);
+  const repository = useRepository();
+  const [tip, setTip] = useState<Tip | null>(null);
   const [dogs, setDogs] = useState<{ id: number; x: number; anim: Animated.Value }[]>([]);
 
   const { width, height } = Dimensions.get("window");
 
-  /**
-   * 初回レンダリング時にスプレッドシートからデータを取得
-   * - 取得したデータをシャッフルし、1行目のみ表示
-   */
-  useEffect(() => {
-    const getData = async () => {
-      setLoading(true); // 読み込み中に設定
-      const sheetNames = ["reference"]; // 読み込むシート名
-      const response = await fetchSpreadsheetData(sheetNames); // シートデータを取得
-
-      // 取得したデータが有効か確認
-      if (Array.isArray(response) && response.length > 0) {
-        const referenceData = response.find(sheet => sheet.sheetType === "reference")?.data ?? [];
-
-        if (Array.isArray(referenceData) && referenceData.length > 1) {
-          // 1行目はヘッダーなので、データ部分だけを取り出し、シャッフルして表示
-          const filteredData = referenceData.slice(1).filter(row => row.length > 0 && row[0]?.trim() !== "");
-          const shuffledData = shuffleArray(filteredData); // 配列をシャッフル
-          setRows(shuffledData.slice(0, 1)); // 最初の1行を表示
-        } else {
-          console.warn("取得したデータが空、または無効です。");
-        }
-      } else {
-        console.warn("API のレスポンスが無効です。");
-      }
-
-      setLoading(false); // 読み込み完了
-    };
-
-    getData(); // データ取得関数を呼び出し
-  }, []);
-
-  /**
-   * 配列をシャッフルする関数
-   * @param {string[][]} array シャッフル対象の2次元配列
-   * @returns {string[][]} シャッフルされた配列
-   */
-  const shuffleArray = (array: string[][]) => {
-    for (let i = array.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1)); // ランダムなインデックスを生成
-      [array[i], array[j]] = [array[j], array[i]]; // 要素を交換
-    }
-    return array;
-  };
+  /** 画面に戻るたびに、ヒントを選び直す */
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      repository
+        .randomTip()
+        .then((next) => active && setTip(next))
+        .catch((error) => console.warn("ヒントを読み込めませんでした", error));
+      return () => {
+        active = false;
+      };
+    }, [repository])
+  );
 
   /**
    * 絵文字 アニメーションを画面上に落とす関数
@@ -72,7 +41,7 @@ export default function App() {
     const x = Math.random() * (width - 50); // 画面幅内でランダムな位置を設定
     const anim = new Animated.Value(0); // アニメーションの初期値を設定
 
-    setDogs(prev => [...prev, { id, x, anim }]); // 既存の絵文字リストに新しい絵文字を追加
+    setDogs((prev) => [...prev, { id, x, anim }]); // 既存の絵文字リストに新しい絵文字を追加
 
     // 絵文字アニメーションを開始（下方向に移動）
     Animated.timing(anim, {
@@ -81,7 +50,7 @@ export default function App() {
       useNativeDriver: true,
     }).start(() => {
       // アニメーション終了後、絵文字をリストから削除
-      setDogs(prev => prev.filter(dog => dog.id !== id));
+      setDogs((prev) => prev.filter((dog) => dog.id !== id));
     });
   };
 
@@ -90,35 +59,26 @@ export default function App() {
       {/* ロゴ画像 */}
       <Image source={require("../assets/images/logo.png")} style={styles.logo} />
 
-      {/* データをスクロールビューで表示 */}
       <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
         <View style={styles.innerContainer}>
-          {loading ? (
-            // ローディング中の表示
-            <Text style={styles.cellData}>読み込み中...</Text>
-          ) : rows.length > 0 ? (
-            // データがある場合
-            rows.map((row, index) => (
-              <View key={index} style={styles.wordContainer}>
-                {/* データの1列目 */}
-                <Text style={styles.cellDataBold}>{row[0]}</Text>
-                {/* データの2列目 */}
-                {!!row[1] && <Text style={styles.cellData}>{row[1]}</Text>}
-                {/* 外部リンクの表示 */}
-                {!!row[2] && (
-                  <TouchableOpacity onPress={() => Linking.openURL(row[2])}>
-                    <Text style={styles.linkText}>外部リンク</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            ))
-          ) : (
-            // データがない場合
-            <Text style={styles.cellData}>データなし</Text>
+          {/* ヒント */}
+          {tip && (
+            <View style={styles.wordContainer}>
+              <Text style={styles.cellDataBold}>{tip.title}</Text>
+              {!!tip.body && <Text style={styles.cellData}>{tip.body}</Text>}
+              {!!tip.url && (
+                <TouchableOpacity onPress={() => Linking.openURL(tip.url)}>
+                  <Text style={styles.linkText}>外部リンク</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           )}
 
-          <TouchableOpacity style={styles.button} onPress={() => router.push("/selectSheetScreen")}>
+          <TouchableOpacity style={styles.button} onPress={() => router.push("/study")}>
             <Text style={styles.buttonText}>単語を覚える</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={() => router.push("/decks")}>
+            <Text style={styles.buttonText}>単語帳</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.button} onPress={() => router.push("/ingOrTo")}>
             <Text style={styles.buttonText}>ing or to</Text>
@@ -134,11 +94,8 @@ export default function App() {
         </View>
       </ScrollView>
 
-      {dogs.map(dog => (
-        <Animated.Text
-          key={dog.id}
-          style={[styles.dog, { left: dog.x, transform: [{ translateY: dog.anim }] }]}
-        >
+      {dogs.map((dog) => (
+        <Animated.Text key={dog.id} style={[styles.dog, { left: dog.x, transform: [{ translateY: dog.anim }] }]}>
           🐶
         </Animated.Text>
       ))}
@@ -179,7 +136,6 @@ const styles = StyleSheet.create({
     color: "black",
     marginBottom: 10,
     textAlign: "left",
-    width: "80%",
   },
   cellDataBold: {
     fontSize: 18,
