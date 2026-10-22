@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 import { SQLiteProvider, useSQLiteContext, type SQLiteDatabase } from "expo-sqlite";
+import { applyDataFixes } from "./dataFixes";
 import { migrate } from "./migrations";
 import { ensureDefaultDeck, syncPresets, type PresetData } from "./presets";
 import { createRepository, type Repository } from "./repository";
@@ -37,6 +38,13 @@ async function initialize(database: SQLiteDatabase) {
   await migrate(db);
   await syncPresets(db, presets);
   await ensureDefaultDeck(db);
+  // 一度だけの単語データの修正（開発者の端末だけで動く）。失敗しても、起動は止めない
+  try {
+    const fixed = await applyDataFixes(db);
+    if (fixed) console.warn("[data-fix]", JSON.stringify(fixed));
+  } catch (error) {
+    console.warn("[data-fix] 失敗（元のまま）:", error);
+  }
 }
 
 const hideSplash = () => {
