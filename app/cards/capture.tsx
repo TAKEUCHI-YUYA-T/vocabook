@@ -10,6 +10,7 @@ import { draftMeaning } from "@/db/draft";
 import { translateOnDevice } from "@/db/translate";
 import { ValidationError } from "@/db/repository";
 import { CardForm, emptyCardForm, type CardFormValue } from "@/components/CardForm";
+import { useCardAutoFill } from "@/hooks/useCardAutoFill";
 import { useDefaultDeck } from "@/hooks/useDefaultDeck";
 import { useDuplicateWarning } from "@/hooks/useDuplicateWarning";
 import { returnToPreviousApp } from "../../modules/selected-text";
@@ -36,6 +37,8 @@ export default function CaptureScreen() {
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const duplicateWarning = useDuplicateWarning(repository, deck?.id, value.term);
+  // 選んだ単語の品詞も、最初から推定する（例文を入れたときの訳も自動で入る）
+  const autoFill = useCardAutoFill(value, setValue, { guessInitialTerm: true });
 
   // 意味の下書きを作る。あなたが意味を入力し始めていたら、上書きしない
   useEffect(() => {
@@ -120,6 +123,7 @@ export default function CaptureScreen() {
           onChange={onChange}
           editable
           duplicateWarning={duplicateWarning}
+          autoFill={autoFill}
           meaningBadge={isDraftShown ? "自動翻訳の下書き" : null}
           meaningHint={isDraftShown ? "内容を確認して、必要なら直してください。" : null}
         />

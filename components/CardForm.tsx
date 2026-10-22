@@ -1,6 +1,7 @@
 import React, { useRef, useState } from "react";
-import { View, Text, StyleSheet, TextInput, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import type { CardAutoFillState } from "@/db/autofill";
 import { LIMITS } from "@/db/repository";
 import { PARTS_OF_SPEECH, type PartOfSpeech } from "@/db/types";
 import { colors } from "./theme";
@@ -36,17 +37,24 @@ type Props = {
   meaningBadge?: string | null;
   /** 意味の欄の下に出す案内 */
   meaningHint?: string | null;
+  /** 品詞・例文の訳の自動入力の状態（自動で入った値に札を出し、訳を作っている間の表示を出す） */
+  autoFill?: CardAutoFillState;
 };
 
 /**
  * 単語の入力フォーム（追加・編集・他のアプリから登録で共通）
  * 必須は「単語」と「意味」だけ。品詞・例文・メモは「詳細」に折りたたむ
  */
-export function CardForm({ value, onChange, editable, duplicateWarning, autoFocus, expanded, meaningBadge, meaningHint }: Props) {
+export function CardForm({ value, onChange, editable, duplicateWarning, autoFocus, expanded, meaningBadge, meaningHint, autoFill }: Props) {
   const meaningRef = useRef<React.ComponentRef<typeof TextInput>>(null);
   const hasDetails = !!(value.partOfSpeech || value.example || value.exampleTranslation || value.note);
   const [showDetails, setShowDetails] = useState(hasDetails);
   const [termFocused, setTermFocused] = useState(false);
+
+  // 自動で入った値のままなら、「自動の下書き」の札を出す（あなたが直したら消える）
+  const isAutoPartOfSpeech = !!autoFill && value.partOfSpeech !== null && value.partOfSpeech === autoFill.autoPartOfSpeech;
+  const isAutoTranslation = !!autoFill && value.exampleTranslation !== "" && value.exampleTranslation === autoFill.autoTranslation;
+  const translationStatus = autoFill?.translationStatus;
 
   const set = <K extends keyof CardFormValue>(key: K, next: CardFormValue[K]) => onChange({ ...value, [key]: next });
 
@@ -105,7 +113,14 @@ export function CardForm({ value, onChange, editable, duplicateWarning, autoFocu
       {expanded || showDetails || hasDetails ? (
         <>
           <View style={styles.field}>
-            <Text style={styles.label}>品詞</Text>
+            <View style={styles.labelRow}>
+              <Text style={styles.label}>品詞</Text>
+              {isAutoPartOfSpeech && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>自動判定の下書き</Text>
+                </View>
+              )}
+            </View>
             <View style={styles.chips}>
               {PARTS_OF_SPEECH.map((part) => {
                 const selected = value.partOfSpeech === part.key;
@@ -139,7 +154,14 @@ export function CardForm({ value, onChange, editable, duplicateWarning, autoFocu
           </View>
 
           <View style={styles.field}>
-            <Text style={styles.label}>例文の訳</Text>
+            <View style={styles.labelRow}>
+              <Text style={styles.label}>例文の訳</Text>
+              {isAutoTranslation && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>自動翻訳の下書き</Text>
+                </View>
+              )}
+            </View>
             <TextInput
               style={[styles.input, styles.multiline, styles.detailInput]}
               value={value.exampleTranslation}
@@ -148,6 +170,14 @@ export function CardForm({ value, onChange, editable, duplicateWarning, autoFocu
               multiline
               maxLength={LIMITS.example}
             />
+            {translationStatus?.state === "loading" && (
+              <View style={styles.statusRow}>
+                <ActivityIndicator size="small" color={colors.secondary} />
+                <Text style={styles.hint}>訳を作っています…</Text>
+              </View>
+            )}
+            {translationStatus?.state === "failed" && !!translationStatus.message && <Text style={styles.failure}>{translationStatus.message}</Text>}
+            {isAutoTranslation && translationStatus?.state !== "loading" && <Text style={styles.hint}>内容を確認して、必要なら直してください。</Text>}
           </View>
 
           <View style={styles.field}>
@@ -181,6 +211,8 @@ const styles = StyleSheet.create({
   badge: { backgroundColor: colors.panel, borderRadius: 10, paddingVertical: 2, paddingHorizontal: 8 },
   badgeText: { fontSize: 12, fontWeight: "bold", color: colors.secondary },
   hint: { fontSize: 13, fontWeight: "500", color: colors.secondary },
+  statusRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  failure: { fontSize: 13, color: colors.warningText },
   termInput: {
     height: 58,
     borderWidth: 1,

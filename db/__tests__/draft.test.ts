@@ -1,4 +1,4 @@
-import { describeTranslationError, draftMeaning, type TranslateFn } from "../draft";
+import { describeTranslationError, draftExampleTranslation, draftMeaning, type TranslateFn } from "../draft";
 
 const ok = (text: string): TranslateFn => async () => ({ translatedTexts: text, sourceLanguage: "en" });
 
@@ -53,6 +53,28 @@ describe("意味の下書き", () => {
     const result = await draftMeaning("apple", never, 20);
     expect(result).toEqual({ status: "failed", reason: describeTranslationError(new Error("TIMEOUT")), detail: "TIMEOUT" });
     expect(result.status === "failed" && result.reason).toContain("時間がかかっています");
+  });
+});
+
+describe("例文の訳の下書き", () => {
+  it("英語の例文を、英語から日本語へ訳す", async () => {
+    const translate = jest.fn(ok(" 私はその案に賛成です。 "));
+    expect(await draftExampleTranslation("I agree with the plan.", translate)).toEqual({ status: "ok", text: "私はその案に賛成です。" });
+    expect(translate).toHaveBeenCalledWith({ input: "I agree with the plan.", sourceLangCode: "en", targetLangCode: "ja" });
+  });
+
+  it("日本語を含む例文や、英字のない例文は、訳さない", async () => {
+    const translate = jest.fn(ok("x"));
+    expect((await draftExampleTranslation("彼は来た。", translate)).status).toBe("skipped");
+    expect((await draftExampleTranslation("123 456", translate)).status).toBe("skipped");
+    expect(translate).not.toHaveBeenCalled();
+  });
+
+  it("失敗したら、訳は手で入力するよう案内する（意味の案内とは文言を分ける）", async () => {
+    const result = await draftExampleTranslation("I agree.", async () => {
+      throw new Error("PARAMETER_ERROR: something");
+    });
+    expect(result).toEqual({ status: "failed", reason: "翻訳できませんでした。訳は手で入力してください", detail: "PARAMETER_ERROR: something" });
   });
 });
 

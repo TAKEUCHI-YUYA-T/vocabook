@@ -9,6 +9,7 @@ import { useRepository } from "@/db/AppDatabase";
 import { ValidationError } from "@/db/repository";
 import type { Card, Deck } from "@/db/types";
 import { CardForm, type CardFormValue } from "@/components/CardForm";
+import { useCardAutoFill } from "@/hooks/useCardAutoFill";
 import { useDuplicateWarning } from "@/hooks/useDuplicateWarning";
 import { useGoBack } from "@/hooks/useGoBack";
 
@@ -28,17 +29,13 @@ const toFormValue = (card: Card): CardFormValue => ({
  */
 export default function EditCardScreen() {
   const repository = useRepository();
-  const insets = useSafeAreaInsets();
   const goBack = useGoBack("/words");
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const [card, setCard] = useState<Card | null>(null);
   const [deck, setDeck] = useState<Deck | null>(null);
-  const [value, setValue] = useState<CardFormValue | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const duplicateWarning = useDuplicateWarning(repository, card?.deckId, value?.term ?? "", card?.id);
 
   useEffect(() => {
     let active = true;
@@ -48,13 +45,36 @@ export default function EditCardScreen() {
       if (!active) return;
       setCard(found);
       setDeck(foundDeck);
-      setValue(found ? toFormValue(found) : null);
       setIsLoaded(true);
     })().catch(() => active && setError("読み込めませんでした"));
     return () => {
       active = false;
     };
   }, [repository, id]);
+
+  if (!card) {
+    return (
+      <View style={styles.container}>
+        <ScreenHeader title="単語を編集" onBack={goBack} backLabel="戻る" bordered />
+        <Text style={styles.message}>{error ?? (isLoaded ? "この単語は見つかりませんでした（削除された可能性があります）" : "読み込み中...")}</Text>
+      </View>
+    );
+  }
+
+  return <EditCardForm card={card} editable={deck?.kind === "user"} goBack={goBack} />;
+}
+
+/** 読み込んだ単語の入力フォーム。保存・削除・自動入力（品詞・例文の訳）をここで扱う */
+function EditCardForm({ card, editable, goBack }: { card: Card; editable: boolean; goBack: () => void }) {
+  const repository = useRepository();
+  const insets = useSafeAreaInsets();
+
+  const [value, setValue] = useState<CardFormValue>(() => toFormValue(card));
+  const [error, setError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const duplicateWarning = useDuplicateWarning(repository, card.deckId, value.term, card.id);
+  // 開いた時点の単語・例文では自動入力しない。あなたが直したときだけ、品詞や訳を入れる
+  const autoFill = useCardAutoFill(value, setValue);
 
   const run = async (action: () => Promise<void>) => {
     if (isSaving) return;
@@ -67,17 +87,6 @@ export default function EditCardScreen() {
       setIsSaving(false);
     }
   };
-
-  if (!card || !value) {
-    return (
-      <View style={styles.container}>
-        <ScreenHeader title="単語を編集" onBack={goBack} backLabel="戻る" bordered />
-        <Text style={styles.message}>{error ?? (isLoaded ? "この単語は見つかりませんでした（削除された可能性があります）" : "読み込み中...")}</Text>
-      </View>
-    );
-  }
-
-  const editable = deck?.kind === "user";
 
   const save = () =>
     run(async () => {
@@ -112,7 +121,14 @@ export default function EditCardScreen() {
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 32 }]} keyboardShouldPersistTaps="handled">
         {!editable && <Text style={styles.readonlyNote}>この単語は編集できません。</Text>}
 
-        <CardForm value={value} onChange={setValue} editable={editable} expanded duplicateWarning={editable ? duplicateWarning : null} />
+        <CardForm
+          value={value}
+          onChange={setValue}
+          editable={editable}
+          expanded
+          duplicateWarning={editable ? duplicateWarning : null}
+          autoFill={editable ? autoFill : undefined}
+        />
 
         {!!error && <Text style={styles.error}>{error}</Text>}
 

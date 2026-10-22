@@ -7,6 +7,7 @@ import { colors } from "@/components/theme";
 import { useRepository } from "@/db/AppDatabase";
 import { ValidationError } from "@/db/repository";
 import { CardForm, emptyCardForm, type CardFormValue } from "@/components/CardForm";
+import { useCardAutoFill } from "@/hooks/useCardAutoFill";
 import { useDefaultDeck } from "@/hooks/useDefaultDeck";
 import { useDuplicateWarning } from "@/hooks/useDuplicateWarning";
 import { useGoBack } from "@/hooks/useGoBack";
@@ -32,6 +33,7 @@ export default function NewCardScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const duplicateWarning = useDuplicateWarning(repository, deck?.id, value.term);
+  const autoFill = useCardAutoFill(value, setValue);
 
   useEffect(() => {
     return () => {
@@ -53,7 +55,9 @@ export default function NewCardScreen() {
       setError(null);
       if (continueAdding) {
         showNotice(`「${card.term}」を追加しました`);
-        setValue(emptyCardForm(value.partOfSpeech));
+        // 品詞は、あなたが選んだものだけを引き継ぐ（自動で入った品詞は、次の単語で推定し直す）
+        setValue(emptyCardForm(value.partOfSpeech === autoFill.autoPartOfSpeech ? null : value.partOfSpeech));
+        autoFill.reset();
         // フォームを作り直して、単語の欄にカーソルを戻す
         setFormKey((n) => n + 1);
       } else {
@@ -78,7 +82,7 @@ export default function NewCardScreen() {
       />
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <CardForm key={formKey} value={value} onChange={setValue} editable autoFocus duplicateWarning={duplicateWarning} />
+        <CardForm key={formKey} value={value} onChange={setValue} editable autoFocus duplicateWarning={duplicateWarning} autoFill={autoFill} />
 
         {!!(error ?? deckError) && <Text style={styles.error}>{error ?? deckError}</Text>}
 
