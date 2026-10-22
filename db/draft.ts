@@ -15,7 +15,7 @@ export type TranslateFn = (params: {
 export type DraftResult =
   | { status: "ok"; meaning: string }
   | { status: "skipped"; reason: string }
-  | { status: "failed"; reason: string };
+  | { status: "failed"; reason: string; /** 原因の特定用に、元のエラーの本文を残す */ detail: string };
 
 /** 翻訳を待つ時間の上限。モデルのダウンロード中などで、画面が固まったままにならないようにする */
 export const DRAFT_TIMEOUT_MS = 30_000;
@@ -34,6 +34,13 @@ const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> =>
       }
     );
   });
+
+/** 元のエラーの本文（コードと文言）。長すぎないよう切る */
+export function describeRawError(error: unknown): string {
+  const code = error && typeof error === "object" && "code" in error ? String((error as { code: unknown }).code) : "";
+  const message = error instanceof Error ? error.message : String(error);
+  return `${code ? code + ": " : ""}${message}`.slice(0, 300);
+}
 
 /** エラーを、ユーザーに見せる短い理由にする */
 export function describeTranslationError(error: unknown): string {
@@ -62,9 +69,9 @@ export async function draftMeaning(text: string, translate: TranslateFn, timeout
         ? result.translatedTexts
         : Object.values(result.translatedTexts)[0];
     const meaning = (Array.isArray(translated) ? translated[0] : translated ?? "").toString().trim();
-    if (!meaning) return { status: "failed", reason: "翻訳の結果が空でした。意味は手で入力してください" };
+    if (!meaning) return { status: "failed", reason: "翻訳の結果が空でした。意味は手で入力してください", detail: "empty result" };
     return { status: "ok", meaning };
   } catch (error) {
-    return { status: "failed", reason: describeTranslationError(error) };
+    return { status: "failed", reason: describeTranslationError(error), detail: describeRawError(error) };
   }
 }

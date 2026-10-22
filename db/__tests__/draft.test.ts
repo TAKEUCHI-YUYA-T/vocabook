@@ -29,7 +29,11 @@ describe("意味の下書き", () => {
     const result = await draftMeaning("apple", async () => {
       throw new Error("MODEL_DOWNLOAD_FAILED: network");
     });
-    expect(result).toEqual({ status: "failed", reason: "翻訳のデータを取得できませんでした。初回だけ、通信が必要です（約30MB）" });
+    expect(result).toEqual({
+      status: "failed",
+      reason: "翻訳のデータを取得できませんでした。初回だけ、通信が必要です（約30MB）",
+      detail: "MODEL_DOWNLOAD_FAILED: network",
+    });
   });
 
   it("翻訳の部品が入っていない版のアプリでは、更新を促す理由を返す", async () => {
@@ -47,7 +51,17 @@ describe("意味の下書き", () => {
   it("時間がかかりすぎたら、待つのをやめる", async () => {
     const never: TranslateFn = () => new Promise(() => {});
     const result = await draftMeaning("apple", never, 20);
-    expect(result).toEqual({ status: "failed", reason: describeTranslationError(new Error("TIMEOUT")) });
+    expect(result).toEqual({ status: "failed", reason: describeTranslationError(new Error("TIMEOUT")), detail: "TIMEOUT" });
     expect(result.status === "failed" && result.reason).toContain("時間がかかっています");
+  });
+});
+
+describe("エラーの本文", () => {
+  it("コードがあればコードつきで、長すぎる本文は切って返す", async () => {
+    const { describeRawError } = await Promise.resolve(require("../draft"));
+    const coded = Object.assign(new Error("download failed"), { code: "MODEL_DOWNLOAD_FAILED" });
+    expect(describeRawError(coded)).toBe("MODEL_DOWNLOAD_FAILED: download failed");
+    expect(describeRawError(new Error("x".repeat(1000))).length).toBe(300);
+    expect(describeRawError("文字列のエラー")).toBe("文字列のエラー");
   });
 });

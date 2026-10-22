@@ -38,6 +38,7 @@ export default function CaptureScreen() {
   const [deckId, setDeckId] = useState<string | null>(null);
   const [draftState, setDraftState] = useState<"loading" | "done" | "none">(initialTerm ? "loading" : "none");
   const [draftNote, setDraftNote] = useState<string | null>(null);
+  const [draftDetail, setDraftDetail] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const meaningTouched = useRef(false);
@@ -68,6 +69,11 @@ export default function CaptureScreen() {
         setDraftState("done");
       } else {
         setDraftNote(result.reason);
+        // 原因の特定用に、元のエラーの本文を、画面とログに残す
+        if (result.status === "failed") {
+          setDraftDetail(result.detail);
+          console.warn("[capture] 翻訳に失敗:", result.detail);
+        }
         setDraftState("none");
       }
     });
@@ -146,6 +152,7 @@ export default function CaptureScreen() {
           </View>
         )}
         {!!draftNote && draftState !== "loading" && <Text style={styles.note}>{draftNote}</Text>}
+        {!!draftDetail && draftState !== "loading" && <Text style={styles.detail}>詳細: {draftDetail}</Text>}
 
         <CardForm value={value} onChange={onChange} editable duplicateWarning={duplicateWarning} />
       </ScrollView>
@@ -166,6 +173,7 @@ const styles = StyleSheet.create({
   form: { paddingHorizontal: 16, paddingBottom: 40 },
   label: { fontSize: 15, fontWeight: "600", color: "#446158", marginTop: 12, marginBottom: 4 },
   note: { fontSize: 14, color: "#b26a00", marginTop: 10 },
+  detail: { fontSize: 12, color: "#777", marginTop: 4 },
   chips: { gap: 8 },
   chip: { borderWidth: 1, borderColor: "gray", borderRadius: 16, paddingVertical: 6, paddingHorizontal: 12 },
   chipSelected: { backgroundColor: "#9fd700", borderColor: "#9fd700" },

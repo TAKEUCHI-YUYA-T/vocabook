@@ -40,8 +40,7 @@ export default {
       "expo-router",
       "expo-splash-screen",
       "expo-sqlite",
-      "expo-sharing",
-      "./plugins/withSelectedText"
+      "expo-sharing"
     ],
     experiments: {
       typedRoutes: true
