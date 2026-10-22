@@ -14,6 +14,13 @@ object SelectedTextIntents {
   const val ACTION_CAPTURE = "com.takeuchi.vocabook.action.CAPTURE"
   const val EXTRA_CAPTURED_TEXT = "com.takeuchi.vocabook.extra.CAPTURED_TEXT"
 
+  /** 文字を送ってきたアプリ（Chrome など）のパッケージ名。登録のあと、そのアプリを前面に戻すために使う */
+  const val EXTRA_SOURCE_PACKAGE = "com.takeuchi.vocabook.extra.SOURCE_PACKAGE"
+
+  /** CaptureActivity が付けた、送り元のアプリのパッケージ名。なければ null */
+  fun sourcePackage(intent: Intent?): String? =
+    intent?.takeIf { it.action == ACTION_CAPTURE }?.getStringExtra(EXTRA_SOURCE_PACKAGE)?.takeIf { it.isNotBlank() }
+
   /** 受け取る文字の長さの上限。長い文章が送られても、アプリが重くならないようにする */
   const val MAX_LENGTH = 2000
 

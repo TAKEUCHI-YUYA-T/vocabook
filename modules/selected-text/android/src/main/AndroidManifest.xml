@@ -1,4 +1,15 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!--
+    登録のあとに、文字を送ってきたアプリ（Chrome など）を開き直すため、
+    アイコンのあるアプリの起動用 Intent を調べられるようにする（Android 11 以降のパッケージの可視性）
+  -->
+  <queries>
+    <intent>
+      <action android:name="android.intent.action.MAIN" />
+      <category android:name="android.intent.category.LAUNCHER" />
+    </intent>
+  </queries>
+
   <application>
     <!--
       他のアプリの「選択メニュー」と「共有」の受け取り口。画面はなく、すぐに閉じる。
