@@ -4,6 +4,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 
 import { SelectedTextRouter } from '@/components/SelectedTextRouter';
+import { colors } from '@/components/theme';
 import { AppDatabase } from '@/db/AppDatabase';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
@@ -25,7 +26,7 @@ export default function RootLayout() {
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <AppDatabase>
         <SelectedTextRouter />
-        <Stack screenOptions={{ headerShown: false }}>
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
           <Stack.Screen name="index" />
           <Stack.Screen name="+not-found" />
         </Stack>

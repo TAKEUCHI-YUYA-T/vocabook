@@ -1,51 +1,41 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ScreenHeader } from "@/components/ScreenHeader";
+import { colors } from "@/components/theme";
 import { useRepository } from "@/db/AppDatabase";
 import { extractSelection, looksJapanese, looksLikeSentence } from "@/db/capture";
 import { draftMeaning } from "@/db/draft";
 import { translateOnDevice } from "@/db/translate";
 import { ValidationError } from "@/db/repository";
-import type { DeckSummary } from "@/db/types";
 import { CardForm, emptyCardForm, type CardFormValue } from "@/components/CardForm";
+import { useDefaultDeck } from "@/hooks/useDefaultDeck";
 import { useDuplicateWarning } from "@/hooks/useDuplicateWarning";
 import { returnToPreviousApp } from "../../modules/selected-text";
 
 /**
  * 他のアプリで選んだ文字を、単語として登録する画面
- * 意味は、端末内の翻訳で下書きを入れる。あなたが直して「登録」すると保存され、元のアプリに戻る
+ * 意味は、端末内の翻訳で下書きを入れる。あなたが直して「登録して戻る」を押すと保存され、元のアプリに戻る
  */
 export default function CaptureScreen() {
   const router = useRouter();
   const repository = useRepository();
+  const insets = useSafeAreaInsets();
   const { text } = useLocalSearchParams<{ text?: string }>();
+  const { deck, error: deckError } = useDefaultDeck();
 
   // 共有された文字から、単語を取り出す（Chrome は、選んだ文字ではなく URL を送ることがある）
   const selection = useMemo(() => extractSelection(text ?? ""), [text]);
   const initialTerm = selection.term;
   const [value, setValue] = useState<CardFormValue>({ ...emptyCardForm(), term: initialTerm });
-  const [decks, setDecks] = useState<DeckSummary[]>([]);
-  const [deckId, setDeckId] = useState<string | null>(null);
   const [draftState, setDraftState] = useState<"loading" | "done" | "none">(initialTerm ? "loading" : "none");
   const [draftNote, setDraftNote] = useState<string | null>(null);
   const [draftDetail, setDraftDetail] = useState<string | null>(null);
+  const [meaningEdited, setMeaningEdited] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const meaningTouched = useRef(false);
-  const duplicateWarning = useDuplicateWarning(repository, deckId ?? undefined, value.term);
-
-  // 登録先の単語帳（自分の単語帳の先頭を既定にする）
-  useEffect(() => {
-    let active = true;
-    repository.listDecks().then((list) => {
-      if (!active) return;
-      setDecks(list);
-      setDeckId((current) => current ?? list[0]?.id ?? null);
-    });
-    return () => {
-      active = false;
-    };
-  }, [repository]);
+  const duplicateWarning = useDuplicateWarning(repository, deck?.id, value.term);
 
   // 意味の下書きを作る。あなたが意味を入力し始めていたら、上書きしない
   useEffect(() => {
@@ -54,8 +44,7 @@ export default function CaptureScreen() {
     draftMeaning(initialTerm, translateOnDevice).then((result) => {
       if (!active) return;
       if (result.status === "ok") {
-        if (!meaningTouched.current) setValue((prev) => ({ ...prev, meaning: result.meaning }));
-        setDraftNote("意味は自動で入れた下書きです。内容を確認して、必要なら直してください");
+        setValue((prev) => (prev.meaning ? prev : { ...prev, meaning: result.meaning }));
         setDraftState("done");
       } else {
         setDraftNote(result.reason);
@@ -73,11 +62,11 @@ export default function CaptureScreen() {
   }, [initialTerm]);
 
   const onChange = (next: CardFormValue) => {
-    if (next.meaning !== value.meaning) meaningTouched.current = true;
+    if (next.meaning !== value.meaning) setMeaningEdited(true);
     setValue(next);
   };
 
-  /** 保存したあと、選択元のアプリに戻る。戻れない場合（アプリ内から開いたとき）は、単語帳へ */
+  /** 保存したあと、選択元のアプリに戻る。戻れない場合（アプリ内から開いたとき）は、ホームへ */
   const finish = () => {
     returnToPreviousApp();
     if (router.canGoBack()) router.back();
@@ -85,10 +74,10 @@ export default function CaptureScreen() {
   };
 
   const save = async () => {
-    if (isSaving || !deckId) return;
+    if (isSaving || !deck) return;
     setIsSaving(true);
     try {
-      await repository.addCard(deckId, value);
+      await repository.addCard(deck.id, value);
       finish();
     } catch (e) {
       setError(e instanceof ValidationError ? e.message : "保存できませんでした");
@@ -97,78 +86,77 @@ export default function CaptureScreen() {
     }
   };
 
+  const isDraftShown = draftState === "done" && !meaningEdited;
+  const notes = [
+    selection.kind === "fragment" && "共有された URL から、選んだ単語を取り出しました。",
+    selection.kind === "url-only" &&
+      "URL だけが共有され、単語を取り出せませんでした。単語を選び直して、選択メニューの「vocabook」から送ると、確実に単語だけが届きます。",
+    looksJapanese(initialTerm) && "日本語の文字を含んでいます。英語の単語を選んだ場合は、選び直してください。",
+    looksLikeSentence(initialTerm) && "文のように長いです。単語や熟語だけにするか、例文の欄に移してください。",
+    draftState !== "loading" && draftState !== "done" && draftNote,
+  ].filter((note): note is string => !!note);
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>単語を登録</Text>
+      <ScreenHeader title="単語を登録" onBack={finish} backIcon="close" backLabel="やめる" bordered />
 
-      <View style={styles.actions}>
-        <TouchableOpacity style={[styles.button, (isSaving || !deckId) && styles.disabled]} disabled={isSaving || !deckId} onPress={save}>
-          <Text style={styles.buttonText}>登録</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.button, styles.secondary]} onPress={finish}>
-          <Text style={styles.lightText}>やめる</Text>
-        </TouchableOpacity>
-      </View>
-      {!!error && <Text style={styles.error}>{error}</Text>}
-
-      <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
-        {selection.kind === "fragment" && <Text style={styles.note}>共有された URL から、選んだ単語を取り出しました。</Text>}
-        {selection.kind === "url-only" && (
-          <Text style={styles.note}>
-            URL だけが共有され、単語を取り出せませんでした。単語を選び直して、選択メニューの「vocabook」から送ると、確実に単語だけが届きます。
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        {notes.map((note) => (
+          <Text key={note} style={styles.note}>
+            {note}
           </Text>
-        )}
-        {looksJapanese(initialTerm) && <Text style={styles.note}>日本語の文字を含んでいます。英語の単語を選んだ場合は、選び直してください。</Text>}
-        {looksLikeSentence(initialTerm) && <Text style={styles.note}>文のように長いです。単語や熟語だけにするか、例文の欄に移してください。</Text>}
-
-        {decks.length > 1 && (
-          <>
-            <Text style={styles.label}>登録先の単語帳</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-              {decks.map((deck) => (
-                <TouchableOpacity key={deck.id} style={[styles.chip, deckId === deck.id && styles.chipSelected]} onPress={() => setDeckId(deck.id)}>
-                  <Text style={[styles.chipText, deckId === deck.id && styles.chipTextSelected]}>{deck.name}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </>
-        )}
-        {decks.length === 1 && <Text style={styles.label}>登録先: {decks[0].name}</Text>}
+        ))}
+        {!!draftDetail && draftState !== "loading" && <Text style={styles.detail}>詳細: {draftDetail}</Text>}
 
         {draftState === "loading" && (
           <View style={styles.loadingRow}>
-            <ActivityIndicator color="#446158" />
+            <ActivityIndicator color={colors.secondary} />
             <Text style={styles.loadingText}>意味を調べています…（初回は、翻訳のデータを取得するため、時間がかかります）</Text>
           </View>
         )}
-        {!!draftNote && draftState !== "loading" && <Text style={styles.note}>{draftNote}</Text>}
-        {!!draftDetail && draftState !== "loading" && <Text style={styles.detail}>詳細: {draftDetail}</Text>}
 
-        <CardForm value={value} onChange={onChange} editable duplicateWarning={duplicateWarning} />
+        <CardForm
+          value={value}
+          onChange={onChange}
+          editable
+          duplicateWarning={duplicateWarning}
+          meaningBadge={isDraftShown ? "自動翻訳の下書き" : null}
+          meaningHint={isDraftShown ? "内容を確認して、必要なら直してください。" : null}
+        />
+
+        {!!(error ?? deckError) && <Text style={styles.error}>{error ?? deckError}</Text>}
       </ScrollView>
+
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) + 16 }]}>
+        <TouchableOpacity accessibilityRole="button" style={styles.cancelButton} onPress={finish}>
+          <Text style={styles.cancelText}>やめる</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityState={{ disabled: isSaving || !deck }}
+          style={[styles.saveButton, (isSaving || !deck) && styles.disabled]}
+          disabled={isSaving || !deck}
+          onPress={save}
+        >
+          <Text style={styles.saveText}>登録して戻る</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fffeef", paddingTop: 60 },
-  title: { fontSize: 20, fontWeight: "bold", textAlign: "center", marginBottom: 8 },
-  actions: { flexDirection: "row", gap: 8, paddingHorizontal: 16 },
-  button: { flex: 1, backgroundColor: "#9fd700", padding: 14, borderRadius: 10, alignItems: "center" },
-  secondary: { backgroundColor: "#446158" },
+  container: { flex: 1, backgroundColor: colors.background },
+  content: { padding: 16, gap: 14 },
+  note: { fontSize: 14, lineHeight: 22, color: colors.warningText, backgroundColor: colors.panel, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 },
+  detail: { fontSize: 12, color: "#777" },
+  error: { color: colors.danger, fontSize: 15 },
+  loadingRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  loadingText: { flex: 1, fontSize: 14, color: colors.secondary },
+  footer: { flexDirection: "row", gap: 10, paddingHorizontal: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.background },
+  cancelButton: { flex: 1, minHeight: 54, borderWidth: 2, borderColor: colors.secondary, borderRadius: 12, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center" },
+  cancelText: { fontSize: 17, fontWeight: "bold", color: colors.secondary },
+  saveButton: { flex: 2, minHeight: 54, borderRadius: 12, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
+  saveText: { fontSize: 18, fontWeight: "bold", color: colors.onPrimary },
   disabled: { opacity: 0.5 },
-  buttonText: { color: "#446158", fontSize: 17, fontWeight: "bold" },
-  lightText: { color: "white", fontSize: 17, fontWeight: "bold" },
-  error: { color: "#ff5757", fontSize: 16, marginTop: 8, paddingHorizontal: 16 },
-  form: { paddingHorizontal: 16, paddingBottom: 40 },
-  label: { fontSize: 15, fontWeight: "600", color: "#446158", marginTop: 12, marginBottom: 4 },
-  note: { fontSize: 14, color: "#b26a00", marginTop: 10 },
-  detail: { fontSize: 12, color: "#777", marginTop: 4 },
-  chips: { gap: 8 },
-  chip: { borderWidth: 1, borderColor: "gray", borderRadius: 16, paddingVertical: 6, paddingHorizontal: 12 },
-  chipSelected: { backgroundColor: "#9fd700", borderColor: "#9fd700" },
-  chipText: { fontSize: 15, color: "black" },
-  chipTextSelected: { color: "white", fontWeight: "bold" },
-  loadingRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 12 },
-  loadingText: { flex: 1, fontSize: 14, color: "#446158" },
 });

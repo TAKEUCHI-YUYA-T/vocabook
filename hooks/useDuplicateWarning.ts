@@ -20,7 +20,7 @@ export function useDuplicateWarning(repository: Repository, deckId: string | und
         .findDuplicates(deckId, trimmed, excludeCardId)
         .then((found) => {
           if (!active) return;
-          setWarning(found.length > 0 ? `「${trimmed}」はこの単語帳に${found.length}件あります（意味: ${found[0].meaning || "なし"}）` : null);
+          setWarning(found.length > 0 ? `単語帳に、すでに${found.length}件あります（意味: ${found[0].meaning || "なし"}）` : null);
         })
         .catch(() => active && setWarning(null));
     }, 300);

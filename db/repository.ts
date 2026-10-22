@@ -1,4 +1,5 @@
 import { newId, now, type Db, type SqlParam } from "./database";
+import { DEFAULT_DECK_NAME } from "./presets";
 import type { Card, CardInput, CardType, Deck, DeckKind, DeckSummary, PartOfSpeech, StudyFilter, Tip } from "./types";
 import { PARTS_OF_SPEECH } from "./types";
 
@@ -97,6 +98,17 @@ export function createRepository(db: Db) {
          ORDER BY d.created_at`
       );
       return rows.map((row) => ({ ...toDeck(row), cardCount: row.card_count ?? 0 }));
+    },
+
+    /**
+     * 単語を入れる単語帳。画面では単語帳を1冊として扱うので、自分の単語帳の先頭（作った順）を返す
+     * 1冊もなければ、空の単語帳を作る（DB の仕組みは複数の単語帳に対応したままなので、あとから画面を増やせる）
+     */
+    async getDefaultDeck(): Promise<Deck> {
+      const row = await db.getFirstAsync<DeckRow>(
+        "SELECT id, name, kind, created_at, updated_at FROM decks WHERE deleted_at IS NULL AND kind = 'user' ORDER BY created_at, id LIMIT 1"
+      );
+      return row ? toDeck(row) : repo.createDeck(DEFAULT_DECK_NAME);
     },
 
     async createDeck(name: string): Promise<Deck> {

@@ -1,17 +1,20 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
-import { useRouter } from "expo-router";
+import { View, Text, StyleSheet } from "react-native";
+import { QuizFrame } from "@/components/QuizFrame";
+import { colors } from "@/components/theme";
 import { useRepository } from "@/db/AppDatabase";
 import { nextQuestion, progress, startQuiz, type QuizState } from "@/db/quiz";
 import type { Card } from "@/db/types";
+import { useGoBack } from "@/hooks/useGoBack";
 
 /**
  * ing or to の画面
  * 動詞のあとに ing と to のどちらが続くかを答える。問題は DB（アプリに同梱した「ing or to」）から読む
+ * 答えを出す操作は、下の「答えを見る」ボタンだけ。見たあとは同じボタンが「次へ」になる
  */
 export default function IngOrToScreen() {
-  const router = useRouter();
   const repository = useRepository();
+  const goBack = useGoBack("/");
 
   const [quiz, setQuiz] = useState<QuizState<Card> | null>(null);
   const [isAnswerVisible, setIsAnswerVisible] = useState(false);
@@ -29,7 +32,6 @@ export default function IngOrToScreen() {
   }, [repository]);
 
   const current = quiz && quiz.order.length > 0 ? quiz.order[quiz.index] : null;
-  const status = quiz ? progress(quiz) : { current: 0, total: 0, percent: 0 };
   const answerLabel = current?.answer === "ing" ? "～ing" : current?.answer === "to" ? "to～" : "";
 
   const handleNext = () => {
@@ -37,143 +39,64 @@ export default function IngOrToScreen() {
     setIsAnswerVisible(false);
   };
 
+  const message = error ?? (!quiz ? "読み込み中..." : current ? null : "データなし");
+
   return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-        {error ? (
-          <Text style={styles.cellData}>{error}</Text>
-        ) : !quiz ? (
-          <Text style={styles.cellData}>読み込み中...</Text>
-        ) : current ? (
-          <View style={styles.wordContainer}>
-            {/* 動詞と、答え（ing / to）の欄。答えは「回答」を押すまで隠す */}
-            <View style={[styles.textRow, styles.abColumnContainer]}>
-              <Text style={[styles.cellDataBold, { marginRight: 10 }]}>{current.term}</Text>
-              {/* 答えは、文字の色で隠すのではなく、「回答」を押すまで文字そのものを描画しない（下線の欄だけを残す） */}
-              <View style={styles.answerBlank}>
-                <Text style={[styles.cellData, styles.answerText]}>{isAnswerVisible ? answerLabel : ""}</Text>
-              </View>
-            </View>
+    <QuizFrame
+      title="ing or to"
+      onBack={goBack}
+      backLabel="ホームに戻る"
+      progress={quiz && current ? progress(quiz) : null}
+      action={current ? (isAnswerVisible ? { kind: "next", onPress: handleNext } : { kind: "reveal", onPress: () => setIsAnswerVisible(true) }) : null}
+      message={message}
+    >
+      {!!current && (
+        <>
+          <Text style={styles.prompt}>あとに続くのは「～ing」？「to～」？</Text>
 
-            {!!current.meaning && <Text style={styles.cellData}>{current.meaning}</Text>}
-            {!!current.example && <Text style={styles.cellData}>{current.example}</Text>}
-            {isAnswerVisible && !!current.note && <Text style={styles.cellData}>{current.note}</Text>}
+          {/* 動詞と、答え（ing / to）の欄。答えは、文字の色で隠すのではなく、「答えを見る」を押すまで文字そのものを描画しない（下線の欄だけを残す） */}
+          <View style={styles.questionRow}>
+            <Text style={styles.term}>{current.term}</Text>
+            <View style={styles.answerBlank}>{isAnswerVisible && <Text style={styles.answerText}>{answerLabel}</Text>}</View>
           </View>
-        ) : (
-          <Text style={styles.cellData}>データなし</Text>
-        )}
-      </ScrollView>
 
-      {/* 進捗表示エリア */}
-      <View style={styles.progressContainer}>
-        <Text style={styles.progressText}>
-          {status.total > 0 ? `問題 ${status.current} / ${status.total}（${status.percent}%）` : ""}
-        </Text>
-      </View>
+          {!!current.meaning && <Text style={styles.meaning}>{current.meaning}</Text>}
+          {!!current.example && <Text style={styles.example}>{current.example}</Text>}
 
-      <View style={styles.buttonContainer}>
-        {current && (
-          <>
-            <TouchableOpacity style={styles.button} onPress={() => setIsAnswerVisible(true)}>
-              <Text style={styles.buttonText}>回答</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.button} onPress={handleNext}>
-              <Text style={styles.buttonText}>次へ</Text>
-            </TouchableOpacity>
-          </>
-        )}
-        <TouchableOpacity style={[styles.button, styles.backButton]} onPress={() => router.push("/")}>
-          <Text style={styles.topButtonText}>トップに戻る</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+          {isAnswerVisible && (
+            <View style={styles.answerPanel}>
+              {!!answerLabel && (
+                <Text style={styles.answerSentence}>
+                  {current.term} のあとは、<Text style={styles.answerStrong}>{answerLabel}</Text>
+                </Text>
+              )}
+              {!!current.note && <Text style={styles.answerNote}>{current.note}</Text>}
+            </View>
+          )}
+        </>
+      )}
+    </QuizFrame>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fffeef",
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingVertical: 20,
-  },
-  wordContainer: {
-    width: "80%",
-    alignItems: "flex-start",
-    paddingHorizontal: 10,
-    marginBottom: 10,
-  },
-  textRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  cellData: {
-    fontSize: 18,
-    color: "black",
-    marginBottom: 5,
-  },
-  cellDataBold: {
-    fontSize: 18,
-    color: "black",
-    fontWeight: "bold",
-    marginBottom: 5,
-  },
-  buttonContainer: {
-    width: "100%",
-    alignItems: "center",
-    paddingBottom: 20,
-  },
-  button: {
-    backgroundColor: "#9fd700",
-    padding: 15,
-    borderRadius: 10,
-    marginVertical: 5,
-    width: "80%",
-    alignItems: "center",
-  },
-  buttonText: {
-    color: "#446158",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  backButton: {
-    backgroundColor: "#ff5757",
-  },
+  prompt: { fontSize: 14, fontWeight: "bold", color: colors.secondary },
+  questionRow: { flexDirection: "row", alignItems: "flex-end", flexWrap: "wrap", gap: 14 },
+  term: { fontSize: 34, fontWeight: "bold", lineHeight: 41, color: colors.text },
   answerBlank: {
-    borderBottomWidth: 2,
-    borderBottomColor: "#446158",
+    minWidth: 120,
+    height: 48,
+    borderBottomWidth: 3,
+    borderBottomColor: colors.secondary,
     paddingBottom: 2,
-    minWidth: 70,
-    minHeight: 28,
     alignItems: "center",
     justifyContent: "flex-end",
   },
-  answerText: {
-    color: "black",
-    textAlign: "center",
-    marginBottom: 0,
-  },
-  abColumnContainer: {
-    marginBottom: 10,
-  },
-  topButtonText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  progressContainer: {
-    color: "#446158",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  progressText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#446158",
-    marginBottom: 10,
-  },
+  answerText: { fontSize: 28, fontWeight: "bold", color: colors.secondary },
+  meaning: { fontSize: 17, lineHeight: 27, color: colors.text },
+  example: { fontSize: 16, lineHeight: 26, color: colors.text },
+  answerPanel: { marginTop: "auto", backgroundColor: colors.panel, borderRadius: 14, padding: 16, gap: 8 },
+  answerSentence: { fontSize: 15, lineHeight: 24, color: colors.text },
+  answerStrong: { fontWeight: "bold" },
+  answerNote: { fontSize: 15, lineHeight: 24, color: colors.text },
 });

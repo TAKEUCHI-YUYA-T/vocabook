@@ -131,6 +131,23 @@ describe("初回の空の単語帳", () => {
   });
 });
 
+describe("単語を入れる単語帳（1冊として扱う）", () => {
+  it("自分の単語帳の先頭（作った順）を返し、ing or to の同梱データは選ばない", async () => {
+    const { repo, defaultDeck } = await setup();
+    await repo.createDeck("あとから作った");
+    expect((await repo.getDefaultDeck()).id).toBe(defaultDeck.id);
+  });
+
+  it("単語帳が1冊もなければ、空の単語帳を作って返す（2回呼んでも増えない）", async () => {
+    const { repo, defaultDeck } = await setup();
+    await repo.deleteDeck(defaultDeck.id);
+    const created = await repo.getDefaultDeck();
+    expect(created.name).toBe(DEFAULT_DECK_NAME);
+    expect((await repo.getDefaultDeck()).id).toBe(created.id);
+    expect(await repo.listDecks()).toHaveLength(1);
+  });
+});
+
 describe("単語帳と単語の読み書き", () => {
   it("単語帳の一覧は、自分の単語帳を作った順に並べ、単語数も数える", async () => {
     const { repo, defaultDeck } = await setup();

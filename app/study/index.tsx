@@ -1,120 +1,134 @@
 import React, { useCallback, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ScreenHeader } from "@/components/ScreenHeader";
+import { colors } from "@/components/theme";
 import { useRepository } from "@/db/AppDatabase";
-import { PARTS_OF_SPEECH, type DeckSummary } from "@/db/types";
+import { PARTS_OF_SPEECH } from "@/db/types";
+import { useDefaultDeck } from "@/hooks/useDefaultDeck";
+import { useGoBack } from "@/hooks/useGoBack";
+
+/** 品詞のボタンを、1行に並べる数 */
+const COLUMNS = 3;
+
+type Cell = { key: string; label: string; count: number; selected: boolean; disabled: boolean };
+
+const chunk = <T,>(items: T[], size: number): T[][] => {
+  const rows: T[][] = [];
+  for (let i = 0; i < items.length; i += size) rows.push(items.slice(i, i + size));
+  return rows;
+};
 
 /**
- * 学習の条件を選ぶ画面
- * - 単語帳（複数選択可）と、品詞（複数選択可。未選択なら全部）を選ぶ
- * - 選んだ条件の ID だけを学習画面に渡し、単語は学習画面が DB から読む
+ * 学習の範囲を選ぶ画面
+ * - 品詞を選ぶ（複数選択可。「すべて」なら全部の品詞から出題する）
+ * - ボタンはすべて同じ大きさ。単語数は2行目に出すので、桁が増えても大きさは変わらない
+ * - 選んだ条件だけを学習画面に渡し、単語は学習画面が DB から読む
  */
 export default function StudySelectScreen() {
   const router = useRouter();
   const repository = useRepository();
+  const insets = useSafeAreaInsets();
+  const goBack = useGoBack("/");
+  const { deck } = useDefaultDeck();
 
-  const [decks, setDecks] = useState<DeckSummary[]>([]);
-  const [selectedDeckIds, setSelectedDeckIds] = useState<string[]>([]);
   const [selectedParts, setSelectedParts] = useState<string[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [isLoaded, setIsLoaded] = useState(false);
 
-  /** 単語帳の一覧を読み込む。初回は、単語のある単語帳をすべて選んだ状態にする */
+  /** 品詞ごとの単語数を数える（ボタンに表示する）。単語を追加して戻ってきたときも数え直す */
   useFocusEffect(
     useCallback(() => {
+      if (!deck) return;
       let active = true;
-      repository.listDecks().then((list) => {
+      repository.countByPartOfSpeech([deck.id]).then((result) => {
         if (!active) return;
-        const studyable = list.filter((deck) => deck.cardCount > 0);
-        setDecks(studyable);
-        setSelectedDeckIds((prev) => (prev.length > 0 ? prev.filter((id) => studyable.some((d) => d.id === id)) : studyable.map((d) => d.id)));
+        setCounts(result);
         setIsLoaded(true);
       });
       return () => {
         active = false;
       };
-    }, [repository])
+    }, [repository, deck])
   );
 
-  /** 選んだ単語帳の、品詞ごとの単語数を数える（品詞のボタンに表示する） */
-  useFocusEffect(
-    useCallback(() => {
-      let active = true;
-      repository.countByPartOfSpeech(selectedDeckIds).then((result) => active && setCounts(result));
-      return () => {
-        active = false;
-      };
-    }, [repository, selectedDeckIds])
-  );
+  const toggle = (part: string) => setSelectedParts((prev) => (prev.includes(part) ? prev.filter((p) => p !== part) : [...prev, part]));
 
-  const toggle = (list: string[], value: string) => (list.includes(value) ? list.filter((item) => item !== value) : [...list, value]);
-
+  const total = Object.values(counts).reduce((sum, n) => sum + n, 0);
   /** 学習の対象になる単語数 */
-  const targetCount =
-    selectedParts.length === 0
-      ? Object.values(counts).reduce((sum, n) => sum + n, 0)
-      : selectedParts.reduce((sum, part) => sum + (counts[part] ?? 0), 0);
+  const targetCount = selectedParts.length === 0 ? total : selectedParts.reduce((sum, part) => sum + (counts[part] ?? 0), 0);
+  const canStart = !!deck && targetCount > 0;
 
-  const canStart = selectedDeckIds.length > 0 && targetCount > 0;
+  const cells: Cell[] = [
+    { key: "all", label: "すべて", count: total, selected: selectedParts.length === 0, disabled: total === 0 },
+    ...PARTS_OF_SPEECH.map((part) => ({
+      key: part.key,
+      label: part.label,
+      count: counts[part.key] ?? 0,
+      selected: selectedParts.includes(part.key),
+      disabled: (counts[part.key] ?? 0) === 0,
+    })),
+  ];
 
   const start = () => {
-    router.push({
-      pathname: "/study/learn",
-      params: { decks: selectedDeckIds.join(","), parts: selectedParts.join(",") },
-    });
+    if (!deck) return;
+    router.push({ pathname: "/study/learn", params: { decks: deck.id, parts: selectedParts.join(",") } });
   };
 
   return (
     <View style={styles.container}>
+      <ScreenHeader title="学習の範囲" onBack={goBack} backLabel="ホームに戻る" bordered />
+
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>学習する範囲を選んでください</Text>
+        <Text style={styles.sectionTitle}>品詞</Text>
 
-        <Text style={styles.sectionTitle}>単語帳</Text>
-        {isLoaded && decks.length === 0 && <Text style={styles.empty}>学習できる単語がありません。先に単語帳に単語を追加してください。</Text>}
-        {decks.map((deck) => {
-          const selected = selectedDeckIds.includes(deck.id);
-          return (
-            <TouchableOpacity
-              key={deck.id}
-              style={[styles.option, selected && styles.optionSelected]}
-              onPress={() => setSelectedDeckIds((prev) => toggle(prev, deck.id))}
-            >
-              <Text style={[styles.optionText, selected && styles.optionTextSelected]}>
-                {deck.name}（{deck.cardCount}語）
-              </Text>
+        {isLoaded && total === 0 ? (
+          <View style={styles.emptyBox}>
+            <Text style={styles.emptyText}>学習できる単語がありません。先に単語を追加してください。</Text>
+            <TouchableOpacity accessibilityRole="button" style={styles.emptyButton} onPress={() => router.push("/cards/new")}>
+              <Text style={styles.emptyButtonText}>単語を追加</Text>
             </TouchableOpacity>
-          );
-        })}
+          </View>
+        ) : (
+          <View style={styles.grid}>
+            {chunk(cells, COLUMNS).map((row) => (
+              <View key={row[0].key} style={styles.gridRow}>
+                {row.map((cell) => (
+                  <TouchableOpacity
+                    key={cell.key}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: cell.selected, disabled: cell.disabled }}
+                    disabled={cell.disabled}
+                    style={[styles.cell, cell.selected && styles.cellSelected, cell.disabled && styles.cellDisabled]}
+                    onPress={() => (cell.key === "all" ? setSelectedParts([]) : toggle(cell.key))}
+                  >
+                    <Text style={[styles.cellLabel, cell.selected && styles.cellLabelSelected]}>{cell.label}</Text>
+                    <Text style={[styles.cellCount, cell.selected && styles.cellCountSelected]}>{cell.count}語</Text>
+                  </TouchableOpacity>
+                ))}
+                {/* 最後の行が埋まらないときも、ボタンの大きさを変えない */}
+                {Array.from({ length: COLUMNS - row.length }, (_, i) => (
+                  <View key={`spacer-${i}`} style={styles.cellSpacer} />
+                ))}
+              </View>
+            ))}
+          </View>
+        )}
 
-        <Text style={styles.sectionTitle}>品詞（選ばなければすべて）</Text>
-        <View style={styles.grid}>
-          {PARTS_OF_SPEECH.map((part) => {
-            const count = counts[part.key] ?? 0;
-            const selected = selectedParts.includes(part.key);
-            return (
-              <TouchableOpacity
-                key={part.key}
-                disabled={count === 0}
-                style={[styles.chip, selected && styles.optionSelected, count === 0 && styles.chipDisabled]}
-                onPress={() => setSelectedParts((prev) => toggle(prev, part.key))}
-              >
-                <Text style={[styles.optionText, selected && styles.optionTextSelected]}>
-                  {part.label} {count}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        <Text style={styles.summary}>{canStart ? `${targetCount}語で学習します` : "学習できる単語がありません"}</Text>
+        <Text style={styles.hint}>複数選べます。「すべて」なら、全部の品詞から出題します。</Text>
       </ScrollView>
 
-      <View style={styles.footer}>
-        <TouchableOpacity style={[styles.button, !canStart && styles.disabledButton]} disabled={!canStart} onPress={start}>
-          <Text style={styles.startButtonText}>学習を開始</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.button, styles.backButton]} onPress={() => router.replace("/")}>
-          <Text style={styles.backButtonText}>トップに戻る</Text>
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) + 16 }]}>
+        <Text style={styles.summary}>{canStart ? `${targetCount}語から出題します` : "学習できる単語がありません"}</Text>
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityState={{ disabled: !canStart }}
+          style={[styles.startButton, !canStart && styles.startButtonDisabled]}
+          disabled={!canStart}
+          onPress={start}
+        >
+          <Text style={styles.startText}>学習を開始</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -122,23 +136,37 @@ export default function StudySelectScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fffeef" },
-  content: { padding: 16, paddingTop: 60 },
-  title: { fontSize: 20, fontWeight: "bold", marginBottom: 16, textAlign: "center" },
-  sectionTitle: { fontSize: 16, fontWeight: "600", color: "#446158", marginTop: 12, marginBottom: 8 },
-  empty: { fontSize: 16, color: "#446158", marginBottom: 8 },
-  option: { borderWidth: 1, borderColor: "gray", borderRadius: 10, padding: 12, marginBottom: 8 },
-  optionSelected: { backgroundColor: "#9fd700", borderColor: "#9fd700" },
-  optionText: { fontSize: 18, color: "black" },
-  optionTextSelected: { color: "white", fontWeight: "bold" },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: { borderWidth: 1, borderColor: "gray", borderRadius: 10, paddingVertical: 10, paddingHorizontal: 14 },
-  chipDisabled: { opacity: 0.35 },
-  summary: { fontSize: 16, fontWeight: "600", color: "#446158", textAlign: "center", marginTop: 20 },
-  footer: { paddingHorizontal: 16, paddingBottom: 20, alignItems: "center" },
-  button: { backgroundColor: "#9fd700", padding: 15, borderRadius: 10, marginVertical: 5, width: "100%", alignItems: "center" },
-  disabledButton: { backgroundColor: "gray" },
-  backButton: { backgroundColor: "#ff5757" },
-  startButtonText: { color: "#446158", fontSize: 18, fontWeight: "bold" },
-  backButtonText: { color: "white", fontSize: 18, fontWeight: "bold" },
+  container: { flex: 1, backgroundColor: colors.background },
+  content: { padding: 16, paddingTop: 20, gap: 10 },
+  sectionTitle: { fontSize: 15, fontWeight: "bold", color: colors.secondary },
+  grid: { gap: 8 },
+  gridRow: { flexDirection: "row", gap: 8 },
+  cell: {
+    flex: 1,
+    height: 64,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.inputBorder,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2,
+  },
+  cellSpacer: { flex: 1 },
+  cellSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
+  cellDisabled: { opacity: 0.35 },
+  cellLabel: { fontSize: 16, fontWeight: "bold", color: colors.text },
+  cellLabelSelected: { color: colors.onPrimary },
+  cellCount: { fontSize: 13, color: colors.secondary },
+  cellCountSelected: { fontWeight: "bold" },
+  hint: { fontSize: 14, color: colors.secondary },
+  emptyBox: { backgroundColor: colors.panel, borderRadius: 12, padding: 16, gap: 12 },
+  emptyText: { fontSize: 15, lineHeight: 24, color: colors.text },
+  emptyButton: { minHeight: 50, borderRadius: 12, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
+  emptyButtonText: { fontSize: 17, fontWeight: "bold", color: colors.onPrimary },
+  footer: { borderTopWidth: 1, borderTopColor: colors.border, paddingHorizontal: 16, paddingTop: 12, gap: 8, backgroundColor: colors.background },
+  summary: { textAlign: "center", fontSize: 15, fontWeight: "500", color: colors.secondary },
+  startButton: { minHeight: 56, borderRadius: 12, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
+  startButtonDisabled: { backgroundColor: "gray" },
+  startText: { fontSize: 18, fontWeight: "bold", color: colors.onPrimary },
 });

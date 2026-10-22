@@ -1,18 +1,23 @@
 import React, { useCallback, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { HeaderIconButton } from "@/components/ScreenHeader";
+import { QuizFrame } from "@/components/QuizFrame";
+import { colors } from "@/components/theme";
 import { useRepository } from "@/db/AppDatabase";
 import { nextQuestion, progress, startQuiz, type QuizState } from "@/db/quiz";
 import { partOfSpeechLabel, PARTS_OF_SPEECH, type Card, type PartOfSpeech } from "@/db/types";
+import { useGoBack } from "@/hooks/useGoBack";
 
 /**
  * 学習画面
  * 条件（単語帳と品詞）に合う単語を DB から読み、ランダムな順に出題する
- * 「回答」で意味・例文の訳・補足を表示し、「次へ」で次の問題へ進む
+ * 答えを出す操作は、下の「答えを見る」ボタンだけ。見たあとは同じボタンが「次へ」になる
  */
 export default function LearnScreen() {
   const router = useRouter();
   const repository = useRepository();
+  const goBack = useGoBack("/study");
   const { decks, parts } = useLocalSearchParams<{ decks?: string; parts?: string }>();
 
   const [quiz, setQuiz] = useState<QuizState<Card> | null>(null);
@@ -52,82 +57,75 @@ export default function LearnScreen() {
   );
 
   const current = quiz && quiz.order.length > 0 ? quiz.order[quiz.index] : null;
-  const status = quiz ? progress(quiz) : { current: 0, total: 0, percent: 0 };
 
   const handleNext = () => {
     setQuiz((prev) => (prev ? nextQuestion(prev) : prev));
     setIsAnswerVisible(false);
   };
 
+  const message = error ?? (!quiz ? "読み込み中..." : current ? null : "この条件に合う単語がありません");
+  const hasAnswerDetails = !!current && (!!current.meaning || !!current.exampleTranslation || !!current.note);
+
   return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        {error ? (
-          <Text style={styles.cellData}>{error}</Text>
-        ) : !quiz ? (
-          <Text style={styles.cellData}>読み込み中...</Text>
-        ) : current ? (
-          <View style={styles.wordContainer}>
-            <Text style={styles.cellDataBold}>{current.term}</Text>
-            {!!current.partOfSpeech && <Text style={styles.partOfSpeech}>{partOfSpeechLabel(current.partOfSpeech)}</Text>}
-            {isAnswerVisible && !!current.meaning && <Text style={styles.cellData}>{current.meaning}</Text>}
-            {!!current.example && <Text style={styles.cellData}>{current.example}</Text>}
-            {isAnswerVisible && !!current.exampleTranslation && <Text style={styles.cellData}>{current.exampleTranslation}</Text>}
-            {isAnswerVisible && !!current.note && <Text style={styles.cellData}>{current.note}</Text>}
-          </View>
-        ) : (
-          <Text style={styles.cellData}>この条件に合う単語がありません</Text>
-        )}
-      </ScrollView>
+    <QuizFrame
+      title="学習"
+      onBack={goBack}
+      backLabel="学習の範囲に戻る"
+      progress={quiz && current ? progress(quiz) : null}
+      headerExtra={
+        current ? (
+          <HeaderIconButton icon="edit-2" label="この単語を編集" onPress={() => router.push({ pathname: "/cards/[id]", params: { id: current.id } })} />
+        ) : undefined
+      }
+      action={current ? (isAnswerVisible ? { kind: "next", onPress: handleNext } : { kind: "reveal", onPress: () => setIsAnswerVisible(true) }) : null}
+      message={message}
+    >
+      {!!current && (
+        <>
+          {!!current.partOfSpeech && (
+            <View style={styles.tag}>
+              <Text style={styles.tagText}>{partOfSpeechLabel(current.partOfSpeech)}</Text>
+            </View>
+          )}
+          <Text style={styles.term}>{current.term}</Text>
+          {!!current.example && <Text style={styles.example}>{current.example}</Text>}
 
-      <View style={styles.progressContainer}>
-        <Text style={styles.progressText}>
-          {status.total > 0 ? `問題 ${status.current} / ${status.total}（${status.percent}%）` : ""}
-        </Text>
-      </View>
-
-      <View style={styles.buttonContainer}>
-        {current && (
-          <>
-            <TouchableOpacity style={styles.button} onPress={() => setIsAnswerVisible(true)}>
-              <Text style={styles.buttonText}>回答</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.button} onPress={handleNext}>
-              <Text style={styles.buttonText}>次へ</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.button, styles.editButton]}
-              onPress={() => router.push({ pathname: "/cards/[id]", params: { id: current.id } })}
-            >
-              <Text style={styles.lightButtonText}>この単語を編集</Text>
-            </TouchableOpacity>
-          </>
-        )}
-        <TouchableOpacity style={[styles.button, styles.backSelectButton]} onPress={() => router.replace("/study")}>
-          <Text style={styles.lightButtonText}>範囲選択に戻る</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.button, styles.backButton]} onPress={() => router.replace("/")}>
-          <Text style={styles.lightButtonText}>トップに戻る</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+          {isAnswerVisible && hasAnswerDetails && (
+            <View style={styles.answer}>
+              {!!current.meaning && (
+                <>
+                  <Text style={styles.label}>意味</Text>
+                  <Text style={styles.meaning}>{current.meaning}</Text>
+                </>
+              )}
+              {!!current.exampleTranslation && (
+                <>
+                  <Text style={[styles.label, styles.labelGap]}>例文の訳</Text>
+                  <Text style={styles.translation}>{current.exampleTranslation}</Text>
+                </>
+              )}
+              {!!current.note && (
+                <>
+                  <Text style={[styles.label, styles.labelGap]}>メモ</Text>
+                  <Text style={styles.translation}>{current.note}</Text>
+                </>
+              )}
+            </View>
+          )}
+        </>
+      )}
+    </QuizFrame>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fffeef" },
-  scrollContainer: { flexGrow: 1, justifyContent: "center", alignItems: "center", paddingVertical: 20 },
-  wordContainer: { width: "80%", alignItems: "flex-start", paddingHorizontal: 10, marginBottom: 10 },
-  cellData: { fontSize: 18, color: "black", marginBottom: 5 },
-  cellDataBold: { fontSize: 18, color: "black", fontWeight: "bold", marginBottom: 5 },
-  partOfSpeech: { fontSize: 14, color: "#446158", marginBottom: 8 },
-  progressContainer: { alignItems: "center", marginBottom: 10 },
-  progressText: { fontSize: 16, fontWeight: "600", color: "#446158", marginBottom: 10 },
-  buttonContainer: { width: "100%", alignItems: "center", paddingBottom: 20 },
-  button: { backgroundColor: "#9fd700", padding: 15, borderRadius: 10, marginVertical: 5, width: "80%", alignItems: "center" },
-  buttonText: { color: "#446158", fontSize: 18, fontWeight: "bold" },
-  lightButtonText: { color: "white", fontSize: 18, fontWeight: "bold" },
-  editButton: { backgroundColor: "#7a8f88" },
-  backSelectButton: { backgroundColor: "#446158" },
-  backButton: { backgroundColor: "#ff5757" },
+  tag: { alignSelf: "flex-start", borderWidth: 1, borderColor: colors.secondary, borderRadius: 6, paddingVertical: 2, paddingHorizontal: 8 },
+  tagText: { fontSize: 13, fontWeight: "bold", color: colors.secondary },
+  term: { fontSize: 32, fontWeight: "bold", lineHeight: 40, color: colors.text },
+  example: { fontSize: 16, lineHeight: 27, color: colors.text },
+  answer: { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 16, marginTop: 4, gap: 12 },
+  label: { fontSize: 13, fontWeight: "bold", color: colors.secondary },
+  labelGap: { marginTop: 4 },
+  meaning: { fontSize: 20, fontWeight: "bold", lineHeight: 30, color: colors.text },
+  translation: { fontSize: 15, lineHeight: 26, color: colors.text },
 });

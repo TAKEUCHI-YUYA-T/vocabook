@@ -1,46 +1,58 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
+import { View, Text, StyleSheet, ScrollView, Switch } from "react-native";
+import { Feather } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { HeaderTextButton, ScreenHeader } from "@/components/ScreenHeader";
+import { colors } from "@/components/theme";
 import { useRepository } from "@/db/AppDatabase";
 import { ValidationError } from "@/db/repository";
-import type { Deck } from "@/db/types";
 import { CardForm, emptyCardForm, type CardFormValue } from "@/components/CardForm";
+import { useDefaultDeck } from "@/hooks/useDefaultDeck";
 import { useDuplicateWarning } from "@/hooks/useDuplicateWarning";
+import { useGoBack } from "@/hooks/useGoBack";
+
+/** 「追加しました」の表示を出しておく時間（ミリ秒） */
+const NOTICE_MS = 2500;
 
 /**
  * 単語の追加画面
- * 「保存して次へ」で、品詞を引き継いだまま続けて入力できる
+ * 「保存したら、続けて追加する」がオンなら、保存のあとも画面に残り、品詞を引き継いで次の単語を入力できる
  */
 export default function NewCardScreen() {
-  const router = useRouter();
   const repository = useRepository();
-  const { deckId } = useLocalSearchParams<{ deckId: string }>();
+  const insets = useSafeAreaInsets();
+  const goBack = useGoBack("/words");
+  const { deck, error: deckError } = useDefaultDeck();
 
-  const [deck, setDeck] = useState<Deck | null>(null);
   const [value, setValue] = useState<CardFormValue>(emptyCardForm());
   const [formKey, setFormKey] = useState(0);
+  const [continueAdding, setContinueAdding] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const duplicateWarning = useDuplicateWarning(repository, deckId, value.term);
+  const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const duplicateWarning = useDuplicateWarning(repository, deck?.id, value.term);
 
   useEffect(() => {
-    repository.getDeck(deckId).then(setDeck).catch(() => setError("単語帳を読み込めませんでした"));
-  }, [repository, deckId]);
+    return () => {
+      if (noticeTimer.current) clearTimeout(noticeTimer.current);
+    };
+  }, []);
 
-  const goBack = () => {
-    if (router.canGoBack()) router.back();
-    else router.replace({ pathname: "/decks/[id]", params: { id: deckId } });
+  const showNotice = (text: string) => {
+    if (noticeTimer.current) clearTimeout(noticeTimer.current);
+    setNotice(text);
+    noticeTimer.current = setTimeout(() => setNotice(null), NOTICE_MS);
   };
 
-  const save = async (continueAdding: boolean) => {
-    if (isSaving) return;
+  const save = async () => {
+    if (isSaving || !deck) return;
     setIsSaving(true);
     try {
-      const card = await repository.addCard(deckId, value);
+      const card = await repository.addCard(deck.id, value);
       setError(null);
       if (continueAdding) {
-        setNotice(`「${card.term}」を追加しました`);
+        showNotice(`「${card.term}」を追加しました`);
         setValue(emptyCardForm(value.partOfSpeech));
         // フォームを作り直して、単語の欄にカーソルを戻す
         setFormKey((n) => n + 1);
@@ -56,41 +68,70 @@ export default function NewCardScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>単語を追加{deck ? `（${deck.name}）` : ""}</Text>
+      <ScreenHeader
+        title="単語を追加"
+        onBack={goBack}
+        backIcon="close"
+        backLabel="閉じる"
+        bordered
+        right={<HeaderTextButton label="保存" onPress={save} disabled={isSaving || !deck} />}
+      />
 
-      <View style={styles.actions}>
-        <TouchableOpacity style={[styles.button, isSaving && styles.disabled]} disabled={isSaving} onPress={() => save(true)}>
-          <Text style={styles.buttonText}>保存して次へ</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.button, styles.secondary, isSaving && styles.disabled]} disabled={isSaving} onPress={() => save(false)}>
-          <Text style={styles.lightText}>保存して戻る</Text>
-        </TouchableOpacity>
-      </View>
-      {!!error && <Text style={styles.error}>{error}</Text>}
-      {!!notice && !error && <Text style={styles.notice}>{notice}</Text>}
-
-      <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <CardForm key={formKey} value={value} onChange={setValue} editable autoFocus duplicateWarning={duplicateWarning} />
-        <TouchableOpacity style={styles.cancel} onPress={goBack}>
-          <Text style={styles.cancelText}>やめる</Text>
-        </TouchableOpacity>
+
+        {!!(error ?? deckError) && <Text style={styles.error}>{error ?? deckError}</Text>}
+
+        <View style={styles.switchRow}>
+          <Text style={styles.switchLabel}>保存したら、続けて追加する</Text>
+          <Switch
+            value={continueAdding}
+            onValueChange={setContinueAdding}
+            trackColor={{ true: colors.primary, false: colors.border }}
+            thumbColor={colors.surface}
+            accessibilityLabel="保存したら、続けて追加する"
+          />
+        </View>
       </ScrollView>
+
+      {!!notice && (
+        <View style={[styles.snackbar, { bottom: insets.bottom + 28 }]} accessibilityRole="alert">
+          <Feather name="check" size={20} color={colors.primary} />
+          <Text style={styles.snackbarText}>{notice}</Text>
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fffeef", paddingTop: 60 },
-  title: { fontSize: 20, fontWeight: "bold", textAlign: "center", marginBottom: 8, paddingHorizontal: 16 },
-  actions: { flexDirection: "row", gap: 8, paddingHorizontal: 16 },
-  button: { flex: 1, backgroundColor: "#9fd700", padding: 14, borderRadius: 10, alignItems: "center" },
-  secondary: { backgroundColor: "#446158" },
-  disabled: { opacity: 0.5 },
-  buttonText: { color: "#446158", fontSize: 17, fontWeight: "bold" },
-  lightText: { color: "white", fontSize: 17, fontWeight: "bold" },
-  error: { color: "#ff5757", fontSize: 16, marginTop: 8, paddingHorizontal: 16 },
-  notice: { color: "#446158", fontSize: 16, marginTop: 8, paddingHorizontal: 16 },
-  form: { paddingHorizontal: 16, paddingBottom: 40 },
-  cancel: { marginTop: 24, alignItems: "center", padding: 12 },
-  cancelText: { color: "#ff5757", fontSize: 17, fontWeight: "bold" },
+  container: { flex: 1, backgroundColor: colors.background },
+  content: { padding: 16, paddingBottom: 120, gap: 18 },
+  error: { color: colors.danger, fontSize: 15 },
+  switchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    minHeight: 52,
+    paddingHorizontal: 14,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+  },
+  switchLabel: { flex: 1, fontSize: 15, color: colors.text },
+  snackbar: {
+    position: "absolute",
+    left: 16,
+    right: 16,
+    minHeight: 52,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: colors.secondary,
+    elevation: 6,
+  },
+  snackbarText: { flex: 1, fontSize: 15, color: colors.onSecondary },
 });
