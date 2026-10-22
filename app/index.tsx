@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Linking, Animated, Image, ScrollView, useWindowDimensions } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Image, ScrollView, useWindowDimensions } from "react-native";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter, type Href } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -79,14 +79,8 @@ export default function Home() {
               <Ionicons name="bulb-outline" size={16} color={colors.secondary} />
               <Text style={styles.tipHeadingText}>今日のヒント</Text>
             </View>
-            <Text style={styles.tipTitle}>{tip.title}</Text>
+            {!!tip.title && <Text style={styles.tipTitle}>{tip.title}</Text>}
             {!!tip.body && <Text style={styles.tipBody}>{tip.body}</Text>}
-            {!!tip.url && (
-              <TouchableOpacity accessibilityRole="link" style={styles.tipLink} onPress={() => Linking.openURL(tip.url)}>
-                <Text style={styles.tipLinkText}>記事を開く</Text>
-                <Feather name="external-link" size={16} color={colors.link} />
-              </TouchableOpacity>
-            )}
           </View>
         )}
 
@@ -138,8 +132,6 @@ const styles = StyleSheet.create({
   tipHeadingText: { fontSize: 13, fontWeight: "bold", color: colors.secondary },
   tipTitle: { fontSize: 17, fontWeight: "bold", color: colors.text },
   tipBody: { fontSize: 15, lineHeight: 24, color: colors.text },
-  tipLink: { flexDirection: "row", alignItems: "center", gap: 4, alignSelf: "flex-start", minHeight: 44 },
-  tipLinkText: { fontSize: 15, color: colors.link, textDecorationLine: "underline" },
   menu: { gap: 12 },
   menuButton: { flexDirection: "row", alignItems: "center", gap: 14, height: 68, paddingLeft: 20, paddingRight: 14, borderRadius: 12, borderWidth: 1 },
   menuPrimary: { backgroundColor: colors.primary, borderColor: colors.primary },

@@ -6,7 +6,7 @@
  *
  * 出力:
  *   assets/presets/ing-or-to.json  ing or to の問題
- *   assets/presets/tips.json       ヒント（reference シート）
+ *   assets/presets/tips.json       ヒント（reference シートの title・reference 列だけ。URL は使わない）
  *   assets/presets/version.json    内容から計算した版（変更の検出用）
  *   preset-source/report.txt       崩れた行・要確認の行の報告書（公開しない）
  *
@@ -119,19 +119,19 @@ const buildTips = (workbook) => {
     return [];
   }
   const rows = readRows(worksheet);
-  const mapping = mapColumns(rows[0].cells, { title: ["title", "タイトル"], body: ["reference", "本文", "内容"], url: ["url", "リンク"] });
+  // ヒントに使うのは、見出し「title」「reference」の2列だけ（URL の列は読まない）
+  const mapping = mapColumns(rows[0].cells, { title: ["title", "タイトル"], body: ["reference", "本文", "内容"] });
+  if (mapping.title == null || mapping.body == null) warn("[reference] 見出し「title」「reference」が見つかりません");
   const makeId = makeIdFactory();
   const tips = [];
   for (const { rowNumber, cells } of rows.slice(1)) {
     const get = (field) => (mapping[field] != null ? (cells[mapping[field]]?.text ?? "") : "");
     const title = get("title");
-    if (!title) {
-      warn(`[reference] ${rowNumber}行目: タイトルが空のため読み飛ばしました（本文: 「${get("body").slice(0, 30)}」 URL: ${get("url") ? "あり" : "なし"}）`);
-      continue;
-    }
-    const url = get("url");
-    if (url && !/^https?:\/\//.test(url)) warn(`[reference] ${rowNumber}行目: 「${title}」の URL が http(s) で始まっていません`);
-    tips.push(compact({ id: makeId("tip", title), title, body: get("body"), url }));
+    const body = get("body");
+    if (!title && !body) continue;
+    // タイトルが空でも、本文があれば登録する（ホームでは本文だけを表示する）
+    if (!title) warn(`[reference] ${rowNumber}行目: タイトルが空です（本文だけを登録しました: 「${body.slice(0, 30)}」）`);
+    tips.push(compact({ id: makeId("tip", title || body.slice(0, 20)), title, body }));
   }
   return tips;
 };
