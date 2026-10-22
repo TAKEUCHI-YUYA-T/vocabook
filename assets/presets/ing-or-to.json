@@ -1,0 +1,44 @@
+[
+ {
+  "id": "ingOrTo:avoid",
+  "term": "avoid",
+  "answer": "～ing",
+  "meaning": "～することを避ける"
+ },
+ {
+  "id": "ingOrTo:postpone",
+  "term": "postpone",
+  "answer": "～ing",
+  "meaning": "～することを延期する"
+ },
+ {
+  "id": "ingOrTo:admit",
+  "term": "admit",
+  "answer": "～ing",
+  "meaning": "～することを認める"
+ },
+ {
+  "id": "ingOrTo:suggest",
+  "term": "suggest",
+  "answer": "～ing",
+  "meaning": "～することを提案する"
+ },
+ {
+  "id": "ingOrTo:imagine",
+  "term": "imagine",
+  "answer": "～ing",
+  "meaning": "～することを想像する"
+ },
+ {
+  "id": "ingOrTo:consider",
+  "term": "consider",
+  "answer": "～ing",
+  "meaning": "～について考える、～しようと思う"
+ },
+ {
+  "id": "ingOrTo:determine",
+  "term": "determine",
+  "answer": "to～",
+  "meaning": "～することを決心する"
+ }
+]
