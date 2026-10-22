@@ -19,7 +19,7 @@ const toFormValue = (card: Card): CardFormValue => ({
 /**
  * 単語の編集画面
  * - 自分の単語帳の単語: 編集・削除できる
- * - 標準の単語帳の単語: 見るだけ（編集するには単語帳をコピーする）
+ * - 同梱の読み取り専用の単語（ing or to など）: 見るだけ
  */
 export default function EditCardScreen() {
   const router = useRouter();
@@ -105,7 +105,7 @@ export default function EditCardScreen() {
           </TouchableOpacity>
         </View>
       ) : (
-        <Text style={styles.readonlyNote}>標準の単語帳の単語は編集できません。編集したい場合は、単語帳の画面で「コピーして編集する」を使ってください。</Text>
+        <Text style={styles.readonlyNote}>この単語は編集できません。</Text>
       )}
 
       {isConfirmingDelete && (

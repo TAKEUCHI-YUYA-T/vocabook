@@ -5,14 +5,13 @@ import { useRepository } from "@/db/AppDatabase";
 import { ValidationError } from "@/db/repository";
 import { partOfSpeechLabel, type Card, type Deck } from "@/db/types";
 
-/** 画面に一度に出す単語数。標準の単語帳は800語を超えるため、少しずつ表示を増やす */
+/** 画面に一度に出す単語数。単語が多い単語帳でも軽く表示できるよう、少しずつ表示を増やす */
 const PAGE_SIZE = 50;
 
 /**
  * 単語帳の中身の画面
  * - 単語の一覧と検索（単語・意味・例文）
- * - 自分の単語帳: 単語の追加、名前の変更、削除
- * - 標準の単語帳: 自分用にコピー（コピーしたものは編集できる）
+ * - 単語の追加、単語帳の名前の変更、削除
  */
 export default function DeckDetailScreen() {
   const router = useRouter();
@@ -65,7 +64,6 @@ export default function DeckDetailScreen() {
     );
   }
 
-  const isPreset = deck.kind === "preset";
 
   return (
     <View style={styles.container}>
@@ -136,39 +134,23 @@ export default function DeckDetailScreen() {
       {!!message && <Text style={styles.error}>{message}</Text>}
 
       <View style={styles.footer}>
-        {isPreset ? (
+        <TouchableOpacity style={styles.button} onPress={() => router.push({ pathname: "/cards/new", params: { deckId: deck.id } })}>
+          <Text style={styles.buttonText}>＋ 単語を追加</Text>
+        </TouchableOpacity>
+        <View style={styles.rowButtons}>
           <TouchableOpacity
-            style={styles.button}
-            onPress={() =>
-              run(async () => {
-                const copy = await repository.duplicateDeck(deck.id, `${deck.name}のコピー`);
-                router.replace({ pathname: "/decks/[id]", params: { id: copy.id } });
-              })
-            }
+            style={[styles.smallButton, styles.secondaryButton]}
+            onPress={() => {
+              setDraftName(deck.name);
+              setMode("rename");
+            }}
           >
-            <Text style={styles.buttonText}>コピーして編集する</Text>
+            <Text style={styles.lightButtonText}>名前を変更</Text>
           </TouchableOpacity>
-        ) : (
-          <>
-            <TouchableOpacity style={styles.button} onPress={() => router.push({ pathname: "/cards/new", params: { deckId: deck.id } })}>
-              <Text style={styles.buttonText}>＋ 単語を追加</Text>
-            </TouchableOpacity>
-            <View style={styles.rowButtons}>
-              <TouchableOpacity
-                style={[styles.smallButton, styles.secondaryButton]}
-                onPress={() => {
-                  setDraftName(deck.name);
-                  setMode("rename");
-                }}
-              >
-                <Text style={styles.lightButtonText}>名前を変更</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.smallButton, styles.dangerOutline]} onPress={() => setMode("confirmDelete")}>
-                <Text style={styles.dangerText}>削除</Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        )}
+          <TouchableOpacity style={[styles.smallButton, styles.dangerOutline]} onPress={() => setMode("confirmDelete")}>
+            <Text style={styles.dangerText}>削除</Text>
+          </TouchableOpacity>
+        </View>
         <TouchableOpacity style={[styles.button, styles.backButton]} onPress={() => router.replace("/decks")}>
           <Text style={styles.lightButtonText}>単語帳の一覧に戻る</Text>
         </TouchableOpacity>

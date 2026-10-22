@@ -65,7 +65,7 @@ export function createRepository(db: Db) {
   const requireEditableDeck = async (deckId: string): Promise<Deck> => {
     const deck = await getDeck(deckId);
     if (!deck) throw new ValidationError("単語帳が見つかりません");
-    if (deck.kind === "preset") throw new ValidationError("標準の単語帳は編集できません。コピーして使ってください");
+    if (deck.kind === "preset") throw new ValidationError("この単語帳は編集できません");
     return deck;
   };
 
@@ -77,13 +77,16 @@ export function createRepository(db: Db) {
   const repo = {
     getDeck,
 
-    /** 単語帳の一覧（標準を先に、続けて作成の新しい順） */
+    /**
+     * 自分の単語帳の一覧（作った順）
+     * ing or to のような同梱の読み取り専用データ（kind = 'preset'）は含めない
+     */
     async listDecks(): Promise<DeckSummary[]> {
       const rows = await db.getAllAsync<DeckRow>(
         `SELECT d.id, d.name, d.kind, d.created_at, d.updated_at,
            (SELECT COUNT(*) FROM cards c WHERE c.deck_id = d.id AND c.deleted_at IS NULL) AS card_count
-         FROM decks d WHERE d.deleted_at IS NULL
-         ORDER BY (d.kind = 'preset') DESC, d.created_at DESC`
+         FROM decks d WHERE d.deleted_at IS NULL AND d.kind = 'user'
+         ORDER BY d.created_at`
       );
       return rows.map((row) => ({ ...toDeck(row), cardCount: row.card_count ?? 0 }));
     },
@@ -114,27 +117,6 @@ export function createRepository(db: Db) {
         await db.runAsync("UPDATE cards SET deleted_at = ?, updated_at = ? WHERE deck_id = ? AND deleted_at IS NULL", [timestamp, timestamp, id]);
         await db.runAsync("UPDATE decks SET deleted_at = ?, updated_at = ? WHERE id = ?", [timestamp, timestamp, id]);
       });
-    },
-
-    /**
-     * 標準の単語帳を、自分用にコピーする（コピーしたものは編集できる）
-     * 戻り値は、できた単語帳
-     */
-    async duplicateDeck(sourceId: string, name: string): Promise<Deck> {
-      const source = await getDeck(sourceId);
-      if (!source) throw new ValidationError("コピー元の単語帳が見つかりません");
-      const copy = await repo.createDeck(name);
-      const timestamp = now();
-      await db.withTransactionAsync(async () => {
-        const cards = await db.getAllAsync<CardRow>(`SELECT ${CARD_COLUMNS} FROM cards WHERE deck_id = ? AND deleted_at IS NULL ORDER BY position`, [sourceId]);
-        for (const card of cards) {
-          await db.runAsync(
-            `INSERT INTO cards (${CARD_COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [newId(), copy.id, card.type, card.term, card.meaning, card.part_of_speech, card.example, card.example_translation, card.note, card.answer, card.position, timestamp, timestamp]
-          );
-        }
-      });
-      return copy;
     },
 
     /** 単語帳の単語を一覧する。query があれば、単語・意味・例文を部分一致で検索する */

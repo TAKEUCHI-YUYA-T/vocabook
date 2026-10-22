@@ -1,15 +1,17 @@
 import { LATEST_SCHEMA_VERSION, migrate } from "../migrations";
-import { normalizeIngOrTo, PRESET_WORDS_DECK_ID, syncPresets, type PresetData } from "../presets";
+import {
+  DEFAULT_DECK_NAME,
+  ensureDefaultDeck,
+  normalizeIngOrTo,
+  PRESET_ING_OR_TO_DECK_ID,
+  syncPresets,
+  type PresetData,
+} from "../presets";
 import { createRepository, LIMITS, ValidationError, validateCardInput } from "../repository";
 import { createTestDb } from "../testing/testDb";
 
 const presetData = (overrides: Partial<PresetData> = {}): PresetData => ({
   version: "v1",
-  words: [
-    { id: "noun:apple", pos: "noun", term: "apple", meaning: "りんご", example: "I ate an apple.", exampleTranslation: "りんごを食べた" },
-    { id: "verb:abolish", pos: "verb", term: "abolish", meaning: "廃止する" },
-    { id: "verb:void", pos: "verb", term: "void" }, // 意味が空のカードも取り込める
-  ],
   ingOrTo: [
     { id: "ingOrTo:avoid", term: "avoid", answer: "～ing", meaning: "避ける" },
     { id: "ingOrTo:decide", term: "decide", answer: "to～", meaning: "決める" },
@@ -22,7 +24,10 @@ const setup = async (data: PresetData = presetData()) => {
   const db = await createTestDb();
   await migrate(db);
   await syncPresets(db, data);
-  return { db, repo: createRepository(db) };
+  await ensureDefaultDeck(db);
+  const repo = createRepository(db);
+  const [defaultDeck] = await repo.listDecks();
+  return { db, repo, defaultDeck };
 };
 
 describe("マイグレーション", () => {
@@ -41,44 +46,57 @@ describe("マイグレーション", () => {
   });
 });
 
-describe("プリセットの取り込み", () => {
-  it("単語・ing or to・ヒントを取り込み、答えを ing / to にそろえる", async () => {
+describe("同梱データの取り込み", () => {
+  it("ing or to とヒントを取り込み、答えを ing / to にそろえる。単語帳の一覧には出さない", async () => {
     const { repo } = await setup();
-    expect(await repo.listCards(PRESET_WORDS_DECK_ID)).toHaveLength(3);
-    const ingOrTo = await repo.listIngOrToCards();
-    expect(ingOrTo.map((c) => c.answer)).toEqual(["ing", "to"]);
+    expect((await repo.listIngOrToCards()).map((c) => c.answer)).toEqual(["ing", "to"]);
     expect((await repo.randomTip())?.title).toBe("ヒントA");
+    expect((await repo.listDecks()).some((d) => d.id === PRESET_ING_OR_TO_DECK_ID)).toBe(false);
   });
 
   it("同じ版なら何もせず、版が変わったら入れ直す（ユーザーの単語帳は残る）", async () => {
-    const { db, repo } = await setup();
-    const mine = await repo.createDeck("自分用");
-    await repo.addCard(mine.id, { term: "keep", meaning: "残る" });
+    const { db, repo, defaultDeck } = await setup();
+    await repo.addCard(defaultDeck.id, { term: "keep", meaning: "残る" });
 
     expect(await syncPresets(db, presetData())).toBe(false);
-    expect(await syncPresets(db, presetData({ version: "v2", words: [{ id: "noun:pear", pos: "noun", term: "pear", meaning: "梨" }] }))).toBe(true);
+    expect(await syncPresets(db, presetData({ version: "v2", ingOrTo: [{ id: "ingOrTo:enjoy", term: "enjoy", answer: "～ing" }] }))).toBe(true);
 
-    expect((await repo.listCards(PRESET_WORDS_DECK_ID)).map((c) => c.term)).toEqual(["pear"]);
-    expect((await repo.listCards(mine.id)).map((c) => c.term)).toEqual(["keep"]);
+    expect((await repo.listIngOrToCards()).map((c) => c.term)).toEqual(["enjoy"]);
+    expect((await repo.listCards(defaultDeck.id)).map((c) => c.term)).toEqual(["keep"]);
+  });
+
+  it("以前の版で同梱していた単語帳が残っていれば消し、ユーザーの単語帳には触れない", async () => {
+    const { db, repo, defaultDeck } = await setup();
+    await repo.addCard(defaultDeck.id, { term: "mine", meaning: "自分の" });
+    // 以前の版の状態を再現する（読み取り専用の単語帳と、その単語）
+    await db.runAsync("INSERT INTO decks (id, name, kind, created_at, updated_at) VALUES ('preset:words', '英単語・熟語（標準）', 'preset', 0, 0)");
+    await db.runAsync(
+      "INSERT INTO cards (id, deck_id, type, term, meaning, created_at, updated_at) VALUES ('noun:apple', 'preset:words', 'basic', 'apple', 'りんご', 0, 0)"
+    );
+
+    await syncPresets(db, presetData({ version: "v2" }));
+
+    expect(await db.getFirstAsync("SELECT id FROM decks WHERE id = 'preset:words'")).toBeNull();
+    expect(await db.getFirstAsync("SELECT id FROM cards WHERE id = 'noun:apple'")).toBeNull();
+    expect((await repo.listCards(defaultDeck.id)).map((c) => c.term)).toEqual(["mine"]);
   });
 
   it("取り込みの途中で失敗したら、元の状態に戻る", async () => {
     const { db, repo } = await setup();
-    const broken = presetData({ version: "v2", words: [{ id: "dup", pos: "noun", term: "a" }, { id: "dup", pos: "noun", term: "b" }] });
+    const broken = presetData({ version: "v2", ingOrTo: [{ id: "dup", term: "a" }, { id: "dup", term: "b" }] });
     await expect(syncPresets(db, broken)).rejects.toThrow();
-    expect(await repo.listCards(PRESET_WORDS_DECK_ID)).toHaveLength(3);
+    expect(await repo.listIngOrToCards()).toHaveLength(2);
     expect((await db.getFirstAsync<{ value: string }>("SELECT value FROM meta WHERE key = 'preset_version'"))?.value).toBe("v1");
   });
 
   it("まとめて書き込む区切り（50行）をまたいでも、全件を順番どおりに取り込む", async () => {
-    const words = Array.from({ length: 120 }, (_, i) => ({ id: `noun:w${i}`, pos: "noun" as const, term: `w${i}`, meaning: `意味${i}` }));
-    const { repo } = await setup(presetData({ words }));
-    const cards = await repo.listCards(PRESET_WORDS_DECK_ID);
+    const ingOrTo = Array.from({ length: 120 }, (_, i) => ({ id: `ingOrTo:w${i}`, term: `w${i}`, answer: i % 2 ? "to～" : "～ing" }));
+    const { repo } = await setup(presetData({ ingOrTo }));
+    const cards = await repo.listIngOrToCards();
     expect(cards).toHaveLength(120);
-    expect(cards[0].term).toBe("w0");
     expect(cards[49].term).toBe("w49");
     expect(cards[50].term).toBe("w50");
-    expect(cards[119]).toMatchObject({ term: "w119", meaning: "意味119", partOfSpeech: "noun" });
+    expect(cards[119]).toMatchObject({ term: "w119", answer: "to" });
   });
 
   it("ing or to の答えの書き方の違いを吸収する", () => {
@@ -88,19 +106,46 @@ describe("プリセットの取り込み", () => {
   });
 });
 
-describe("単語帳と単語の読み書き", () => {
-  it("単語帳の一覧に、標準が先に出て、単語数も数えられる", async () => {
-    const { repo } = await setup();
-    await repo.createDeck("自分用");
+describe("初回の空の単語帳", () => {
+  it("初回だけ、空の単語帳を1つ作る", async () => {
+    const { db, repo } = await setup();
+    await ensureDefaultDeck(db);
     const decks = await repo.listDecks();
-    expect(decks.map((d) => d.kind)).toEqual(["preset", "preset", "user"]);
-    expect(decks.find((d) => d.id === PRESET_WORDS_DECK_ID)?.cardCount).toBe(3);
+    expect(decks.map((d) => [d.name, d.cardCount])).toEqual([[DEFAULT_DECK_NAME, 0]]);
+  });
+
+  it("ユーザーが単語帳をすべて削除しても、作り直さない", async () => {
+    const { db, repo, defaultDeck } = await setup();
+    await repo.deleteDeck(defaultDeck.id);
+    await ensureDefaultDeck(db);
+    expect(await repo.listDecks()).toEqual([]);
+  });
+
+  it("すでに自分の単語帳があれば、作らない", async () => {
+    const db = await createTestDb();
+    await migrate(db);
+    const repo = createRepository(db);
+    await repo.createDeck("既存");
+    await ensureDefaultDeck(db);
+    expect((await repo.listDecks()).map((d) => d.name)).toEqual(["既存"]);
+  });
+});
+
+describe("単語帳と単語の読み書き", () => {
+  it("単語帳の一覧は、自分の単語帳を作った順に並べ、単語数も数える", async () => {
+    const { repo, defaultDeck } = await setup();
+    await repo.addCard(defaultDeck.id, { term: "a", meaning: "b" });
+    await repo.createDeck("あとから作った");
+    const decks = await repo.listDecks();
+    expect(decks.map((d) => [d.name, d.cardCount])).toEqual([
+      [DEFAULT_DECK_NAME, 1],
+      ["あとから作った", 0],
+    ]);
   });
 
   it("単語を追加・編集・削除できる", async () => {
-    const { repo } = await setup();
-    const deck = await repo.createDeck("自分用");
-    const card = await repo.addCard(deck.id, { term: "  banana ", meaning: " バナナ ", partOfSpeech: "noun" });
+    const { repo, defaultDeck } = await setup();
+    const card = await repo.addCard(defaultDeck.id, { term: "  banana ", meaning: " バナナ ", partOfSpeech: "noun" });
     expect(card).toMatchObject({ term: "banana", meaning: "バナナ", partOfSpeech: "noun", type: "basic" });
 
     const updated = await repo.updateCard(card.id, { term: "banana", meaning: "バナナ（果物）", example: "I like bananas." });
@@ -109,19 +154,15 @@ describe("単語帳と単語の読み書き", () => {
 
     await repo.deleteCard(card.id);
     expect(await repo.getCard(card.id)).toBeNull();
-    expect(await repo.listCards(deck.id)).toHaveLength(0);
+    expect(await repo.listCards(defaultDeck.id)).toHaveLength(0);
   });
 
-  it("標準の単語帳は編集できないが、コピーすれば編集できる", async () => {
+  it("同梱の ing or to は編集・削除できない", async () => {
     const { repo } = await setup();
-    await expect(repo.addCard(PRESET_WORDS_DECK_ID, { term: "x", meaning: "y" })).rejects.toThrow("標準の単語帳は編集できません");
-    await expect(repo.deleteDeck(PRESET_WORDS_DECK_ID)).rejects.toBeInstanceOf(ValidationError);
-
-    const copy = await repo.duplicateDeck(PRESET_WORDS_DECK_ID, "コピー");
-    const cards = await repo.listCards(copy.id);
-    expect(cards).toHaveLength(3);
-    await repo.updateCard(cards[0].id, { term: "edited", meaning: "編集した" });
-    expect((await repo.listCards(PRESET_WORDS_DECK_ID)).map((c) => c.term)).toContain("apple");
+    await expect(repo.addCard(PRESET_ING_OR_TO_DECK_ID, { term: "x", meaning: "y" })).rejects.toThrow("この単語帳は編集できません");
+    await expect(repo.deleteDeck(PRESET_ING_OR_TO_DECK_ID)).rejects.toBeInstanceOf(ValidationError);
+    const [first] = await repo.listIngOrToCards();
+    await expect(repo.updateCard(first.id, { term: "x", meaning: "y" })).rejects.toBeInstanceOf(ValidationError);
   });
 
   it("単語帳を削除すると、中の単語も一覧から消える", async () => {
@@ -147,23 +188,26 @@ describe("単語帳と単語の読み書き", () => {
   });
 
   it("重複する単語を、大文字小文字を区別せずに見つける", async () => {
-    const { repo } = await setup();
-    const deck = await repo.createDeck("重複");
-    const first = await repo.addCard(deck.id, { term: "Apple", meaning: "りんご" });
-    expect(await repo.findDuplicates(deck.id, "apple")).toHaveLength(1);
-    expect(await repo.findDuplicates(deck.id, "apple", first.id)).toHaveLength(0);
+    const { repo, defaultDeck } = await setup();
+    const first = await repo.addCard(defaultDeck.id, { term: "Apple", meaning: "りんご" });
+    expect(await repo.findDuplicates(defaultDeck.id, "apple")).toHaveLength(1);
+    expect(await repo.findDuplicates(defaultDeck.id, "apple", first.id)).toHaveLength(0);
   });
 });
 
 describe("出題用の取り出し", () => {
   it("単語帳と品詞で絞り込み、ing or to は含めない", async () => {
-    const { repo } = await setup();
-    const all = await repo.listStudyCards({ deckIds: [PRESET_WORDS_DECK_ID] });
-    expect(all).toHaveLength(3);
-    const verbs = await repo.listStudyCards({ deckIds: [PRESET_WORDS_DECK_ID], partsOfSpeech: ["verb"] });
+    const { repo, defaultDeck } = await setup();
+    await repo.addCard(defaultDeck.id, { term: "apple", meaning: "りんご", partOfSpeech: "noun" });
+    await repo.addCard(defaultDeck.id, { term: "abolish", meaning: "廃止する", partOfSpeech: "verb" });
+    await repo.addCard(defaultDeck.id, { term: "void", meaning: "無効にする", partOfSpeech: "verb" });
+
+    expect(await repo.listStudyCards({ deckIds: [defaultDeck.id] })).toHaveLength(3);
+    const verbs = await repo.listStudyCards({ deckIds: [defaultDeck.id], partsOfSpeech: ["verb"] });
     expect(verbs.map((c) => c.term).sort()).toEqual(["abolish", "void"]);
+    expect(await repo.listStudyCards({ deckIds: [PRESET_ING_OR_TO_DECK_ID] })).toEqual([]);
     expect(await repo.listStudyCards({ deckIds: [] })).toEqual([]);
-    expect(await repo.countByPartOfSpeech([PRESET_WORDS_DECK_ID])).toEqual({ noun: 1, verb: 2 });
+    expect(await repo.countByPartOfSpeech([defaultDeck.id])).toEqual({ noun: 1, verb: 2 });
   });
 });
 

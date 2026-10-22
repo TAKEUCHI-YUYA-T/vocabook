@@ -7,7 +7,7 @@ import type { Card } from "@/db/types";
 
 /**
  * ing or to の画面
- * 動詞のあとに ing と to のどちらが続くかを答える。問題は DB（標準の「ing or to」）から読む
+ * 動詞のあとに ing と to のどちらが続くかを答える。問題は DB（アプリに同梱した「ing or to」）から読む
  */
 export default function IngOrToScreen() {
   const router = useRouter();

@@ -3,11 +3,10 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 import { SQLiteProvider, useSQLiteContext, type SQLiteDatabase } from "expo-sqlite";
 import { migrate } from "./migrations";
-import { syncPresets, type PresetData } from "./presets";
+import { ensureDefaultDeck, syncPresets, type PresetData } from "./presets";
 import { createRepository, type Repository } from "./repository";
 import type { Db, SqlParam } from "./database";
 
-import presetWords from "../assets/presets/words.json";
 import presetIngOrTo from "../assets/presets/ing-or-to.json";
 import presetTips from "../assets/presets/tips.json";
 import presetVersion from "../assets/presets/version.json";
@@ -16,7 +15,6 @@ const DATABASE_NAME = "vocabook.db";
 
 const presets = {
   version: presetVersion.version,
-  words: presetWords,
   ingOrTo: presetIngOrTo,
   tips: presetTips,
 } as PresetData;
@@ -32,12 +30,13 @@ const toDb = (database: SQLiteDatabase): Db => ({
   withTransactionAsync: (task) => database.withTransactionAsync(task),
 });
 
-/** 起動時に、データ構造を最新にして、同梱のプリセットを反映する */
+/** 起動時に、データ構造を最新にして、同梱のデータを反映し、初回なら空の単語帳を用意する */
 async function initialize(database: SQLiteDatabase) {
   const db = toDb(database);
   await db.execAsync("PRAGMA foreign_keys = ON");
   await migrate(db);
   await syncPresets(db, presets);
+  await ensureDefaultDeck(db);
 }
 
 const hideSplash = () => {

@@ -25,7 +25,7 @@ export default function StudySelectScreen() {
       let active = true;
       repository.listDecks().then((list) => {
         if (!active) return;
-        const studyable = list.filter((deck) => deck.cardCount > 0 && deck.name !== "ing or to");
+        const studyable = list.filter((deck) => deck.cardCount > 0);
         setDecks(studyable);
         setSelectedDeckIds((prev) => (prev.length > 0 ? prev.filter((id) => studyable.some((d) => d.id === id)) : studyable.map((d) => d.id)));
         setIsLoaded(true);

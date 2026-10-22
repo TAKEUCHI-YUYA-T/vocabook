@@ -7,7 +7,7 @@ import type { DeckSummary } from "@/db/types";
 
 /**
  * 単語帳の一覧画面
- * - 標準の単語帳（読み取り専用）と、自分で作った単語帳を並べる
+ * - 自分の単語帳を、作った順に並べる
  * - 新しい単語帳を作れる
  */
 export default function DecksScreen() {
@@ -55,9 +55,7 @@ export default function DecksScreen() {
         renderItem={({ item }) => (
           <TouchableOpacity style={styles.row} onPress={() => router.push({ pathname: "/decks/[id]", params: { id: item.id } })}>
             <Text style={styles.rowTitle}>{item.name}</Text>
-            <Text style={styles.rowSub}>
-              {item.cardCount}語{item.kind === "preset" ? "・標準（編集するにはコピーしてください）" : ""}
-            </Text>
+            <Text style={styles.rowSub}>{item.cardCount}語</Text>
           </TouchableOpacity>
         )}
         ListEmptyComponent={<Text style={styles.empty}>単語帳がありません</Text>}
