@@ -3,6 +3,12 @@ const apiKey = Constants.expoConfig?.extra?.GOOGLE_API_KEY;
 const sheetID = Constants.expoConfig?.extra?.SPREAD_SHEET_ID;
 
 export const fetchSpreadsheetData = async (sheetTypes: string[]) => {
+  // API キーをアプリに持たせない方針に移行中のため、未設定なら通信せず空のデータを返す
+  if (!apiKey || !sheetID) {
+    console.warn("スプレッドシートの API キーが未設定のため、データを取得しません");
+    return sheetTypes.map((sheetType) => ({ sheetType, data: [] as string[][] }));
+  }
+
   try {
     const responses = await Promise.all(
       sheetTypes.map(async (sheetType) => {

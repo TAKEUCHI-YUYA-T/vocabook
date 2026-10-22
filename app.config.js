@@ -1,4 +1,3 @@
-import "dotenv/config";
 
 export default {
   expo: {
@@ -50,8 +49,6 @@ export default {
       eas: {
         projectId: "66976257-69db-4ccf-82f5-ff53bc6c8c70"
       },
-      GOOGLE_API_KEY: process.env.GOOGLE_API_KEY,
-      SPREAD_SHEET_ID: process.env.SPREAD_SHEET_ID
     },
     updates: {
       url: "https://u.expo.dev/66976257-69db-4ccf-82f5-ff53bc6c8c70",
