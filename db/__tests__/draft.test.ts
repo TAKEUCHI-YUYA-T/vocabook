@@ -32,6 +32,14 @@ describe("意味の下書き", () => {
     expect(result).toEqual({ status: "failed", reason: "翻訳のデータを取得できませんでした。初回だけ、通信が必要です（約30MB）" });
   });
 
+  it("翻訳の部品が入っていない版のアプリでは、更新を促す理由を返す", async () => {
+    const result = await draftMeaning("apple", async () => {
+      throw new Error("Cannot find native module 'ExpoTranslateText'");
+    });
+    expect(result.status).toBe("failed");
+    expect(result.status === "failed" && result.reason).toContain("アプリを更新してください");
+  });
+
   it("結果が空なら、失敗として扱う", async () => {
     expect((await draftMeaning("apple", ok("   "))).status).toBe("failed");
   });

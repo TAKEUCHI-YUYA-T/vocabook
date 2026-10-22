@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { onTranslateTask } from "expo-translate-text";
 import { useRepository } from "@/db/AppDatabase";
 import { cleanCapturedText, looksJapanese, looksLikeSentence } from "@/db/capture";
 import { draftMeaning, type TranslateFn } from "@/db/draft";
@@ -11,8 +10,16 @@ import { CardForm, emptyCardForm, type CardFormValue } from "@/components/CardFo
 import { useDuplicateWarning } from "@/hooks/useDuplicateWarning";
 import { returnToPreviousApp } from "../../modules/selected-text";
 
-/** 翻訳の部品を、アプリ共通の形に合わせる */
-const translate: TranslateFn = (params) => onTranslateTask({ ...params, requiresWifi: false });
+/**
+ * 翻訳の部品を、アプリ共通の形に合わせる
+ * 翻訳の部品（ネイティブ）は、含まれていない版のアプリでは、読み込んだ時点でエラーになる
+ * 起動時にアプリ全体が落ちないよう、使うときに初めて読み込む（失敗は呼び出し側が理由つきで受け取る）
+ */
+const translate: TranslateFn = async (params) => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { onTranslateTask } = require("expo-translate-text") as typeof import("expo-translate-text");
+  return onTranslateTask({ ...params, requiresWifi: false });
+};
 
 /**
  * 他のアプリで選んだ文字を、単語として登録する画面

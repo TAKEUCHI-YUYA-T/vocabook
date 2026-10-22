@@ -49,9 +49,10 @@ export default function IngOrToScreen() {
             {/* 動詞と、答え（ing / to）の欄。答えは「回答」を押すまで隠す */}
             <View style={[styles.textRow, styles.abColumnContainer]}>
               <Text style={[styles.cellDataBold, { marginRight: 10 }]}>{current.term}</Text>
-              <Text style={[styles.cellData, styles.underlined, isAnswerVisible ? styles.visibleText : styles.hiddenText]}>
-                {answerLabel}
-              </Text>
+              {/* 答えは、文字の色で隠すのではなく、「回答」を押すまで文字そのものを描画しない（下線の欄だけを残す） */}
+              <View style={styles.answerBlank}>
+                <Text style={[styles.cellData, styles.answerText]}>{isAnswerVisible ? answerLabel : ""}</Text>
+              </View>
             </View>
 
             {!!current.meaning && <Text style={styles.cellData}>{current.meaning}</Text>}
@@ -142,18 +143,19 @@ const styles = StyleSheet.create({
   backButton: {
     backgroundColor: "#ff5757",
   },
-  underlined: {
+  answerBlank: {
     borderBottomWidth: 2,
     borderBottomColor: "#446158",
     paddingBottom: 2,
-    minWidth: 50,
-    textAlign: "center",
+    minWidth: 70,
+    minHeight: 28,
+    alignItems: "center",
+    justifyContent: "flex-end",
   },
-  hiddenText: {
-    color: "transparent",
-  },
-  visibleText: {
+  answerText: {
     color: "black",
+    textAlign: "center",
+    marginBottom: 0,
   },
   abColumnContainer: {
     marginBottom: 10,
