@@ -1,7 +1,10 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput } from "react-native";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import * as Sharing from "expo-sharing";
+import { File, Paths } from "expo-file-system";
 import { useRepository } from "@/db/AppDatabase";
+import { cardsToCsv, exportFileName } from "@/db/importing";
 import { ValidationError } from "@/db/repository";
 import { partOfSpeechLabel, type Card, type Deck } from "@/db/types";
 
@@ -52,6 +55,18 @@ export default function DeckDetailScreen() {
       setMessage(e instanceof ValidationError ? e.message : "処理に失敗しました");
     }
   };
+
+  /** 単語帳を CSV にして、共有メニューで他のアプリ（ドライブ、メールなど）に送れるようにする。バックアップ用 */
+  const exportCsv = (target: Deck) =>
+    run(async () => {
+      if (!(await Sharing.isAvailableAsync())) throw new ValidationError("この端末では共有を使えません");
+      const all = await repository.listCards(target.id);
+      if (all.length === 0) throw new ValidationError("書き出す単語がありません");
+      const file = new File(Paths.cache, exportFileName(target.name));
+      file.create({ overwrite: true });
+      file.write(cardsToCsv(all));
+      await Sharing.shareAsync(file.uri, { mimeType: "text/csv", dialogTitle: "単語帳を書き出す", UTI: "public.comma-separated-values-text" });
+    });
 
   if (!deck) {
     return (
@@ -137,6 +152,14 @@ export default function DeckDetailScreen() {
         <TouchableOpacity style={styles.button} onPress={() => router.push({ pathname: "/cards/new", params: { deckId: deck.id } })}>
           <Text style={styles.buttonText}>＋ 単語を追加</Text>
         </TouchableOpacity>
+        <View style={styles.rowButtons}>
+          <TouchableOpacity style={[styles.smallButton, styles.secondaryButton]} onPress={() => router.push({ pathname: "/decks/import", params: { deckId: deck.id } })}>
+            <Text style={styles.lightButtonText}>取り込み</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.smallButton, styles.secondaryButton]} onPress={() => exportCsv(deck)}>
+            <Text style={styles.lightButtonText}>書き出し</Text>
+          </TouchableOpacity>
+        </View>
         <View style={styles.rowButtons}>
           <TouchableOpacity
             style={[styles.smallButton, styles.secondaryButton]}

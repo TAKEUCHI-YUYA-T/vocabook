@@ -90,3 +90,6 @@ yarn-error.*
 # @end expo-cli
 # source data for bundled preset decks (not published)
 preset-source/
+
+# local-only tests that read private source data
+db/__tests__/*.local.test.ts

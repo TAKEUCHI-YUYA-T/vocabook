@@ -38,7 +38,15 @@ const CARD_COLUMNS =
 const escapeLike = (text: string) => text.replace(/[\\%_]/g, (char) => `\\${char}`);
 
 /** 入力値を検証し、前後の空白を取り除いた値を返す。不正なら ValidationError */
-export function validateCardInput(input: CardInput): Required<Omit<CardInput, "partOfSpeech">> & { partOfSpeech: PartOfSpeech | null } {
+/**
+ * 意味が空でもよいのは、取り込みと、すでに意味が空の単語の編集だけ（手入力の新規登録では必須）
+ */
+export type ValidateOptions = { allowEmptyMeaning?: boolean };
+
+export function validateCardInput(
+  input: CardInput,
+  options: ValidateOptions = {}
+): Required<Omit<CardInput, "partOfSpeech">> & { partOfSpeech: PartOfSpeech | null } {
   const term = input.term.trim();
   const meaning = input.meaning.trim();
   const example = (input.example ?? "").trim();
@@ -46,7 +54,7 @@ export function validateCardInput(input: CardInput): Required<Omit<CardInput, "p
   const note = (input.note ?? "").trim();
 
   if (!term) throw new ValidationError("単語を入力してください");
-  if (!meaning) throw new ValidationError("意味を入力してください");
+  if (!meaning && !options.allowEmptyMeaning) throw new ValidationError("意味を入力してください");
   if (term.length > LIMITS.term) throw new ValidationError(`単語は${LIMITS.term}文字以内で入力してください`);
   if (meaning.length > LIMITS.meaning) throw new ValidationError(`意味は${LIMITS.meaning}文字以内で入力してください`);
   if (example.length > LIMITS.example || exampleTranslation.length > LIMITS.example) {
@@ -161,11 +169,38 @@ export function createRepository(db: Db) {
       return (await repo.getCard(id)) as Card;
     },
 
+    /**
+     * 検証済みの単語を、まとめて追加する（取り込み用）
+     * 1回のトランザクションで書き込むので、途中で失敗しても、半端な状態は残らない
+     * 戻り値は、追加した件数
+     */
+    async importCards(deckId: string, inputs: CardInput[]): Promise<number> {
+      await requireEditableDeck(deckId);
+      if (inputs.length === 0) return 0;
+      const values = inputs.map((input) => validateCardInput(input, { allowEmptyMeaning: true })); // 念のため、書き込む前にもう一度検証する
+      const timestamp = now();
+      await db.withTransactionAsync(async () => {
+        const last = await db.getFirstAsync<{ max_position: number | null }>("SELECT MAX(position) AS max_position FROM cards WHERE deck_id = ?", [deckId]);
+        let position = (last?.max_position ?? -1) + 1;
+        const perStatement = 50;
+        for (let start = 0; start < values.length; start += perStatement) {
+          const chunk = values.slice(start, start + perStatement);
+          const params: SqlParam[] = [];
+          for (const value of chunk) {
+            params.push(newId(), deckId, value.term, value.meaning, value.partOfSpeech, value.example, value.exampleTranslation, value.note, position++, timestamp, timestamp);
+          }
+          const placeholders = chunk.map(() => "(?, ?, 'basic', ?, ?, ?, ?, ?, ?, '', ?, ?, ?)").join(", ");
+          await db.runAsync(`INSERT INTO cards (${CARD_COLUMNS}) VALUES ${placeholders}`, params);
+        }
+      });
+      return values.length;
+    },
+
     async updateCard(id: string, input: CardInput): Promise<Card> {
       const existing = await repo.getCard(id);
       if (!existing) throw new ValidationError("単語が見つかりません");
       await requireEditableDeck(existing.deckId);
-      const value = validateCardInput(input);
+      const value = validateCardInput(input, { allowEmptyMeaning: existing.meaning === "" });
       await db.runAsync(
         "UPDATE cards SET term = ?, meaning = ?, part_of_speech = ?, example = ?, example_translation = ?, note = ?, updated_at = ? WHERE id = ?",
         [value.term, value.meaning, value.partOfSpeech, value.example, value.exampleTranslation, value.note, now(), id]
