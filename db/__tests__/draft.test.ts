@@ -65,3 +65,17 @@ describe("エラーの本文", () => {
     expect(describeRawError("文字列のエラー")).toBe("文字列のエラー");
   });
 });
+
+describe("失敗の理由の判定", () => {
+  it("通信が必要だと案内するのは、モデルの取得の失敗と、通信そのもののエラーだけ", () => {
+    const network = "翻訳のデータを取得できませんでした。初回だけ、通信が必要です（約30MB）";
+    expect(describeTranslationError(new Error("MODEL_DOWNLOAD_FAILED: x"))).toBe(network);
+    expect(describeTranslationError(new Error("java.net.UnknownHostException: Unable to resolve host"))).toBe(network);
+    // 今回の実際のエラー（Kotlin への変換の失敗）は、通信とは無関係
+    const conversion = new Error("ERR_UNEXPECTED: [translateTask] Cannot convert '[object Object]' to a Kotlin type. Value is undefined, expected an Object");
+    expect(describeTranslationError(conversion)).toBe("翻訳できませんでした。意味は手で入力してください");
+    expect(describeTranslationError(new Error("at ?anon_0_onTranslateTask (http://localhost:8081/node_modules/expo-router/entry.bundle//&platform=android&dev=true)"))).toBe(
+      "翻訳できませんでした。意味は手で入力してください"
+    );
+  });
+});

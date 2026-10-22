@@ -47,7 +47,8 @@ export function describeTranslationError(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);
   if (message === "TIMEOUT") return "翻訳に時間がかかっています。通信状態を確認して、もう一度試してください";
   if (/Cannot find native module/i.test(message)) return "この版のアプリは、翻訳に対応していません。アプリを更新してください。意味は手で入力できます";
-  if (/MODEL_DOWNLOAD|download|network|connect|UnknownHost|timeout/i.test(message)) {
+  // 通信が必要だと案内するのは、モデルの取得の失敗と、通信そのもののエラーに限る（それ以外の失敗を、通信のせいにしない）
+  if (/MODEL_DOWNLOAD_FAILED|UnknownHostException|Unable to resolve host|Network is unreachable|SocketTimeoutException|ConnectException/i.test(message)) {
     return "翻訳のデータを取得できませんでした。初回だけ、通信が必要です（約30MB）";
   }
   return "翻訳できませんでした。意味は手で入力してください";

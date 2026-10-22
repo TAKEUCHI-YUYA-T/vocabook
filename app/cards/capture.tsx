@@ -3,23 +3,13 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useRepository } from "@/db/AppDatabase";
 import { extractSelection, looksJapanese, looksLikeSentence } from "@/db/capture";
-import { draftMeaning, type TranslateFn } from "@/db/draft";
+import { draftMeaning } from "@/db/draft";
+import { translateOnDevice } from "@/db/translate";
 import { ValidationError } from "@/db/repository";
 import type { DeckSummary } from "@/db/types";
 import { CardForm, emptyCardForm, type CardFormValue } from "@/components/CardForm";
 import { useDuplicateWarning } from "@/hooks/useDuplicateWarning";
 import { returnToPreviousApp } from "../../modules/selected-text";
-
-/**
- * 翻訳の部品を、アプリ共通の形に合わせる
- * 翻訳の部品（ネイティブ）は、含まれていない版のアプリでは、読み込んだ時点でエラーになる
- * 起動時にアプリ全体が落ちないよう、使うときに初めて読み込む（失敗は呼び出し側が理由つきで受け取る）
- */
-const translate: TranslateFn = async (params) => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { onTranslateTask } = require("expo-translate-text") as typeof import("expo-translate-text");
-  return onTranslateTask({ ...params, requiresWifi: false });
-};
 
 /**
  * 他のアプリで選んだ文字を、単語として登録する画面
@@ -61,7 +51,7 @@ export default function CaptureScreen() {
   useEffect(() => {
     if (!initialTerm) return;
     let active = true;
-    draftMeaning(initialTerm, translate).then((result) => {
+    draftMeaning(initialTerm, translateOnDevice).then((result) => {
       if (!active) return;
       if (result.status === "ok") {
         if (!meaningTouched.current) setValue((prev) => ({ ...prev, meaning: result.meaning }));
