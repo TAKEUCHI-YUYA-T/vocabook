@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useRepository } from "@/db/AppDatabase";
-import { cleanCapturedText, looksJapanese, looksLikeSentence } from "@/db/capture";
+import { extractSelection, looksJapanese, looksLikeSentence } from "@/db/capture";
 import { draftMeaning, type TranslateFn } from "@/db/draft";
 import { ValidationError } from "@/db/repository";
 import type { DeckSummary } from "@/db/types";
@@ -30,7 +30,9 @@ export default function CaptureScreen() {
   const repository = useRepository();
   const { text } = useLocalSearchParams<{ text?: string }>();
 
-  const initialTerm = cleanCapturedText(text ?? "");
+  // 共有された文字から、単語を取り出す（Chrome は、選んだ文字ではなく URL を送ることがある）
+  const selection = useMemo(() => extractSelection(text ?? ""), [text]);
+  const initialTerm = selection.term;
   const [value, setValue] = useState<CardFormValue>({ ...emptyCardForm(), term: initialTerm });
   const [decks, setDecks] = useState<DeckSummary[]>([]);
   const [deckId, setDeckId] = useState<string | null>(null);
@@ -114,6 +116,12 @@ export default function CaptureScreen() {
       {!!error && <Text style={styles.error}>{error}</Text>}
 
       <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
+        {selection.kind === "fragment" && <Text style={styles.note}>共有された URL から、選んだ単語を取り出しました。</Text>}
+        {selection.kind === "url-only" && (
+          <Text style={styles.note}>
+            URL だけが共有され、単語を取り出せませんでした。単語を選び直して、選択メニューの「vocabook」から送ると、確実に単語だけが届きます。
+          </Text>
+        )}
         {looksJapanese(initialTerm) && <Text style={styles.note}>日本語の文字を含んでいます。英語の単語を選んだ場合は、選び直してください。</Text>}
         {looksLikeSentence(initialTerm) && <Text style={styles.note}>文のように長いです。単語や熟語だけにするか、例文の欄に移してください。</Text>}
 
