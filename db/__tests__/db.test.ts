@@ -54,6 +54,12 @@ describe("同梱データの取り込み", () => {
     expect((await repo.listDecks()).some((d) => d.id === PRESET_ING_OR_TO_DECK_ID)).toBe(false);
   });
 
+  it("タイトルのないヒントも取り込める（本文だけを表示する）", async () => {
+    // build-presets.js が title を出さない形のデータでも、取り込みで失敗しない
+    const { repo } = await setup(presetData({ tips: [{ id: "tip:body-only", body: "本文だけ" }] }));
+    expect(await repo.randomTip()).toEqual({ id: "tip:body-only", title: "", body: "本文だけ", url: "" });
+  });
+
   it("同じ版なら何もせず、版が変わったら入れ直す（ユーザーの単語帳は残る）", async () => {
     const { db, repo, defaultDeck } = await setup();
     await repo.addCard(defaultDeck.id, { term: "keep", meaning: "残る" });

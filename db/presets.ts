@@ -13,7 +13,8 @@ export type PresetIngOrTo = {
   note?: string;
 };
 
-export type PresetTip = { id: string; title: string; body?: string; url?: string };
+/** title は空でもよい（ホームでは本文だけを表示する） */
+export type PresetTip = { id: string; title?: string; body?: string; url?: string };
 
 export type PresetData = {
   version: string;
@@ -85,7 +86,7 @@ export async function syncPresets(db: Db, data: PresetData): Promise<boolean> {
     await insertRows(
       db,
       "INSERT INTO tips (id, title, body, url)",
-      data.tips.map((tip): SqlParam[] => [tip.id, tip.title, tip.body ?? "", tip.url ?? ""])
+      data.tips.map((tip): SqlParam[] => [tip.id, tip.title ?? "", tip.body ?? "", tip.url ?? ""])
     );
 
     await db.runAsync(

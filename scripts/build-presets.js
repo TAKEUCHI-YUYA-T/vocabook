@@ -131,7 +131,8 @@ const buildTips = (workbook) => {
     if (!title && !body) continue;
     // タイトルが空でも、本文があれば登録する（ホームでは本文だけを表示する）
     if (!title) warn(`[reference] ${rowNumber}行目: タイトルが空です（本文だけを登録しました: 「${body.slice(0, 30)}」）`);
-    tips.push(compact({ id: makeId("tip", title || body.slice(0, 20)), title, body }));
+    // タイトルが空でも、title の項目は必ず残す（アプリの DB は title が必須）
+    tips.push({ id: makeId("tip", title || body.slice(0, 20)), title, body });
   }
   return tips;
 };
