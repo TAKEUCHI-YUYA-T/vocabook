@@ -93,3 +93,6 @@ preset-source/
 
 # local-only tests that read private source data
 db/__tests__/*.local.test.ts
+
+# 自分の単語（個人のデータ。公開しない）
+presets-src/words/
