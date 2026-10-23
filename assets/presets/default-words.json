@@ -3444,17 +3444,23 @@
  {
   "term": "concerning",
   "meaning": "…に関して(は)",
-  "partOfSpeech": "preposition"
+  "partOfSpeech": "preposition",
+  "example": "I have a question concerning the schedule.",
+  "exampleTranslation": "スケジュールに関して質問があります。"
  },
  {
   "term": "beside",
   "meaning": "…のそばに、…と比べて、をはずれて",
-  "partOfSpeech": "preposition"
+  "partOfSpeech": "preposition",
+  "example": "The printer is beside the window.",
+  "exampleTranslation": "プリンターは窓のそばにある。"
  },
  {
   "term": "besides",
   "meaning": "…の他にも",
-  "partOfSpeech": "preposition"
+  "partOfSpeech": "preposition",
+  "example": "Besides English, she speaks French and Spanish.",
+  "exampleTranslation": "英語のほかに、彼女はフランス語とスペイン語を話す。"
  },
  {
   "term": "notwithstanding",
@@ -3499,6 +3505,318 @@
   "partOfSpeech": "preposition",
   "example": "Among his many achievements, he is best known for the concept of logistics .",
   "exampleTranslation": "彼には多数の業績がありますが、中でも一番有名なのは物流管理の構想です。"
+ },
+ {
+  "term": "about",
+  "meaning": "～について、～ごろ",
+  "partOfSpeech": "preposition",
+  "example": "We talked about the new project.",
+  "exampleTranslation": "私たちは新しいプロジェクトについて話した。"
+ },
+ {
+  "term": "above",
+  "meaning": "～の上に、～を超えて",
+  "partOfSpeech": "preposition",
+  "example": "A clock hangs above the entrance.",
+  "exampleTranslation": "入口の上に時計が掛かっている。"
+ },
+ {
+  "term": "across",
+  "meaning": "～を横切って、～の向かい側に",
+  "partOfSpeech": "preposition",
+  "example": "The post office is across the street from the bank.",
+  "exampleTranslation": "郵便局は銀行の向かい側にある。"
+ },
+ {
+  "term": "after",
+  "meaning": "～のあとに",
+  "partOfSpeech": "preposition",
+  "example": "Please call me after the meeting.",
+  "exampleTranslation": "会議のあとで電話してください。",
+  "note": "接続詞（～したあとに）の用法もある"
+ },
+ {
+  "term": "against",
+  "meaning": "～に反対して、～に対して",
+  "partOfSpeech": "preposition",
+  "example": "Many employees voted against the proposal.",
+  "exampleTranslation": "多くの従業員がその提案に反対票を投じた。"
+ },
+ {
+  "term": "along",
+  "meaning": "～に沿って",
+  "partOfSpeech": "preposition",
+  "example": "Several shops are located along the river.",
+  "exampleTranslation": "川沿いに数軒の店がある。"
+ },
+ {
+  "term": "around",
+  "meaning": "～のまわりに、～ごろ",
+  "partOfSpeech": "preposition",
+  "example": "The staff gathered around the table.",
+  "exampleTranslation": "スタッフはテーブルのまわりに集まった。",
+  "note": "around 5 p.m.（5時ごろ）のように、おおよその時刻・数も表す"
+ },
+ {
+  "term": "as",
+  "meaning": "～として",
+  "partOfSpeech": "preposition",
+  "example": "She works as an interpreter.",
+  "exampleTranslation": "彼女は通訳として働いている。",
+  "note": "接続詞（～するとき、～なので）の用法もある"
+ },
+ {
+  "term": "before",
+  "meaning": "～の前に",
+  "partOfSpeech": "preposition",
+  "example": "Please submit the form before Friday.",
+  "exampleTranslation": "金曜日より前に用紙を提出してください。",
+  "note": "接続詞（～する前に）の用法もある"
+ },
+ {
+  "term": "behind",
+  "meaning": "～の後ろに、～より遅れて",
+  "partOfSpeech": "preposition",
+  "example": "The project is two weeks behind schedule.",
+  "exampleTranslation": "そのプロジェクトは予定より2週間遅れている。",
+  "note": "behind schedule（予定より遅れて）"
+ },
+ {
+  "term": "below",
+  "meaning": "～の下に、～以下で",
+  "partOfSpeech": "preposition",
+  "example": "Please sign your name below the line.",
+  "exampleTranslation": "線の下に署名してください。"
+ },
+ {
+  "term": "between",
+  "meaning": "（2つ）の間に",
+  "partOfSpeech": "preposition",
+  "example": "The meeting is scheduled between 2 and 4 p.m.",
+  "exampleTranslation": "会議は午後2時から4時の間に予定されている。",
+  "note": "between A and B。3つ以上の間は among"
+ },
+ {
+  "term": "beyond",
+  "meaning": "～を越えて、～の範囲外で",
+  "partOfSpeech": "preposition",
+  "example": "The repair is beyond our budget.",
+  "exampleTranslation": "その修理は私たちの予算を超えている。"
+ },
+ {
+  "term": "by",
+  "meaning": "～までに、～によって、～のそばに",
+  "partOfSpeech": "preposition",
+  "example": "Please submit the report by Friday.",
+  "exampleTranslation": "金曜日までに報告書を提出してください。",
+  "note": "by は期限（～までに）、until は継続（～までずっと）"
+ },
+ {
+  "term": "during",
+  "meaning": "～の間に（特定の期間）",
+  "partOfSpeech": "preposition",
+  "example": "Mobile phones must be turned off during the flight.",
+  "exampleTranslation": "飛行中は携帯電話の電源を切らなければならない。",
+  "note": "during のあとは名詞。while のあとは主語＋動詞"
+ },
+ {
+  "term": "following",
+  "meaning": "～に続いて、～のあとで",
+  "partOfSpeech": "preposition",
+  "example": "Following the presentation, there will be a short break.",
+  "exampleTranslation": "プレゼンテーションのあとに、短い休憩がある。"
+ },
+ {
+  "term": "for",
+  "meaning": "～のために、～の間",
+  "partOfSpeech": "preposition",
+  "example": "The store has been closed for two weeks.",
+  "exampleTranslation": "その店は2週間閉まっている。",
+  "note": "for＋期間の長さ（for two weeks）、during＋特定の期間（during the summer）"
+ },
+ {
+  "term": "from",
+  "meaning": "～から",
+  "partOfSpeech": "preposition",
+  "example": "The train from Osaka arrives at noon.",
+  "exampleTranslation": "大阪発の列車は正午に到着する。"
+ },
+ {
+  "term": "including",
+  "meaning": "～を含めて",
+  "partOfSpeech": "preposition",
+  "example": "The price is $50, including tax.",
+  "exampleTranslation": "価格は税込みで50ドルです。",
+  "note": "反対は excluding（～を除いて）"
+ },
+ {
+  "term": "inside",
+  "meaning": "～の中に",
+  "partOfSpeech": "preposition",
+  "example": "Please keep your valuables inside the locker.",
+  "exampleTranslation": "貴重品はロッカーの中に保管してください。"
+ },
+ {
+  "term": "into",
+  "meaning": "～の中へ、～に（変化）",
+  "partOfSpeech": "preposition",
+  "example": "The company is expanding into new markets.",
+  "exampleTranslation": "その会社は新しい市場へ進出している。"
+ },
+ {
+  "term": "like",
+  "meaning": "～のような",
+  "partOfSpeech": "preposition",
+  "example": "The new model looks like the old one.",
+  "exampleTranslation": "新モデルは旧モデルに似ている。",
+  "note": "前置詞の like のあとは名詞"
+ },
+ {
+  "term": "near",
+  "meaning": "～の近くに",
+  "partOfSpeech": "preposition",
+  "example": "The hotel is near the train station.",
+  "exampleTranslation": "そのホテルは駅の近くにある。"
+ },
+ {
+  "term": "off",
+  "meaning": "～から離れて、～を外れて",
+  "partOfSpeech": "preposition",
+  "example": "Please keep off the grass.",
+  "exampleTranslation": "芝生に入らないでください。"
+ },
+ {
+  "term": "onto",
+  "meaning": "～の上へ",
+  "partOfSpeech": "preposition",
+  "example": "Load the boxes onto the truck.",
+  "exampleTranslation": "箱をトラックに積み込んでください。"
+ },
+ {
+  "term": "outside",
+  "meaning": "～の外に",
+  "partOfSpeech": "preposition",
+  "example": "Customers are waiting outside the office.",
+  "exampleTranslation": "顧客が事務所の外で待っている。"
+ },
+ {
+  "term": "over",
+  "meaning": "～の上に、～を超えて、～の間に",
+  "partOfSpeech": "preposition",
+  "example": "We will finish the repairs over the weekend.",
+  "exampleTranslation": "週末の間に修理を終える予定です。",
+  "note": "over 200 people（200人を超える）のように、数が「～を超える」ときにも使う"
+ },
+ {
+  "term": "past",
+  "meaning": "～を過ぎて",
+  "partOfSpeech": "preposition",
+  "example": "The bank is just past the post office.",
+  "exampleTranslation": "銀行は郵便局のすぐ先にある。"
+ },
+ {
+  "term": "pending",
+  "meaning": "～が決まるまで、～を待つ間",
+  "partOfSpeech": "preposition",
+  "example": "The order is on hold pending approval.",
+  "exampleTranslation": "注文は承認待ちで保留になっている。"
+ },
+ {
+  "term": "per",
+  "meaning": "～につき",
+  "partOfSpeech": "preposition",
+  "example": "The fee is $10 per person.",
+  "exampleTranslation": "料金は1人につき10ドルです。"
+ },
+ {
+  "term": "regarding",
+  "meaning": "～に関して",
+  "partOfSpeech": "preposition",
+  "example": "I am writing regarding your recent order.",
+  "exampleTranslation": "先日のご注文についてご連絡しています。",
+  "note": "類語: concerning、with regard to"
+ },
+ {
+  "term": "through",
+  "meaning": "～を通して、～を通り抜けて",
+  "partOfSpeech": "preposition",
+  "example": "You can register through our website.",
+  "exampleTranslation": "ウェブサイトから登録できます。"
+ },
+ {
+  "term": "toward",
+  "meaning": "～の方へ、～に向けて",
+  "partOfSpeech": "preposition",
+  "example": "We are moving toward our sales goal.",
+  "exampleTranslation": "私たちは売上目標に近づいている。",
+  "note": "towards とも言う"
+ },
+ {
+  "term": "under",
+  "meaning": "～の下に、～の状況で",
+  "partOfSpeech": "preposition",
+  "example": "The building is under construction.",
+  "exampleTranslation": "その建物は建設中だ。",
+  "note": "under construction（建設中）、under review（検討中）"
+ },
+ {
+  "term": "unlike",
+  "meaning": "～と違って",
+  "partOfSpeech": "preposition",
+  "example": "Unlike last year, sales increased this quarter.",
+  "exampleTranslation": "昨年と違って、今四半期は売上が伸びた。"
+ },
+ {
+  "term": "until",
+  "meaning": "～まで（ずっと）",
+  "partOfSpeech": "preposition",
+  "example": "The store is open until 9 p.m.",
+  "exampleTranslation": "その店は午後9時まで開いている。",
+  "note": "by（～までに）と区別する。接続詞の用法もある"
+ },
+ {
+  "term": "upon",
+  "meaning": "～するとすぐに、～の上に",
+  "partOfSpeech": "preposition",
+  "example": "Upon arrival, please check in at the front desk.",
+  "exampleTranslation": "到着したらすぐに、受付で手続きをしてください。",
+  "note": "upon ～ing（～するとすぐに）"
+ },
+ {
+  "term": "via",
+  "meaning": "～を経由して、～を通じて",
+  "partOfSpeech": "preposition",
+  "example": "The flight to Rome goes via Paris.",
+  "exampleTranslation": "ローマ行きの便はパリ経由だ。"
+ },
+ {
+  "term": "with",
+  "meaning": "～と一緒に、～を使って",
+  "partOfSpeech": "preposition",
+  "example": "She completed the report with help from her colleagues.",
+  "exampleTranslation": "彼女は同僚の助けを借りて報告書を完成させた。"
+ },
+ {
+  "term": "without",
+  "meaning": "～なしで",
+  "partOfSpeech": "preposition",
+  "example": "We cannot start without your approval.",
+  "exampleTranslation": "あなたの承認なしでは始められません。"
+ },
+ {
+  "term": "opposite",
+  "meaning": "～の向かい側に",
+  "partOfSpeech": "preposition",
+  "example": "The café is opposite the library.",
+  "exampleTranslation": "そのカフェは図書館の向かい側にある。"
+ },
+ {
+  "term": "excluding",
+  "meaning": "～を除いて",
+  "partOfSpeech": "preposition",
+  "example": "The total is $200, excluding shipping.",
+  "exampleTranslation": "合計は送料を除いて200ドルです。",
+  "note": "反対は including（～を含めて）"
  },
  {
   "term": "though",
@@ -3572,6 +3890,186 @@
   "exampleTranslation": "やらなければいけない家事雑用がたくさんあるので、私はとても疲れていますが、しかしながら、私はこの仕事を終わらせなければなりません。"
  },
  {
+  "term": "and",
+  "meaning": "そして、～と",
+  "partOfSpeech": "conjunction",
+  "example": "He opened the file and checked the data.",
+  "exampleTranslation": "彼はファイルを開いて、データを確認した。"
+ },
+ {
+  "term": "but",
+  "meaning": "しかし",
+  "partOfSpeech": "conjunction",
+  "example": "The product is cheap, but the quality is excellent.",
+  "exampleTranslation": "その製品は安いが、品質は非常に優れている。"
+ },
+ {
+  "term": "or",
+  "meaning": "または、さもないと",
+  "partOfSpeech": "conjunction",
+  "example": "Would you like coffee or tea?",
+  "exampleTranslation": "コーヒーと紅茶のどちらがよろしいですか。"
+ },
+ {
+  "term": "so",
+  "meaning": "だから",
+  "partOfSpeech": "conjunction",
+  "example": "The train was late, so I missed the meeting.",
+  "exampleTranslation": "電車が遅れたので、会議に間に合わなかった。"
+ },
+ {
+  "term": "yet",
+  "meaning": "しかし、それでも",
+  "partOfSpeech": "conjunction",
+  "example": "The plan is simple, yet effective.",
+  "exampleTranslation": "その計画は単純だが、効果的だ。"
+ },
+ {
+  "term": "nor",
+  "meaning": "～もまた…ない",
+  "partOfSpeech": "conjunction",
+  "example": "The manager did not attend, nor did his assistant.",
+  "exampleTranslation": "部長は出席せず、助手も出席しなかった。",
+  "note": "nor のあとは疑問文と同じ語順（倒置）"
+ },
+ {
+  "term": "because",
+  "meaning": "～なので",
+  "partOfSpeech": "conjunction",
+  "example": "The event was canceled because the speaker was ill.",
+  "exampleTranslation": "講演者が病気だったので、イベントは中止になった。",
+  "note": "because のあとは主語＋動詞、because of のあとは名詞"
+ },
+ {
+  "term": "although",
+  "meaning": "～だけれども",
+  "partOfSpeech": "conjunction",
+  "example": "Although the price is high, the product sells well.",
+  "exampleTranslation": "価格は高いが、その製品はよく売れている。",
+  "note": "although のあとに but は不要"
+ },
+ {
+  "term": "as",
+  "meaning": "～するとき、～なので",
+  "partOfSpeech": "conjunction",
+  "example": "As the deadline approached, the team worked overtime.",
+  "exampleTranslation": "締め切りが近づくにつれて、チームは残業した。",
+  "note": "前置詞（～として）の用法もある"
+ },
+ {
+  "term": "if",
+  "meaning": "もし～なら、～かどうか",
+  "partOfSpeech": "conjunction",
+  "example": "If you have any questions, please contact us.",
+  "exampleTranslation": "ご質問があれば、ご連絡ください。",
+  "note": "条件を表す if の節では、未来のことでも現在形を使う"
+ },
+ {
+  "term": "once",
+  "meaning": "いったん～すれば",
+  "partOfSpeech": "conjunction",
+  "example": "Once the contract is signed, we will begin the work.",
+  "exampleTranslation": "契約書に署名がされたら、作業を始めます。",
+  "note": "once の節も、未来のことを現在形で表す"
+ },
+ {
+  "term": "whenever",
+  "meaning": "～するときはいつでも",
+  "partOfSpeech": "conjunction",
+  "example": "Please call me whenever you need help.",
+  "exampleTranslation": "助けが必要なときは、いつでも電話してください。"
+ },
+ {
+  "term": "wherever",
+  "meaning": "～する所はどこでも",
+  "partOfSpeech": "conjunction",
+  "example": "You can work wherever you like.",
+  "exampleTranslation": "好きな場所で働けます。"
+ },
+ {
+  "term": "whether",
+  "meaning": "～かどうか",
+  "partOfSpeech": "conjunction",
+  "example": "I am not sure whether the meeting will be held.",
+  "exampleTranslation": "会議が開かれるかどうか分かりません。",
+  "note": "whether A or B、whether or not"
+ },
+ {
+  "term": "after",
+  "meaning": "～したあとに",
+  "partOfSpeech": "conjunction",
+  "example": "After the guests arrived, the ceremony began.",
+  "exampleTranslation": "客が到着したあとで、式が始まった。",
+  "note": "前置詞の用法もある（after the meeting）"
+ },
+ {
+  "term": "before",
+  "meaning": "～する前に",
+  "partOfSpeech": "conjunction",
+  "example": "Please save the file before you close the program.",
+  "exampleTranslation": "プログラムを閉じる前に、ファイルを保存してください。",
+  "note": "前置詞の用法もある（before Friday）"
+ },
+ {
+  "term": "so that",
+  "meaning": "～するために、～できるように",
+  "partOfSpeech": "conjunction",
+  "example": "We left early so that we could avoid the traffic.",
+  "exampleTranslation": "渋滞を避けられるように、早く出発した。"
+ },
+ {
+  "term": "now that",
+  "meaning": "今や～なので",
+  "partOfSpeech": "conjunction",
+  "example": "Now that the budget is approved, we can hire more staff.",
+  "exampleTranslation": "予算が承認されたので、人員を増やせる。"
+ },
+ {
+  "term": "as soon as",
+  "meaning": "～するとすぐに",
+  "partOfSpeech": "conjunction",
+  "example": "Please let me know as soon as you receive the package.",
+  "exampleTranslation": "荷物を受け取ったら、すぐにお知らせください。"
+ },
+ {
+  "term": "even if",
+  "meaning": "たとえ～でも",
+  "partOfSpeech": "conjunction",
+  "example": "We will go ahead even if it rains.",
+  "exampleTranslation": "たとえ雨が降っても、予定どおり実施します。"
+ },
+ {
+  "term": "that",
+  "meaning": "～ということ",
+  "partOfSpeech": "conjunction",
+  "example": "The report shows that sales have increased.",
+  "exampleTranslation": "報告書は、売上が伸びたことを示している。"
+ },
+ {
+  "term": "as if",
+  "meaning": "まるで～のように",
+  "partOfSpeech": "conjunction",
+  "example": "He talks as if he were the manager.",
+  "exampleTranslation": "彼はまるで部長であるかのように話す。",
+  "note": "as if のあとは、仮定法（were）が使われることが多い"
+ },
+ {
+  "term": "both A and B",
+  "meaning": "AもBも両方",
+  "partOfSpeech": "conjunction",
+  "example": "Both the manager and the staff attended the workshop.",
+  "exampleTranslation": "部長もスタッフも、研修に出席した。",
+  "note": "主語になるときは、複数扱い"
+ },
+ {
+  "term": "not only A but also B",
+  "meaning": "AだけでなくBも",
+  "partOfSpeech": "conjunction",
+  "example": "The software is not only fast but also easy to use.",
+  "exampleTranslation": "そのソフトは速いだけでなく、使いやすい。",
+  "note": "B を主語に合わせて動詞を決める（Bに一致）"
+ },
+ {
   "term": "ought",
   "meaning": "…すべきである、…するのが当然である、…したほうがよい、…のはずである、…に決まっている",
   "partOfSpeech": "auxiliaryVerb",
@@ -3584,6 +4082,90 @@
   "partOfSpeech": "auxiliaryVerb",
   "example": "①Many students dared to take that really difficult exam.\n\n②Nancy daren’t speak to him.",
   "exampleTranslation": "①多くの学生があえてその難関試験に挑戦した。\n\n②ナンシーはあえて彼に話しかけなかった。"
+ },
+ {
+  "term": "can",
+  "meaning": "～できる、～してもよい",
+  "partOfSpeech": "auxiliaryVerb",
+  "example": "Customers can return items within 30 days.",
+  "exampleTranslation": "顧客は30日以内に商品を返品できる。",
+  "note": "否定は cannot / can't"
+ },
+ {
+  "term": "could",
+  "meaning": "～できた、～していただけますか（丁寧な依頼）",
+  "partOfSpeech": "auxiliaryVerb",
+  "example": "Could you send me the schedule?",
+  "exampleTranslation": "スケジュールを送っていただけますか。"
+ },
+ {
+  "term": "may",
+  "meaning": "～してもよい、～かもしれない",
+  "partOfSpeech": "auxiliaryVerb",
+  "example": "You may leave your luggage at the front desk.",
+  "exampleTranslation": "荷物は受付に預けてもかまいません。"
+ },
+ {
+  "term": "might",
+  "meaning": "～かもしれない",
+  "partOfSpeech": "auxiliaryVerb",
+  "example": "The flight might be delayed because of the weather.",
+  "exampleTranslation": "天候のため、フライトが遅れるかもしれない。",
+  "note": "may よりも、可能性が低い"
+ },
+ {
+  "term": "must",
+  "meaning": "～しなければならない、～に違いない",
+  "partOfSpeech": "auxiliaryVerb",
+  "example": "All visitors must wear a badge.",
+  "exampleTranslation": "来訪者は全員、バッジを着用しなければならない。",
+  "note": "否定の must not は「～してはいけない」"
+ },
+ {
+  "term": "shall",
+  "meaning": "～しましょうか（Shall I ～?）",
+  "partOfSpeech": "auxiliaryVerb",
+  "example": "Shall I send you the details by e-mail?",
+  "exampleTranslation": "詳細をメールでお送りしましょうか。",
+  "note": "契約書などでは「～するものとする」の意味"
+ },
+ {
+  "term": "should",
+  "meaning": "～すべきである",
+  "partOfSpeech": "auxiliaryVerb",
+  "example": "You should back up your files regularly.",
+  "exampleTranslation": "ファイルは定期的にバックアップすべきだ。"
+ },
+ {
+  "term": "will",
+  "meaning": "～するだろう、～する（意思）",
+  "partOfSpeech": "auxiliaryVerb",
+  "example": "The new store will open next month.",
+  "exampleTranslation": "新店舗は来月オープンする。"
+ },
+ {
+  "term": "would",
+  "meaning": "～だろう、～したいのですが（丁寧）",
+  "partOfSpeech": "auxiliaryVerb",
+  "example": "Would you like to join us for lunch?",
+  "exampleTranslation": "昼食をご一緒しませんか。",
+  "note": "would like to ～（～したい）"
+ },
+ {
+  "term": "need",
+  "meaning": "～する必要がある（助動詞）",
+  "partOfSpeech": "auxiliaryVerb",
+  "example": "You need not attend the meeting.",
+  "exampleTranslation": "あなたは会議に出席する必要はない。",
+  "note": "助動詞の need は、否定文・疑問文で使う。ふつうの動詞は need to do"
+ },
+ {
+  "term": "had better",
+  "meaning": "～したほうがよい",
+  "partOfSpeech": "auxiliaryVerb",
+  "example": "You had better check the schedule before you leave.",
+  "exampleTranslation": "出発する前に、予定を確認したほうがいい。",
+  "note": "否定は had better not。強い忠告の響きがある"
  },
  {
   "term": "cry one's eyes out",

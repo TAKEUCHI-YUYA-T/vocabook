@@ -2,6 +2,8 @@
  * アプリの初回起動で入れる「既定の単語」の Markdown を、自分の単語（presets-src/words/*.md）から選んで作る（一度だけ使う）
  *
  * 使い方: node scripts/build-default-words.js
+ * 注意: 実行すると、presets-src/default-words/ を作り直す。手で足した・直した単語は、消える。
+ *       すでに default-words/ がある場合は、--force を付けないと実行しない（一度だけ使う想定）
  * 出力: presets-src/default-words/<品詞>.md（git で管理する。以後は、この Markdown を直接直す）
  *
  * 選ぶ基準（公開して配るものとして、品質が足りない行を外す）
@@ -71,6 +73,10 @@ const mergeMeanings = (a, b) => {
   return merged.join("、");
 };
 
+if (fs.existsSync(OUT_DIR) && fs.readdirSync(OUT_DIR).some((f) => f.endsWith(".md")) && !process.argv.includes("--force")) {
+  console.error("presets-src/default-words/ はすでにあります。作り直すと、手で足した・直した単語が消えるため、実行しませんでした（作り直すなら --force）");
+  process.exit(1);
+}
 fs.mkdirSync(OUT_DIR, { recursive: true });
 let total = 0;
 for (const [key, label] of POS) {
