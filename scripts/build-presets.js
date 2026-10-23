@@ -1,5 +1,8 @@
 /**
- * preset-source/vocabook.xlsx から、アプリに同梱するプリセット JSON を作る
+ * アプリに同梱するプリセット JSON を作る
+ * - ヒント: preset-source/vocabook.xlsx（Google スプレッドシートを xlsx で書き出したもの）の reference タブ
+ * - ing or to の問題: presets-src/ing-or-to.tsv（リポジトリで管理する。シートの ingOrTo タブは使わない）
+ *   TSV の列は、シートの ingOrTo タブと同じ（words / ing or to / meaning / example / 空欄 / supplement）
  *
  * 使い方: node scripts/build-presets.js [xlsx のパス]
  * 単語のタブは同梱しない（単語帳はユーザーが自分で作る）
@@ -21,6 +24,7 @@ const ROOT = path.join(__dirname, "..");
 const SOURCE = process.argv[2] || path.join(ROOT, "preset-source", "vocabook.xlsx");
 const OUT_DIR = path.join(ROOT, "assets", "presets");
 const REPORT = path.join(ROOT, "preset-source", "report.txt");
+const ING_OR_TO_SOURCE = path.join(ROOT, "presets-src", "ing-or-to.tsv");
 
 /** 単語のタブ。アプリには同梱しないので読み飛ばす（想定外のタブとしても報告しない） */
 const WORD_TABS = ["noun", "verb", "adverb", "adjective", "preposition", "conjunction", "auxiliaryVerb", "idiom"];
@@ -82,13 +86,20 @@ const makeIdFactory = () => {
 
 const compact = (object) => Object.fromEntries(Object.entries(object).filter(([, v]) => v !== "" && v != null));
 
-const buildIngOrTo = (workbook) => {
-  const worksheet = workbook.getWorksheet("ingOrTo");
-  if (!worksheet) {
-    warn("[ingOrTo] タブが見つかりません");
+/** TSV の全行を、シートを読んだときと同じ形（行番号と、セルの文字列）で取り出す（空行は除く） */
+const readTsvRows = (file) =>
+  fs
+    .readFileSync(file, "utf8")
+    .replace(/^﻿/, "")
+    .split(/\r?\n/)
+    .map((line, i) => ({ rowNumber: i + 1, cells: line.split("\t").map(cleanKeepRaw) }))
+    .filter((row) => row.cells.some((cell) => cell.text));
+
+const buildIngOrTo = (rows) => {
+  if (rows.length === 0) {
+    warn("[ingOrTo] 問題がありません");
     return [];
   }
-  const rows = readRows(worksheet);
   const mapping = mapColumns(rows[0].cells, {
     term: ["words", "word"],
     answer: ["ingorto", "ing/to"],
@@ -145,7 +156,8 @@ const buildTips = (workbook) => {
     if (!known.has(worksheet.name)) warn(`[${worksheet.name}] 想定外のタブです（読み飛ばしました）`);
   }
 
-  const ingOrTo = buildIngOrTo(workbook);
+  if (workbook.getWorksheet("ingOrTo")) warn("[ingOrTo] シートのタブは使っていません（問題は presets-src/ing-or-to.tsv から作ります）");
+  const ingOrTo = buildIngOrTo(readTsvRows(ING_OR_TO_SOURCE));
   const tips = buildTips(workbook);
 
   fs.mkdirSync(OUT_DIR, { recursive: true });
