@@ -21,14 +21,31 @@ export function planAutoWrite<T>(current: T, lastAuto: T | null, candidate: T | 
   return next === current ? { write: false } : { write: true, value: next };
 }
 
-/** 例文の訳を作っている途中・失敗したときの状態 */
+/** 意味・例文の訳を作っている途中・失敗したときの状態 */
 export type TranslationStatus = { state: "idle" | "loading" | "failed"; message: string | null };
 
 /** 入力フォームに渡す、自動入力の状態（どの値が自動で入ったか、訳の状態） */
 export type CardAutoFillState = {
   /** 最後に、自動で入れた品詞（いまの品詞がこれと同じなら、自動の下書きとして札を出す） */
   autoPartOfSpeech: PartOfSpeech | null;
+  /** 最後に、自動で入れた意味 */
+  autoMeaning: string | null;
+  meaningStatus: TranslationStatus;
   /** 最後に、自動で入れた例文の訳 */
   autoTranslation: string | null;
   translationStatus: TranslationStatus;
 };
+
+/**
+ * 単語から、意味の下書きを作るための、翻訳にかける文字を作る。訳さないほうがよいときは null
+ * - かっこの中の補足は除く（divide (into) → divide）
+ * - 「～」「…」を含む表現は、機械翻訳では意味が崩れるので訳さない
+ * - 英字が2文字未満（記号や1文字）も訳さない
+ */
+export function meaningQuery(term: string): string | null {
+  const text = term.replace(/[（(][^）)]*[）)]/g, " ").replace(/\s+/g, " ").trim();
+  if (!text) return null;
+  if (/[～〜~…]/.test(text)) return null;
+  if ((text.match(/[A-Za-z]/g) ?? []).length < 2) return null;
+  return text;
+}

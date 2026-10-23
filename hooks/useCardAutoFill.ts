@@ -1,22 +1,25 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CardFormValue } from "@/components/CardForm";
-import { planAutoWrite, type CardAutoFillState, type TranslationStatus } from "@/db/autofill";
-import { draftExampleTranslation, type TranslateFn } from "@/db/draft";
+import { meaningQuery, planAutoWrite, type CardAutoFillState, type TranslationStatus } from "@/db/autofill";
+import { draftExampleTranslation, draftMeaning, type TranslateFn } from "@/db/draft";
 import { guessPartOfSpeechOnDevice } from "@/db/posDictionary";
 import { translateOnDevice } from "@/db/translate";
 import type { PartOfSpeech } from "@/db/types";
 
 /** 入力が止まってから、品詞を推定するまでの待ち時間（ミリ秒） */
 export const TERM_DELAY_MS = 400;
+/** 入力が止まってから、意味を訳すまでの待ち時間（ミリ秒）。打ち終わるのを待って、無駄な翻訳を減らす */
+export const MEANING_DELAY_MS = 700;
 /** 入力・貼り付けが止まってから、例文を訳すまでの待ち時間（ミリ秒） */
 export const EXAMPLE_DELAY_MS = 600;
 
 type Options = {
-  /** 最初から入っている単語の品詞も推定する（他のアプリから登録する画面）。省略すると、入力が変わったときだけ推定する */
+  /** 最初から入っている単語の品詞・意味も下書きする（他のアプリから登録する画面）。省略すると、入力が変わったときだけ動く */
   guessInitialTerm?: boolean;
   translate?: TranslateFn;
   guess?: (term: string) => PartOfSpeech | null;
   termDelayMs?: number;
+  meaningDelayMs?: number;
   exampleDelayMs?: number;
 };
 
@@ -25,6 +28,7 @@ const IDLE: TranslationStatus = { state: "idle", message: null };
 /**
  * 単語の入力欄の自動入力（端末の中だけで動き、通信も費用もかからない）
  * - 単語を入力すると、品詞を推定して、空の品詞欄に入れる
+ * - 単語を入力すると、日本語の意味を訳して、空の意味欄に入れる
  * - 英語の例文を入力・貼り付けると、日本語に訳して、空の「例文の訳」欄に入れる
  * あなたが入力・選択した値は上書きしない（planAutoWrite の規則）
  * 編集画面で、開いた時点の単語・例文では、自動入力しない（入力が変わったときだけ動く）
@@ -39,23 +43,27 @@ export function useCardAutoFill(
     translate = translateOnDevice,
     guess = guessPartOfSpeechOnDevice,
     termDelayMs = TERM_DELAY_MS,
+    meaningDelayMs = MEANING_DELAY_MS,
     exampleDelayMs = EXAMPLE_DELAY_MS,
   } = options;
 
   const [autoPartOfSpeech, setAutoPartOfSpeech] = useState<PartOfSpeech | null>(null);
+  const [autoMeaning, setAutoMeaning] = useState<string | null>(null);
+  const [meaningStatus, setMeaningStatus] = useState<TranslationStatus>(IDLE);
   const [autoTranslation, setAutoTranslation] = useState<string | null>(null);
   const [translationStatus, setTranslationStatus] = useState<TranslationStatus>(IDLE);
 
   // タイマーや翻訳の完了は、あとから呼ばれるので、その時点の最新の値を読めるようにしておく
-  const latest = useRef({ value, autoPartOfSpeech, autoTranslation });
+  const latest = useRef({ value, autoPartOfSpeech, autoMeaning, autoTranslation });
   useEffect(() => {
-    latest.current = { value, autoPartOfSpeech, autoTranslation };
+    latest.current = { value, autoPartOfSpeech, autoMeaning, autoTranslation };
   });
 
   // 開いた時点の単語・例文では動かない。一度でも入力が変わったら、以降は（元の値に戻したときも）動く
   const initialTerm = useRef(value.term);
   const initialExample = useRef(value.example);
   const termTouched = useRef(guessInitialTerm);
+  const meaningTouched = useRef(guessInitialTerm);
   const exampleTouched = useRef(false);
 
   // 品詞: 単語の入力が止まったら、推定して、空の（または自動で入れた）品詞を入れ替える
@@ -80,6 +88,54 @@ export function useCardAutoFill(
       setValue((prev) => (prev.partOfSpeech === now.value.partOfSpeech ? { ...prev, partOfSpeech: plan.value } : prev));
     }, termDelayMs);
     return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value.term]);
+
+  // 意味: 単語の入力が止まったら、英語から日本語に訳して、空の（または自動で入れた）意味欄に入れる
+  useEffect(() => {
+    if (!meaningTouched.current) {
+      if (value.term === initialTerm.current) return;
+      meaningTouched.current = true;
+    }
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      const now = latest.current;
+      const query = meaningQuery(now.value.term);
+      if (!query) {
+        // 訳せない単語（空、～を含む表現など）になったら、自動で入れた意味は消す
+        const plan = planAutoWrite(now.value.meaning, now.autoMeaning, null, "");
+        setMeaningStatus(IDLE);
+        if (plan.write) {
+          setAutoMeaning(null);
+          setValue((prev) => (prev.meaning === now.value.meaning ? { ...prev, meaning: "" } : prev));
+        }
+        return;
+      }
+
+      setMeaningStatus({ state: "loading", message: null });
+      const result = await draftMeaning(query, translate);
+      if (cancelled) return;
+
+      if (result.status === "failed") {
+        console.warn("[autofill] 意味の翻訳に失敗:", result.detail);
+        setMeaningStatus({ state: "failed", message: result.reason });
+        return;
+      }
+      setMeaningStatus(IDLE);
+      if (result.status !== "ok") return;
+
+      const current = latest.current;
+      // 翻訳している間に、単語がさらに変わっていたら、次の翻訳に任せる
+      if (meaningQuery(current.value.term) !== query) return;
+      const plan = planAutoWrite(current.value.meaning, current.autoMeaning, result.meaning, "");
+      if (!plan.write) return;
+      setAutoMeaning(plan.value || null);
+      setValue((prev) => (meaningQuery(prev.term) === query && prev.meaning === current.value.meaning ? { ...prev, meaning: plan.value } : prev));
+    }, meaningDelayMs);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value.term]);
 
@@ -136,9 +192,11 @@ export function useCardAutoFill(
   /** 入力欄を空に戻したあと（続けて追加するとき）に、自動入力の記録も消す */
   const reset = useCallback(() => {
     setAutoPartOfSpeech(null);
+    setAutoMeaning(null);
+    setMeaningStatus(IDLE);
     setAutoTranslation(null);
     setTranslationStatus(IDLE);
   }, []);
 
-  return { autoPartOfSpeech, autoTranslation, translationStatus, reset };
+  return { autoPartOfSpeech, autoMeaning, meaningStatus, autoTranslation, translationStatus, reset };
 }

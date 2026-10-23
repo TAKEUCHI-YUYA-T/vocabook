@@ -21,6 +21,17 @@ export type PartOfSpeech = (typeof PARTS_OF_SPEECH)[number]["key"];
 export const partOfSpeechLabel = (key: string | null | undefined): string =>
   PARTS_OF_SPEECH.find((p) => p.key === key)?.label ?? "";
 
+/** 学習のフラグ。"" は未設定、learned は「覚えた」、review は「要復習」 */
+export type CardFlag = "" | "learned" | "review";
+
+/** フラグの表示名（未設定は表示しない） */
+export const FLAG_LABELS: Record<Exclude<CardFlag, "">, string> = { learned: "覚えた", review: "要復習" };
+
+export const flagLabel = (flag: string | null | undefined): string => (flag === "learned" || flag === "review" ? FLAG_LABELS[flag] : "");
+
+/** 文字列を、フラグにする（不明な値は未設定） */
+export const toFlag = (value: string | null | undefined): CardFlag => (value === "learned" || value === "review" ? value : "");
+
 /** ing or to の答え。動詞などのあとに続くのが「～ing」か「to～」か */
 export type IngOrToAnswer = "ing" | "to";
 
@@ -61,6 +72,8 @@ export type Card = {
    * ing_or_to（同梱の問題）は必ず入る。basic（自分の単語）は、ing or to の問題にも出すときだけ入る（空なら出さない）
    */
   answer: string;
+  /** 学習のフラグ（覚えた / 要復習 / 未設定） */
+  flag: CardFlag;
   position: number;
   createdAt: number;
   updatedAt: number;
@@ -76,6 +89,8 @@ export type CardInput = {
   note?: string;
   /** ing or to の問題にも出すときの答え（null なら出さない） */
   answer?: IngOrToAnswer | null;
+  /** 学習のフラグ。省略すると、追加では未設定、更新では今の値のまま */
+  flag?: CardFlag;
 };
 
 /** ホームに出すヒント（同梱のみ） */
@@ -90,4 +105,21 @@ export type Tip = {
 export type StudyFilter = {
   deckIds: string[];
   partsOfSpeech?: PartOfSpeech[];
+  /** 絞り込むフラグ（"" は未設定）。空・省略なら、すべて */
+  flags?: CardFlag[];
+  /** 意味のある単語だけ（日本語を見て英語を答える出題のため） */
+  requireMeaning?: boolean;
+};
+
+/** 出題の向き。en-ja は英語→日本語、ja-en は日本語→英語、listen は音声→意味 */
+export type StudyDirection = "en-ja" | "ja-en" | "listen";
+
+/** 今日の学習の記録（ホームに出す） */
+export type HomeStats = {
+  /** 今日、答えを見た単語の数（同じ単語は1回と数える） */
+  studiedToday: number;
+  /** フラグが「覚えた」の単語の数 */
+  learned: number;
+  /** 単語の総数 */
+  total: number;
 };

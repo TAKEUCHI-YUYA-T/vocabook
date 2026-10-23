@@ -1,4 +1,22 @@
-import { planAutoWrite } from "../autofill";
+import { meaningQuery, planAutoWrite } from "../autofill";
+
+describe("意味を訳すための文字（meaningQuery）", () => {
+  it("単語や熟語は、そのまま訳す。かっこの中の補足と、余分な空白は除く", () => {
+    expect(meaningQuery("abolish")).toBe("abolish");
+    expect(meaningQuery("  take   part in ")).toBe("take part in");
+    expect(meaningQuery("divide (into)")).toBe("divide");
+    expect(meaningQuery("allergic（to）")).toBe("allergic");
+  });
+
+  it("～・…を含む表現、英字が2文字未満の入力、空は、訳さない（null）", () => {
+    expect(meaningQuery("avoid ～ing")).toBeNull();
+    expect(meaningQuery("something tells me…")).toBeNull();
+    expect(meaningQuery("a")).toBeNull();
+    expect(meaningQuery("123")).toBeNull();
+    expect(meaningQuery("（補足だけ）")).toBeNull();
+    expect(meaningQuery("")).toBeNull();
+  });
+});
 
 describe("自動入力の判定（planAutoWrite）", () => {
   it("欄が空なら、候補を書き込む", () => {

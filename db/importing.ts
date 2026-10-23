@@ -1,7 +1,7 @@
 import Papa from "papaparse";
 import { validateCardInput, ValidationError } from "./repository";
-import type { CardInput, IngOrToAnswer, PartOfSpeech } from "./types";
-import { ingOrToLabel, PARTS_OF_SPEECH } from "./types";
+import type { CardFlag, CardInput, IngOrToAnswer, PartOfSpeech } from "./types";
+import { flagLabel, ingOrToLabel, PARTS_OF_SPEECH } from "./types";
 
 /**
  * 取り込み（貼り付け・CSV）の処理
@@ -13,7 +13,7 @@ import { ingOrToLabel, PARTS_OF_SPEECH } from "./types";
 export const IMPORT_LIMITS = { maxRows: 5000, maxBytes: 5 * 1024 * 1024 } as const;
 
 /** 取り込める項目。必須は term と meaning */
-export type ImportField = "term" | "meaning" | "partOfSpeech" | "example" | "exampleTranslation" | "note" | "answer";
+export type ImportField = "term" | "meaning" | "partOfSpeech" | "example" | "exampleTranslation" | "note" | "answer" | "flag";
 
 export const IMPORT_FIELDS: { key: ImportField; label: string; required: boolean }[] = [
   { key: "term", label: "単語", required: true },
@@ -23,6 +23,7 @@ export const IMPORT_FIELDS: { key: ImportField; label: string; required: boolean
   { key: "exampleTranslation", label: "例文の訳", required: false },
   { key: "note", label: "メモ", required: false },
   { key: "answer", label: "ing or to", required: false },
+  { key: "flag", label: "フラグ", required: false },
 ];
 
 /** 見出し名の別名（小文字・空白なしで比べる）。列の並びが違っても、名前で見つける */
@@ -34,6 +35,7 @@ const HEADER_ALIASES: Record<ImportField, string[]> = {
   exampleTranslation: ["例文の訳", "例文訳", "例文和訳", "exampletranslation", "sentencetranslation", "訳文"],
   note: ["メモ", "補足", "備考", "note", "notes", "supplement", "comment"],
   answer: ["ingorto", "ing/to", "後ろの形", "後ろに続く形"],
+  flag: ["フラグ", "flag", "学習状況", "状態"],
 };
 
 /** 品詞の別名。日本語の名前や、英語の短縮形でも受け付ける */
@@ -62,6 +64,21 @@ export function parseIngOrTo(text: string): IngOrToAnswer | null {
   if (!key) return null;
   if (ING_OR_TO_ALIASES.ing.includes(key)) return "ing";
   if (ING_OR_TO_ALIASES.to.includes(key)) return "to";
+  return null;
+}
+
+/** フラグの別名（「覚えた」「要復習」のほか、英語や短い言い方も受け付ける） */
+const FLAG_ALIASES: Record<Exclude<CardFlag, "">, string[]> = {
+  learned: ["覚えた", "おぼえた", "learned", "known", "済", "済み"],
+  review: ["要復習", "復習", "review", "あやしい", "要確認"],
+};
+
+/** フラグの文字を、フラグにする。空や、分からない文字なら null */
+export function parseFlag(text: string): Exclude<CardFlag, ""> | null {
+  const key = normalizeKey(text);
+  if (!key) return null;
+  if (FLAG_ALIASES.learned.includes(key)) return "learned";
+  if (FLAG_ALIASES.review.includes(key)) return "review";
   return null;
 }
 
@@ -174,6 +191,8 @@ export function buildPreview(table: string[][], mapping: ColumnMapping, hasHeade
     const partOfSpeech = parsePartOfSpeech(rawPos);
     const rawAnswer = cell("answer");
     const answer = parseIngOrTo(rawAnswer);
+    const rawFlag = cell("flag");
+    const flag = parseFlag(rawFlag);
     const input: CardInput = {
       term: cell("term"),
       meaning: cell("meaning"),
@@ -182,11 +201,13 @@ export function buildPreview(table: string[][], mapping: ColumnMapping, hasHeade
       exampleTranslation: cell("exampleTranslation"),
       note: cell("note"),
       answer,
+      flag: flag ?? "",
     };
 
     // 品詞や ing or to の分からない文字は、捨てずにメモへ残す（情報を失わないため）
     if (rawPos && !partOfSpeech) input.note = [input.note, `品詞: ${rawPos}`].filter(Boolean).join("\n");
     if (rawAnswer && !answer) input.note = [input.note, `ing or to: ${rawAnswer}`].filter(Boolean).join("\n");
+    if (rawFlag && !flag) input.note = [input.note, `フラグ: ${rawFlag}`].filter(Boolean).join("\n");
 
     try {
       const value = validateCardInput(input, { allowEmptyMeaning: true });
@@ -217,11 +238,11 @@ export function exportFileName(deckName: string): string {
 
 /** 単語帳の単語を CSV にする（バックアップ用）。Excel で文字化けしないよう、先頭に BOM を付ける */
 export function cardsToCsv(
-  cards: { term: string; meaning: string; partOfSpeech: PartOfSpeech | null; example: string; exampleTranslation: string; note: string; answer?: string }[]
+  cards: { term: string; meaning: string; partOfSpeech: PartOfSpeech | null; example: string; exampleTranslation: string; note: string; answer?: string; flag?: string }[]
 ): string {
-  const header = ["単語", "意味", "品詞", "例文", "例文の訳", "メモ", "ing or to"];
+  const header = ["単語", "意味", "品詞", "例文", "例文の訳", "メモ", "ing or to", "フラグ"];
   const posLabel = (key: PartOfSpeech | null) => PARTS_OF_SPEECH.find((p) => p.key === key)?.label ?? "";
-  const rows = cards.map((c) => [c.term, c.meaning, posLabel(c.partOfSpeech), c.example, c.exampleTranslation, c.note, ingOrToLabel(c.answer)]);
+  const rows = cards.map((c) => [c.term, c.meaning, posLabel(c.partOfSpeech), c.example, c.exampleTranslation, c.note, ingOrToLabel(c.answer), flagLabel(c.flag)]);
   // 数式として解釈されうる先頭文字（= + - @）を無害にする（CSV インジェクション対策）
   const safe = (value: string) => (/^[=+\-@\t\r]/.test(value) ? `'${value}` : value);
   return "﻿" + Papa.unparse([header, ...rows.map((row) => row.map(safe))], { newline: "\r\n" });

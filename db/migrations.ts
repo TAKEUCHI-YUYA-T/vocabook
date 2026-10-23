@@ -47,15 +47,25 @@ const MIGRATIONS: string[] = [
     value TEXT NOT NULL
   );
   `,
+  // 2: 学習のフラグ（覚えた / 要復習）と、学習の記録（いつ、どの単語を見たか）
+  `
+  ALTER TABLE cards ADD COLUMN flag TEXT NOT NULL DEFAULT '' CHECK (flag IN ('', 'learned', 'review'));
+
+  CREATE TABLE study_log (
+    day TEXT NOT NULL,
+    card_id TEXT NOT NULL,
+    PRIMARY KEY (day, card_id)
+  );
+  `,
 ];
 
 export const LATEST_SCHEMA_VERSION = MIGRATIONS.length;
 
 /**
- * 未適用の変更を順番に適用する
+ * 未適用の変更を順番に適用する（upTo は、そこまでで止める番号。テストで、古い版から更新するときに使う）
  * 変更ごとにトランザクションで囲み、途中で失敗しても半端な状態を残さない
  */
-export async function migrate(db: Db): Promise<void> {
+export async function migrate(db: Db, upTo: number = LATEST_SCHEMA_VERSION): Promise<void> {
   const row = await db.getFirstAsync<{ user_version: number }>("PRAGMA user_version");
   const current = row?.user_version ?? 0;
 
@@ -64,7 +74,7 @@ export async function migrate(db: Db): Promise<void> {
     throw new Error(`データの版（${current}）が、このアプリの対応（${LATEST_SCHEMA_VERSION}）より新しいです。アプリを更新してください`);
   }
 
-  for (let version = current + 1; version <= LATEST_SCHEMA_VERSION; version++) {
+  for (let version = current + 1; version <= Math.min(upTo, LATEST_SCHEMA_VERSION); version++) {
     await db.withTransactionAsync(async () => {
       await db.execAsync(MIGRATIONS[version - 1]);
       // PRAGMA はバインド変数を使えないため、整数であることを確かめて埋め込む

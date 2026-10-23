@@ -1,3 +1,4 @@
+import { localDay } from "../day";
 import { LATEST_SCHEMA_VERSION, migrate } from "../migrations";
 import {
   DEFAULT_DECK_NAME,
@@ -137,6 +138,115 @@ describe("初回の空の単語帳", () => {
   });
 });
 
+describe("データ構造の更新（版 1 → 最新）", () => {
+  it("版 1 のデータは、単語も記録も失わずに更新され、フラグは未設定になる", async () => {
+    const db = await createTestDb();
+    await migrate(db, 1);
+    const old = await db.getFirstAsync<{ user_version: number }>("PRAGMA user_version");
+    expect(old?.user_version).toBe(1);
+    await db.runAsync("INSERT INTO decks (id, name, kind, created_at, updated_at) VALUES ('d1', 'マイ単語帳', 'user', 1, 1)");
+    await db.runAsync("INSERT INTO cards (id, deck_id, type, term, meaning, created_at, updated_at) VALUES ('c1', 'd1', 'basic', 'apple', 'りんご', 1, 1)");
+
+    await migrate(db);
+    const repo = createRepository(db);
+    expect(await repo.getCard("c1")).toMatchObject({ term: "apple", meaning: "りんご", flag: "" });
+    await repo.recordStudied("c1", "2026-10-23"); // 追加された記録の表も、使える
+    expect((await repo.homeStats("2026-10-23")).studiedToday).toBe(1);
+  });
+
+  it("フラグには、決まった値しか入れられない（データベース側でも）", async () => {
+    const { db, defaultDeck, repo } = await setup();
+    const card = await repo.addCard(defaultDeck.id, { term: "a", meaning: "あ" });
+    await expect(db.runAsync("UPDATE cards SET flag = 'ほか' WHERE id = ?", [card.id])).rejects.toBeTruthy();
+  });
+});
+
+describe("学習のフラグ（覚えた / 要復習）", () => {
+  it("新しい単語はフラグなし。フラグを付ける・外す・編集で変える", async () => {
+    const { repo, defaultDeck } = await setup();
+    const card = await repo.addCard(defaultDeck.id, { term: "apple", meaning: "りんご" });
+    expect(card.flag).toBe("");
+    await repo.setFlag(card.id, "review");
+    expect((await repo.getCard(card.id))?.flag).toBe("review");
+    // 編集で、フラグを指定しなければ、そのまま。指定すれば、変わる
+    await repo.updateCard(card.id, { term: "apple", meaning: "りんご（果物）" });
+    expect((await repo.getCard(card.id))?.flag).toBe("review");
+    await repo.updateCard(card.id, { term: "apple", meaning: "りんご", flag: "learned" });
+    expect((await repo.getCard(card.id))?.flag).toBe("learned");
+    await repo.setFlag(card.id, "");
+    expect((await repo.getCard(card.id))?.flag).toBe("");
+  });
+
+  it("正しくないフラグは受け付けない。取り込みでは、フラグも保存する", async () => {
+    const { repo, defaultDeck } = await setup();
+    await expect(repo.addCard(defaultDeck.id, { term: "x", meaning: "y", flag: "ほか" as never })).rejects.toThrow("フラグが正しくありません");
+    await repo.importCards(defaultDeck.id, [{ term: "kept", meaning: "覚えた単語", flag: "learned" }]);
+    expect((await repo.listCards(defaultDeck.id))[0].flag).toBe("learned");
+  });
+
+  it("出題は、フラグ（未設定を含む）と、意味の有無で絞れる", async () => {
+    const { repo, defaultDeck } = await setup();
+    await repo.importCards(defaultDeck.id, [
+      { term: "a", meaning: "あ", flag: "" },
+      { term: "b", meaning: "い", flag: "learned" },
+      { term: "c", meaning: "う", flag: "review" },
+      { term: "d", meaning: "", flag: "review" },
+    ]);
+    const terms = async (filter: object) => (await repo.listStudyCards({ deckIds: [defaultDeck.id], ...filter })).map((c) => c.term).sort();
+    expect(await terms({})).toEqual(["a", "b", "c", "d"]);
+    expect(await terms({ flags: ["review"] })).toEqual(["c", "d"]);
+    expect(await terms({ flags: ["", "learned"] })).toEqual(["a", "b"]);
+    expect(await terms({ flags: ["review"], requireMeaning: true })).toEqual(["c"]);
+  });
+
+  it("絞り込み画面の集計は、品詞とフラグの組み合わせごとの数と、意味のある数を返す", async () => {
+    const { repo, defaultDeck } = await setup();
+    await repo.importCards(defaultDeck.id, [
+      { term: "a", meaning: "あ", partOfSpeech: "noun", flag: "learned" },
+      { term: "b", meaning: "", partOfSpeech: "noun", flag: "learned" },
+      { term: "c", meaning: "う" },
+    ]);
+    const rows = await repo.studyBreakdown([defaultDeck.id]);
+    expect(rows.sort((x, y) => x.partOfSpeech.localeCompare(y.partOfSpeech))).toEqual([
+      { partOfSpeech: "", flag: "", count: 1, withMeaning: 1 },
+      { partOfSpeech: "noun", flag: "learned", count: 2, withMeaning: 1 },
+    ]);
+  });
+});
+
+describe("学習の記録（ホームに出す数）", () => {
+  it("今日見た単語は、同じ単語を何度見ても1回と数える。日が変われば、また数える", async () => {
+    const { repo, defaultDeck } = await setup();
+    const a = await repo.addCard(defaultDeck.id, { term: "a", meaning: "あ" });
+    const b = await repo.addCard(defaultDeck.id, { term: "b", meaning: "い" });
+    await repo.recordStudied(a.id, "2026-10-23");
+    await repo.recordStudied(a.id, "2026-10-23");
+    await repo.recordStudied(b.id, "2026-10-23");
+    await repo.recordStudied(a.id, "2026-10-24");
+    expect((await repo.homeStats("2026-10-23")).studiedToday).toBe(2);
+    expect((await repo.homeStats("2026-10-24")).studiedToday).toBe(1);
+    expect((await repo.homeStats("2026-10-25")).studiedToday).toBe(0);
+  });
+
+  it("「覚えた」の数と単語の総数を返す。削除した単語や、ing or to の問題は数えない", async () => {
+    const { repo, defaultDeck } = await setup();
+    const a = await repo.addCard(defaultDeck.id, { term: "a", meaning: "あ" });
+    const b = await repo.addCard(defaultDeck.id, { term: "b", meaning: "い" });
+    await repo.addCard(defaultDeck.id, { term: "c", meaning: "う" });
+    await repo.setFlag(a.id, "learned");
+    await repo.setFlag(b.id, "learned");
+    await repo.recordStudied(b.id, "2026-10-23");
+    expect(await repo.homeStats("2026-10-23")).toEqual({ studiedToday: 1, learned: 2, total: 3 });
+    await repo.deleteCard(b.id);
+    expect(await repo.homeStats("2026-10-23")).toEqual({ studiedToday: 0, learned: 1, total: 2 });
+  });
+
+  it("日付は、端末の日付（YYYY-MM-DD）にする", () => {
+    expect(localDay(new Date(2026, 9, 3, 23, 59))).toBe("2026-10-03");
+    expect(localDay(new Date(2026, 11, 31, 0, 0))).toBe("2026-12-31");
+  });
+});
+
 describe("自分で足す ing or to の問題", () => {
   it("答えを付けた単語は、同梱の問題と一緒に ing or to の問題に出る。答えのない単語は出ない", async () => {
     const { repo, defaultDeck } = await setup();
@@ -172,8 +282,10 @@ describe("自分で足す ing or to の問題", () => {
 
 describe("単語を入れる単語帳（1冊として扱う）", () => {
   it("自分の単語帳の先頭（作った順）を返し、ing or to の同梱データは選ばない", async () => {
-    const { repo, defaultDeck } = await setup();
+    const { db, repo, defaultDeck } = await setup();
     await repo.createDeck("あとから作った");
+    // 同じ1ミリ秒の間に作ると、順番が ID の乱数で決まるので、あとから作ったことが分かるよう時刻をずらす
+    await db.runAsync("UPDATE decks SET created_at = created_at + 1000 WHERE name = 'あとから作った'");
     expect((await repo.getDefaultDeck()).id).toBe(defaultDeck.id);
   });
 
@@ -189,9 +301,10 @@ describe("単語を入れる単語帳（1冊として扱う）", () => {
 
 describe("単語帳と単語の読み書き", () => {
   it("単語帳の一覧は、自分の単語帳を作った順に並べ、単語数も数える", async () => {
-    const { repo, defaultDeck } = await setup();
+    const { db, repo, defaultDeck } = await setup();
     await repo.addCard(defaultDeck.id, { term: "a", meaning: "b" });
     await repo.createDeck("あとから作った");
+    await db.runAsync("UPDATE decks SET created_at = created_at + 1000 WHERE name = 'あとから作った'"); // 同じ1ミリ秒の間に作ると順番が決まらないため
     const decks = await repo.listDecks();
     expect(decks.map((d) => [d.name, d.cardCount])).toEqual([
       [DEFAULT_DECK_NAME, 1],

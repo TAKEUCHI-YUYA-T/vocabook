@@ -5,7 +5,8 @@ import { useFocusEffect, useRouter, type Href } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "@/components/theme";
 import { useRepository } from "@/db/AppDatabase";
-import type { Tip } from "@/db/types";
+import { localDay } from "@/db/day";
+import type { HomeStats, Tip } from "@/db/types";
 
 type MenuItem = { label: string; icon: React.ComponentProps<typeof Feather>["name"]; href: Href; primary: boolean };
 
@@ -29,9 +30,10 @@ export default function Home() {
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const [tip, setTip] = useState<Tip | null>(null);
+  const [stats, setStats] = useState<HomeStats | null>(null);
   const [dogs, setDogs] = useState<{ id: number; x: number; anim: Animated.Value }[]>([]);
 
-  /** 画面に戻るたびに、ヒントを選び直す */
+  /** 画面に戻るたびに、ヒントを選び直し、今日の学習の記録を読み直す */
   useFocusEffect(
     useCallback(() => {
       let active = true;
@@ -39,6 +41,10 @@ export default function Home() {
         .randomTip()
         .then((next) => active && setTip(next))
         .catch((error) => console.warn("ヒントを読み込めませんでした", error));
+      repository
+        .homeStats(localDay())
+        .then((next) => active && setStats(next))
+        .catch((error) => console.warn("学習の記録を読み込めませんでした", error));
       return () => {
         active = false;
       };
@@ -81,6 +87,26 @@ export default function Home() {
             </View>
             {!!tip.title && <Text style={styles.tipTitle}>{tip.title}</Text>}
             {!!tip.body && <Text style={styles.tipBody}>{tip.body}</Text>}
+          </View>
+        )}
+
+        {/* 今日の学習の記録 */}
+        {stats && (
+          <View style={styles.stats} accessibilityLabel="学習の記録">
+            <View style={styles.stat}>
+              <Text style={styles.statLabel}>今日の学習</Text>
+              <Text style={styles.statValue}>
+                {stats.studiedToday}
+                <Text style={styles.statUnit}> 語</Text>
+              </Text>
+            </View>
+            <View style={styles.stat}>
+              <Text style={styles.statLabel}>覚えた</Text>
+              <Text style={styles.statValue}>
+                {stats.learned}
+                <Text style={styles.statUnit}> 語</Text>
+              </Text>
+            </View>
           </View>
         )}
 
@@ -132,6 +158,11 @@ const styles = StyleSheet.create({
   tipHeadingText: { fontSize: 13, fontWeight: "bold", color: colors.secondary },
   tipTitle: { fontSize: 17, fontWeight: "bold", color: colors.text },
   tipBody: { fontSize: 15, lineHeight: 24, color: colors.text },
+  stats: { flexDirection: "row", gap: 12 },
+  stat: { flex: 1, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 14 },
+  statLabel: { fontSize: 13, fontWeight: "bold", color: colors.secondary },
+  statValue: { fontSize: 28, fontWeight: "bold", lineHeight: 36, color: colors.text },
+  statUnit: { fontSize: 14, fontWeight: "normal", color: colors.secondary },
   menu: { gap: 12 },
   menuButton: { flexDirection: "row", alignItems: "center", gap: 14, height: 68, paddingLeft: 20, paddingRight: 14, borderRadius: 12, borderWidth: 1 },
   menuPrimary: { backgroundColor: colors.primary, borderColor: colors.primary },

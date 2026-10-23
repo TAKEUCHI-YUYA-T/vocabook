@@ -5,6 +5,7 @@ import { useFocusEffect, useRouter } from "expo-router";
 import * as Sharing from "expo-sharing";
 import { File, Paths } from "expo-file-system";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { FlagTag } from "@/components/FlagTag";
 import { HeaderIconButton, ScreenHeader } from "@/components/ScreenHeader";
 import { colors } from "@/components/theme";
 import { useRepository } from "@/db/AppDatabase";
@@ -171,6 +172,7 @@ export default function WordsScreen() {
                   <Text style={styles.tagText}>{ingOrToLabel(item.answer)}</Text>
                 </View>
               )}
+              <FlagTag flag={item.flag} />
             </View>
             <Text style={styles.rowSub} numberOfLines={1}>
               {item.meaning || "（意味なし）"}

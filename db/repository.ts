@@ -1,7 +1,7 @@
 import { newId, now, type Db, type SqlParam } from "./database";
 import { DEFAULT_DECK_NAME } from "./presets";
-import type { Card, CardInput, CardType, Deck, DeckKind, DeckSummary, IngOrToAnswer, PartOfSpeech, StudyFilter, Tip } from "./types";
-import { PARTS_OF_SPEECH } from "./types";
+import type { Card, CardFlag, CardInput, CardType, Deck, DeckKind, DeckSummary, HomeStats, IngOrToAnswer, PartOfSpeech, StudyFilter, Tip } from "./types";
+import { PARTS_OF_SPEECH, toFlag } from "./types";
 
 /** 入力できる長さの上限。極端に長い値でアプリが重くならないようにする */
 export const LIMITS = { term: 200, meaning: 1000, example: 2000, note: 2000, deckName: 100 } as const;
@@ -11,7 +11,7 @@ export class ValidationError extends Error {}
 type DeckRow = { id: string; name: string; kind: DeckKind; created_at: number; updated_at: number; card_count?: number };
 type CardRow = {
   id: string; deck_id: string; type: CardType; term: string; meaning: string; part_of_speech: string | null;
-  example: string; example_translation: string; note: string; answer: string; position: number; created_at: number; updated_at: number;
+  example: string; example_translation: string; note: string; answer: string; position: number; created_at: number; updated_at: number; flag: string;
 };
 
 const toDeck = (row: DeckRow): Deck => ({ id: row.id, name: row.name, kind: row.kind, createdAt: row.created_at, updatedAt: row.updated_at });
@@ -27,13 +27,14 @@ const toCard = (row: CardRow): Card => ({
   exampleTranslation: row.example_translation,
   note: row.note,
   answer: row.answer,
+  flag: toFlag(row.flag),
   position: row.position,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });
 
 const CARD_COLUMNS =
-  "id, deck_id, type, term, meaning, part_of_speech, example, example_translation, note, answer, position, created_at, updated_at";
+  "id, deck_id, type, term, meaning, part_of_speech, example, example_translation, note, answer, position, created_at, updated_at, flag";
 
 /** LIKE の特殊文字（% と _）を、ふつうの文字として検索するための処理 */
 const escapeLike = (text: string) => text.replace(/[\\%_]/g, (char) => `\\${char}`);
@@ -47,7 +48,7 @@ export type ValidateOptions = { allowEmptyMeaning?: boolean };
 export function validateCardInput(
   input: CardInput,
   options: ValidateOptions = {}
-): Required<Omit<CardInput, "partOfSpeech" | "answer">> & { partOfSpeech: PartOfSpeech | null; answer: IngOrToAnswer | null } {
+): Required<Omit<CardInput, "partOfSpeech" | "answer" | "flag">> & { partOfSpeech: PartOfSpeech | null; answer: IngOrToAnswer | null; flag: CardFlag | undefined } {
   const term = input.term.trim();
   const meaning = input.meaning.trim();
   const example = (input.example ?? "").trim();
@@ -69,7 +70,10 @@ export function validateCardInput(
   const answer = input.answer ?? null;
   if (answer !== null && answer !== "ing" && answer !== "to") throw new ValidationError("ing or to の答えが正しくありません");
 
-  return { term, meaning, example, exampleTranslation, note, partOfSpeech: pos, answer };
+  const flag = input.flag;
+  if (flag !== undefined && flag !== "" && flag !== "learned" && flag !== "review") throw new ValidationError("フラグが正しくありません");
+
+  return { term, meaning, example, exampleTranslation, note, partOfSpeech: pos, answer, flag };
 }
 
 /** 単語帳・単語・ヒントの読み書きをまとめたもの。画面は DB を直接触らず、これを通す */
@@ -178,8 +182,8 @@ export function createRepository(db: Db) {
       const last = await db.getFirstAsync<{ max_position: number | null }>("SELECT MAX(position) AS max_position FROM cards WHERE deck_id = ?", [deckId]);
       const position = (last?.max_position ?? -1) + 1;
       await db.runAsync(
-        `INSERT INTO cards (${CARD_COLUMNS}) VALUES (?, ?, 'basic', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [id, deckId, value.term, value.meaning, value.partOfSpeech, value.example, value.exampleTranslation, value.note, value.answer ?? "", position, timestamp, timestamp]
+        `INSERT INTO cards (${CARD_COLUMNS}) VALUES (?, ?, 'basic', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [id, deckId, value.term, value.meaning, value.partOfSpeech, value.example, value.exampleTranslation, value.note, value.answer ?? "", position, timestamp, timestamp, value.flag ?? ""]
       );
       return (await repo.getCard(id)) as Card;
     },
@@ -202,9 +206,9 @@ export function createRepository(db: Db) {
           const chunk = values.slice(start, start + perStatement);
           const params: SqlParam[] = [];
           for (const value of chunk) {
-            params.push(newId(), deckId, value.term, value.meaning, value.partOfSpeech, value.example, value.exampleTranslation, value.note, value.answer ?? "", position++, timestamp, timestamp);
+            params.push(newId(), deckId, value.term, value.meaning, value.partOfSpeech, value.example, value.exampleTranslation, value.note, value.answer ?? "", position++, timestamp, timestamp, value.flag ?? "");
           }
-          const placeholders = chunk.map(() => "(?, ?, 'basic', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ");
+          const placeholders = chunk.map(() => "(?, ?, 'basic', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ");
           await db.runAsync(`INSERT INTO cards (${CARD_COLUMNS}) VALUES ${placeholders}`, params);
         }
       });
@@ -217,8 +221,8 @@ export function createRepository(db: Db) {
       await requireEditableDeck(existing.deckId);
       const value = validateCardInput(input, { allowEmptyMeaning: existing.meaning === "" });
       await db.runAsync(
-        "UPDATE cards SET term = ?, meaning = ?, part_of_speech = ?, example = ?, example_translation = ?, note = ?, answer = ?, updated_at = ? WHERE id = ?",
-        [value.term, value.meaning, value.partOfSpeech, value.example, value.exampleTranslation, value.note, value.answer ?? "", now(), id]
+        "UPDATE cards SET term = ?, meaning = ?, part_of_speech = ?, example = ?, example_translation = ?, note = ?, answer = ?, flag = ?, updated_at = ? WHERE id = ?",
+        [value.term, value.meaning, value.partOfSpeech, value.example, value.exampleTranslation, value.note, value.answer ?? "", value.flag ?? existing.flag, now(), id]
       );
       return (await repo.getCard(id)) as Card;
     },
@@ -240,8 +244,51 @@ export function createRepository(db: Db) {
         where += ` AND part_of_speech IN (${filter.partsOfSpeech.map(() => "?").join(", ")})`;
         params.push(...filter.partsOfSpeech);
       }
+      if (filter.flags && filter.flags.length > 0) {
+        where += ` AND flag IN (${filter.flags.map(() => "?").join(", ")})`;
+        params.push(...filter.flags);
+      }
+      if (filter.requireMeaning) where += " AND meaning <> ''";
       const rows = await db.getAllAsync<CardRow>(`SELECT ${CARD_COLUMNS} FROM cards WHERE ${where}`, params);
       return rows.map(toCard);
+    },
+
+    /**
+     * 出題の絞り込み画面の集計。品詞とフラグの組み合わせごとの、単語の数（意味のある単語の数も）
+     * 画面で、選んだ条件に合う数を、組み合わせから計算する（db/studyRange.ts）
+     */
+    async studyBreakdown(deckIds: string[]): Promise<{ partOfSpeech: string; flag: string; count: number; withMeaning: number }[]> {
+      if (deckIds.length === 0) return [];
+      const rows = await db.getAllAsync<{ part_of_speech: string | null; flag: string; n: number; with_meaning: number }>(
+        `SELECT part_of_speech, flag, COUNT(*) AS n, SUM(CASE WHEN meaning <> '' THEN 1 ELSE 0 END) AS with_meaning
+         FROM cards WHERE type = 'basic' AND deleted_at IS NULL AND deck_id IN (${deckIds.map(() => "?").join(", ")})
+         GROUP BY part_of_speech, flag`,
+        deckIds
+      );
+      return rows.map((row) => ({ partOfSpeech: row.part_of_speech ?? "", flag: row.flag, count: row.n, withMeaning: row.with_meaning ?? 0 }));
+    },
+
+    /** 単語のフラグを付ける・外す（学習画面から） */
+    async setFlag(id: string, flag: CardFlag): Promise<void> {
+      await db.runAsync("UPDATE cards SET flag = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL", [toFlag(flag), now(), id]);
+    },
+
+    /** 単語の答えを見たことを記録する（day は "YYYY-MM-DD"。同じ日に同じ単語を何度見ても、1回と数える） */
+    async recordStudied(cardId: string, day: string): Promise<void> {
+      await db.runAsync("INSERT OR IGNORE INTO study_log (day, card_id) VALUES (?, ?)", [day, cardId]);
+    },
+
+    /** ホームに出す記録（今日見た単語の数、「覚えた」の数、単語の総数） */
+    async homeStats(day: string): Promise<HomeStats> {
+      const studied = await db.getFirstAsync<{ n: number }>(
+        `SELECT COUNT(*) AS n FROM study_log l JOIN cards c ON c.id = l.card_id WHERE l.day = ? AND c.deleted_at IS NULL AND c.type = 'basic'`,
+        [day]
+      );
+      const cards = await db.getFirstAsync<{ total: number; learned: number }>(
+        `SELECT COUNT(*) AS total, SUM(CASE WHEN flag = 'learned' THEN 1 ELSE 0 END) AS learned
+         FROM cards WHERE type = 'basic' AND deleted_at IS NULL`
+      );
+      return { studiedToday: studied?.n ?? 0, learned: cards?.learned ?? 0, total: cards?.total ?? 0 };
     },
 
     /** ing or to の問題（同梱の問題と、ing or to の答えを付けた自分の単語） */

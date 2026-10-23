@@ -14,6 +14,8 @@ type Props = {
   headerExtra?: React.ReactNode;
   /** 下のボタン。答えを見る前は reveal、見たあとは next。なければボタンを出さない */
   action?: { kind: "reveal" | "next"; onPress: () => void } | null;
+  /** 下の操作を、画面側で作る（指定すると、action の代わりに出す。学習画面の、フラグのボタンなど） */
+  footer?: React.ReactNode;
   /** 読み込み中・エラー・単語なしのときの文章（カードの代わりに出す） */
   message?: string | null;
   /** カードの中身 */
@@ -24,7 +26,7 @@ type Props = {
  * 出題画面の共通の枠（学習と ing or to）
  * ヘッダー・進み具合の線・白いカード・下のボタン1つ。答えは、下のボタンだけで出す
  */
-export function QuizFrame({ title, onBack, backLabel, progress, headerExtra, action, message, children }: Props) {
+export function QuizFrame({ title, onBack, backLabel, progress, headerExtra, action, footer, message, children }: Props) {
   const insets = useSafeAreaInsets();
   return (
     <View style={styles.container}>
@@ -57,7 +59,9 @@ export function QuizFrame({ title, onBack, backLabel, progress, headerExtra, act
         {message ? <Text style={styles.message}>{message}</Text> : <View style={styles.card}>{children}</View>}
       </ScrollView>
 
-      {!!action && (
+      {!!footer && <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) + 16 }]}>{footer}</View>}
+
+      {!footer && !!action && (
         <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) + 16 }]}>
           <TouchableOpacity
             accessibilityRole="button"

@@ -1,4 +1,4 @@
-import { buildPreview, cardsToCsv, detectColumns, exportFileName, IMPORT_LIMITS, parseIngOrTo, parsePartOfSpeech, parseTable } from "../importing";
+import { buildPreview, cardsToCsv, detectColumns, exportFileName, IMPORT_LIMITS, parseFlag, parseIngOrTo, parsePartOfSpeech, parseTable } from "../importing";
 import { migrate } from "../migrations";
 import { createRepository } from "../repository";
 import { createTestDb } from "../testing/testDb";
@@ -167,8 +167,8 @@ describe("書き込みと書き出し", () => {
     const again = preview(csv);
     expect(again.errors).toEqual([]);
     expect(again.valid.map((v) => v.input)).toEqual([
-      { term: "-ing", meaning: "=動名詞の語尾", partOfSpeech: "idiom", example: "He said \"stop\",\nthen left.", exampleTranslation: "「止まれ」と言って去った", note: "+メモ", answer: null },
-      { term: "apple", meaning: "りんご", partOfSpeech: null, example: "", exampleTranslation: "", note: "", answer: null },
+      { term: "-ing", meaning: "=動名詞の語尾", partOfSpeech: "idiom", example: "He said \"stop\",\nthen left.", exampleTranslation: "「止まれ」と言って去った", note: "+メモ", answer: null, flag: "" },
+      { term: "apple", meaning: "りんご", partOfSpeech: null, example: "", exampleTranslation: "", note: "", answer: null, flag: "" },
     ]);
   });
 
@@ -183,12 +183,40 @@ describe("書き込みと書き出し", () => {
       { term: "apple", meaning: "りんご" },
     ]);
     const csv = cardsToCsv(await repo.listCards(deck.id));
-    expect(csv.split("\r\n")[0]).toBe("﻿単語,意味,品詞,例文,例文の訳,メモ,ing or to");
+    expect(csv.split("\r\n")[0]).toBe("﻿単語,意味,品詞,例文,例文の訳,メモ,ing or to,フラグ");
     expect(preview(csv).valid.map((v) => [v.input.term, v.input.answer])).toEqual([
       ["avoid", "ing"],
       ["decide", "to"],
       ["apple", null],
     ]);
+  });
+});
+
+describe("フラグの列", () => {
+  it("「覚えた」「要復習」のほか、英語や短い言い方も、フラグとして読む", () => {
+    expect(["覚えた", "learned", "済み", " 覚えた "].map(parseFlag)).toEqual(["learned", "learned", "learned", "learned"]);
+    expect(["要復習", "review", "復習", "あやしい"].map(parseFlag)).toEqual(["review", "review", "review", "review"]);
+    expect(["", "  ", "未学習", "???"].map(parseFlag)).toEqual([null, null, null, null]);
+  });
+
+  it("フラグも書き出して、取り込み直すと同じフラグに戻る。分からない文字は、メモに残す", async () => {
+    const db = await createTestDb();
+    await migrate(db);
+    const repo = createRepository(db);
+    const deck = await repo.createDeck("テスト");
+    await repo.importCards(deck.id, [
+      { term: "a", meaning: "あ", flag: "learned" },
+      { term: "b", meaning: "い", flag: "review" },
+      { term: "c", meaning: "う" },
+    ]);
+    const csv = cardsToCsv(await repo.listCards(deck.id));
+    expect(preview(csv).valid.map((v) => [v.input.term, v.input.flag])).toEqual([
+      ["a", "learned"],
+      ["b", "review"],
+      ["c", ""],
+    ]);
+    const odd = preview("単語,意味,フラグ\nx,え,未学習");
+    expect(odd.valid[0].input).toMatchObject({ flag: "", note: "フラグ: 未学習" });
   });
 });
 

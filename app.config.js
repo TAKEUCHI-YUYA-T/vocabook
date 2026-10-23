@@ -41,6 +41,8 @@ export default {
       "expo-splash-screen",
       "expo-sqlite",
       "expo-sharing",
+      // 毎朝の学習の通知（端末の中で予約する）。通知の色は、アプリの深緑
+      ["expo-notifications", { color: "#446158" }],
       "./plugins/withProguardRules"
     ],
     experiments: {

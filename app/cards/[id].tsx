@@ -21,6 +21,7 @@ const toFormValue = (card: Card): CardFormValue => ({
   exampleTranslation: card.exampleTranslation,
   note: card.note,
   answer: card.answer === "ing" || card.answer === "to" ? card.answer : null,
+  flag: card.flag,
 });
 
 /**
@@ -127,6 +128,7 @@ function EditCardForm({ card, editable, goBack }: { card: Card; editable: boolea
           onChange={setValue}
           editable={editable}
           expanded
+          showFlag={editable}
           duplicateWarning={editable ? duplicateWarning : null}
           autoFill={editable ? autoFill : undefined}
         />

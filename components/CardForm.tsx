@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator 
 import { Feather } from "@expo/vector-icons";
 import type { CardAutoFillState } from "@/db/autofill";
 import { LIMITS } from "@/db/repository";
-import { ING_OR_TO_LABELS, PARTS_OF_SPEECH, type IngOrToAnswer, type PartOfSpeech } from "@/db/types";
+import { FLAG_LABELS, ING_OR_TO_LABELS, PARTS_OF_SPEECH, type CardFlag, type IngOrToAnswer, type PartOfSpeech } from "@/db/types";
+import { SpeakButton } from "./SpeakButton";
 import { colors } from "./theme";
 
 export type CardFormValue = {
@@ -15,6 +16,8 @@ export type CardFormValue = {
   note: string;
   /** ing or to の問題にも出すときの答え（null なら出さない） */
   answer: IngOrToAnswer | null;
+  /** 学習のフラグ（編集画面で付け外しする。追加では未設定） */
+  flag: CardFlag;
 };
 
 export const emptyCardForm = (partOfSpeech: PartOfSpeech | null = null): CardFormValue => ({
@@ -25,7 +28,15 @@ export const emptyCardForm = (partOfSpeech: PartOfSpeech | null = null): CardFor
   exampleTranslation: "",
   note: "",
   answer: null,
+  flag: "",
 });
+
+/** フラグの選択肢（なし・覚えた・要復習） */
+const FLAG_CHOICES: { key: CardFlag; label: string }[] = [
+  { key: "", label: "フラグなし" },
+  { key: "learned", label: FLAG_LABELS.learned },
+  { key: "review", label: FLAG_LABELS.review },
+];
 
 /** ing or to の問題の選択肢（出さない・～ing・to～） */
 const ING_OR_TO_CHOICES: { key: IngOrToAnswer | null; label: string }[] = [
@@ -43,11 +54,9 @@ type Props = {
   autoFocus?: boolean;
   /** 品詞・例文・メモを、最初から開いておく（編集画面） */
   expanded?: boolean;
-  /** 意味の欄の名前の横に出す札（例: 自動翻訳の下書き） */
-  meaningBadge?: string | null;
-  /** 意味の欄の下に出す案内 */
-  meaningHint?: string | null;
-  /** 品詞・例文の訳の自動入力の状態（自動で入った値に札を出し、訳を作っている間の表示を出す） */
+  /** 学習のフラグの選択を出す（編集画面） */
+  showFlag?: boolean;
+  /** 品詞・意味・例文の訳の自動入力の状態（自動で入った値に札を出し、訳を作っている間の表示を出す） */
   autoFill?: CardAutoFillState;
 };
 
@@ -55,7 +64,7 @@ type Props = {
  * 単語の入力フォーム（追加・編集・他のアプリから登録で共通）
  * 必須は「単語」と「意味」だけ。品詞・例文・メモは「詳細」に折りたたむ
  */
-export function CardForm({ value, onChange, editable, duplicateWarning, autoFocus, expanded, meaningBadge, meaningHint, autoFill }: Props) {
+export function CardForm({ value, onChange, editable, duplicateWarning, autoFocus, expanded, showFlag, autoFill }: Props) {
   const meaningRef = useRef<React.ComponentRef<typeof TextInput>>(null);
   const hasDetails = !!(value.partOfSpeech || value.example || value.exampleTranslation || value.note || value.answer);
   // ing or to の問題は、動詞と熟語のときに選べる（すでに選んであれば、品詞を変えても、外せるよう出しておく）
@@ -65,6 +74,8 @@ export function CardForm({ value, onChange, editable, duplicateWarning, autoFocu
 
   // 自動で入った値のままなら、「自動の下書き」の札を出す（あなたが直したら消える）
   const isAutoPartOfSpeech = !!autoFill && value.partOfSpeech !== null && value.partOfSpeech === autoFill.autoPartOfSpeech;
+  const isAutoMeaning = !!autoFill && value.meaning !== "" && value.meaning === autoFill.autoMeaning;
+  const meaningStatus = autoFill?.meaningStatus;
   const isAutoTranslation = !!autoFill && value.exampleTranslation !== "" && value.exampleTranslation === autoFill.autoTranslation;
   const translationStatus = autoFill?.translationStatus;
 
@@ -73,7 +84,10 @@ export function CardForm({ value, onChange, editable, duplicateWarning, autoFocu
   return (
     <View style={styles.form}>
       <View style={styles.field}>
-        <Text style={styles.label}>単語（必須）</Text>
+        <View style={styles.labelRow}>
+          <Text style={styles.label}>単語（必須）</Text>
+          <SpeakButton text={value.term} label="単語を読み上げる" />
+        </View>
         <TextInput
           style={[styles.termInput, termFocused && styles.termInputFocused]}
           value={value.term}
@@ -102,9 +116,9 @@ export function CardForm({ value, onChange, editable, duplicateWarning, autoFocu
       <View style={styles.field}>
         <View style={styles.labelRow}>
           <Text style={styles.label}>意味（必須）</Text>
-          {!!meaningBadge && (
+          {isAutoMeaning && (
             <View style={styles.badge}>
-              <Text style={styles.badgeText}>{meaningBadge}</Text>
+              <Text style={styles.badgeText}>自動翻訳の下書き</Text>
             </View>
           )}
         </View>
@@ -118,8 +132,38 @@ export function CardForm({ value, onChange, editable, duplicateWarning, autoFocu
           maxLength={LIMITS.meaning}
           placeholder="例: 廃止する"
         />
-        {!!meaningHint && <Text style={styles.hint}>{meaningHint}</Text>}
+        {meaningStatus?.state === "loading" && (
+          <View style={styles.statusRow}>
+            <ActivityIndicator size="small" color={colors.secondary} />
+            <Text style={styles.hint}>意味を調べています…（初回は、翻訳のデータを取得するため、時間がかかります）</Text>
+          </View>
+        )}
+        {meaningStatus?.state === "failed" && !!meaningStatus.message && <Text style={styles.failure}>{meaningStatus.message}</Text>}
+        {isAutoMeaning && meaningStatus?.state !== "loading" && <Text style={styles.hint}>内容を確認して、必要なら直してください。</Text>}
       </View>
+
+      {showFlag && (
+        <View style={styles.field}>
+          <Text style={styles.label}>フラグ</Text>
+          <View style={styles.chips}>
+            {FLAG_CHOICES.map((choice) => {
+              const selected = value.flag === choice.key;
+              return (
+                <TouchableOpacity
+                  key={choice.label}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  disabled={!editable}
+                  style={[styles.chip, selected && (choice.key === "review" ? styles.chipReview : styles.chipSelected)]}
+                  onPress={() => set("flag", choice.key)}
+                >
+                  <Text style={[styles.chipText, selected && (choice.key === "review" ? styles.chipTextReview : styles.chipTextSelected)]}>{choice.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+      )}
 
       {/* 詳細（品詞・例文・メモ）。編集画面や、入力済みなら最初から開いておく */}
       {expanded || showDetails || hasDetails ? (
@@ -177,7 +221,10 @@ export function CardForm({ value, onChange, editable, duplicateWarning, autoFocu
           )}
 
           <View style={styles.field}>
-            <Text style={styles.label}>例文</Text>
+            <View style={styles.labelRow}>
+              <Text style={styles.label}>例文</Text>
+              <SpeakButton text={value.example} label="例文を読み上げる" />
+            </View>
             <TextInput
               style={[styles.input, styles.multiline, styles.detailInput]}
               value={value.example}
@@ -273,6 +320,8 @@ const styles = StyleSheet.create({
   chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { fontSize: 14, color: colors.text },
   chipTextSelected: { fontWeight: "bold", color: colors.onPrimary },
+  chipReview: { backgroundColor: colors.danger, borderColor: colors.danger },
+  chipTextReview: { fontWeight: "bold", color: colors.surface },
   detailsToggle: { flexDirection: "row", alignItems: "center", gap: 8, minHeight: 48, paddingHorizontal: 4 },
   detailsToggleText: { fontSize: 16, fontWeight: "bold", color: colors.secondary },
 });

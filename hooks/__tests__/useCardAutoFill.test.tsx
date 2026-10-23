@@ -3,7 +3,7 @@ import renderer, { act } from "react-test-renderer";
 import { emptyCardForm, type CardFormValue } from "@/components/CardForm";
 import type { TranslateFn } from "@/db/draft";
 import type { PartOfSpeech } from "@/db/types";
-import { EXAMPLE_DELAY_MS, TERM_DELAY_MS, useCardAutoFill } from "../useCardAutoFill";
+import { EXAMPLE_DELAY_MS, MEANING_DELAY_MS, TERM_DELAY_MS, useCardAutoFill } from "../useCardAutoFill";
 
 type Api = { value: CardFormValue; setValue: React.Dispatch<React.SetStateAction<CardFormValue>>; fill: ReturnType<typeof useCardAutoFill> };
 
@@ -110,6 +110,88 @@ describe("品詞の自動入力", () => {
     });
     await typeAndWait({ term: "abolish" }, TERM_DELAY_MS);
     expect(api.value.partOfSpeech).toBeNull();
+  });
+});
+
+describe("意味の自動入力", () => {
+  it("単語を入力して待つと、日本語の意味が空の欄に入り、自動で入ったと分かる", async () => {
+    const translate = translation({ abolish: "廃止する" });
+    await mount(emptyCardForm(), { guess, translate });
+    await typeAndWait({ term: "abolish" }, MEANING_DELAY_MS);
+    expect(api.value.meaning).toBe("廃止する");
+    expect(api.fill.autoMeaning).toBe("廃止する");
+    expect(api.fill.meaningStatus.state).toBe("idle");
+    expect(translate).toHaveBeenCalledWith({ input: "abolish", sourceLangCode: "en", targetLangCode: "ja" });
+  });
+
+  it("待ち時間の前は訳さない（入力の途中で、何度も翻訳しない）", async () => {
+    const translate = translation({});
+    await mount(emptyCardForm(), { guess, translate });
+    await typeAndWait({ term: "abolish" }, MEANING_DELAY_MS - 100);
+    expect(translate).not.toHaveBeenCalled();
+  });
+
+  it("あなたが入力した意味は、上書きしない", async () => {
+    await mount({ ...emptyCardForm(), meaning: "自分の意味" }, { guess, translate: translation({ abolish: "廃止する" }) });
+    await typeAndWait({ term: "abolish" }, MEANING_DELAY_MS);
+    expect(api.value.meaning).toBe("自分の意味");
+  });
+
+  it("自動で入れた意味は、単語を直すと入れ直し、訳せない単語になったら消える", async () => {
+    const translate = translation({ abolish: "廃止する", happy: "幸せな" });
+    await mount(emptyCardForm(), { guess, translate });
+    await typeAndWait({ term: "abolish" }, MEANING_DELAY_MS);
+    await typeAndWait({ term: "happy" }, MEANING_DELAY_MS);
+    expect(api.value.meaning).toBe("幸せな");
+    await typeAndWait({ term: "avoid ～ing" }, MEANING_DELAY_MS); // ～を含む表現は訳さない
+    expect(api.value.meaning).toBe("");
+    expect(api.fill.autoMeaning).toBeNull();
+  });
+
+  it("かっこの中の補足を除いて訳す", async () => {
+    const translate = translation({ divide: "分ける" });
+    await mount(emptyCardForm(), { guess, translate });
+    await typeAndWait({ term: "divide (into)" }, MEANING_DELAY_MS);
+    expect(translate).toHaveBeenCalledWith({ input: "divide", sourceLangCode: "en", targetLangCode: "ja" });
+    expect(api.value.meaning).toBe("分ける");
+  });
+
+  it("開いた時点の単語では訳さない（編集画面）。他のアプリから登録する画面では、最初から訳す", async () => {
+    const translate = translation({ abolish: "廃止する" });
+    await mount({ ...emptyCardForm(), term: "abolish" }, { guess, translate });
+    await act(async () => {
+      jest.advanceTimersByTime(MEANING_DELAY_MS * 2);
+    });
+    expect(translate).not.toHaveBeenCalled();
+    expect(api.value.meaning).toBe("");
+
+    await mount({ ...emptyCardForm(), term: "abolish" }, { guess, translate, guessInitialTerm: true });
+    await act(async () => {
+      jest.advanceTimersByTime(MEANING_DELAY_MS * 2);
+    });
+    expect(api.value.meaning).toBe("廃止する");
+  });
+
+  it("翻訳が失敗しても、例外にせず、理由を出して、入力はそのまま続けられる", async () => {
+    const translate: TranslateFn = async () => {
+      throw new Error("PARAMETER_ERROR: something");
+    };
+    await mount(emptyCardForm(), { guess, translate });
+    await typeAndWait({ term: "abolish" }, MEANING_DELAY_MS);
+    expect(api.fill.meaningStatus).toEqual({ state: "failed", message: "翻訳できませんでした。意味は手で入力してください" });
+    expect(api.value.meaning).toBe("");
+  });
+
+  it("訳している間に単語が変わったら、古い訳は入れず、新しい単語の訳を入れる", async () => {
+    const resolvers: Record<string, (value: Awaited<ReturnType<TranslateFn>>) => void> = {};
+    const translate: TranslateFn = ({ input }) => new Promise((resolve) => (resolvers[input] = resolve));
+    await mount(emptyCardForm(), { guess, translate });
+    await typeAndWait({ term: "abolish" }, MEANING_DELAY_MS);
+    await typeAndWait({ term: "happy" }, MEANING_DELAY_MS);
+    await act(async () => resolvers.abolish({ translatedTexts: "古い訳", sourceLanguage: "en" }));
+    expect(api.value.meaning).toBe("");
+    await act(async () => resolvers.happy({ translatedTexts: "幸せな", sourceLanguage: "en" }));
+    expect(api.value.meaning).toBe("幸せな");
   });
 });
 
