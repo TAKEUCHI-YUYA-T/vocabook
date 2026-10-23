@@ -210,7 +210,17 @@ export default function WordsScreen() {
             </Text>
           </TouchableOpacity>
         )}
-        ListEmptyComponent={<Text style={styles.empty}>{deckError ?? message ?? (query || pos !== "all" ? "見つかりませんでした" : deck ? "単語がありません" : "読み込み中...")}</Text>}
+        ListEmptyComponent={
+          <Text style={styles.empty}>
+            {deckError ??
+              message ??
+              (query || pos !== "all"
+                ? "見つかりませんでした"
+                : deck
+                  ? "単語がありません。「単語を追加」のほか、右上の「⋮」→「既定の単語を追加」で、TOEIC 対策の単語を入れられます。"
+                  : "読み込み中...")}
+          </Text>
+        }
       />
 
       {!!message && cards.length > 0 && <Text style={styles.error}>{message}</Text>}

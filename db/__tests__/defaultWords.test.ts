@@ -65,61 +65,29 @@ describe("既定の単語（presets-src/default-words → assets/presets/default
   });
 });
 
-describe("初回起動での、既定の単語の入れ方", () => {
-  const sample: DefaultWord[] = [
-    { term: "abolish", meaning: "廃止する", partOfSpeech: "verb", example: "abolish slavery", exampleTranslation: "奴隷制度を廃止する" },
-    { term: "benefit", meaning: "利益", partOfSpeech: "noun", note: "メモ" },
-  ];
-  const setup = async () => {
+describe("初回起動", () => {
+  it("新規インストールは、既定の単語を入れず、空の単語帳から始まる（既定の単語は、「既定の単語を追加」で、利用者が選んで追加する）", async () => {
     const db = await createTestDb();
     await migrate(db);
-    return { db, repo: createRepository(db) };
-  };
-
-  it("初回に、単語帳を作って、既定の単語を入れる（ふつうの単語として、編集・フラグができる）", async () => {
-    const { db, repo } = await setup();
-    await ensureDefaultDeck(db, sample);
-    const deck = await repo.getDefaultDeck();
-    const cards = await repo.listCards(deck.id);
-    expect(cards.map((c) => [c.term, c.partOfSpeech, c.meaning, c.example, c.exampleTranslation, c.note, c.type, c.flag])).toEqual([
-      ["abolish", "verb", "廃止する", "abolish slavery", "奴隷制度を廃止する", "", "basic", ""],
-      ["benefit", "noun", "利益", "", "", "メモ", "basic", ""],
-    ]);
-    await repo.updateCard(cards[0].id, { term: "abolish", meaning: "撤廃する", flag: "learned" });
-    expect((await repo.getCard(cards[0].id))?.flag).toBe("learned");
-  });
-
-  it("二度目の起動や、ユーザーが単語を削除したあとは、入れ直さない", async () => {
-    const { db, repo } = await setup();
-    await ensureDefaultDeck(db, sample);
-    await ensureDefaultDeck(db, sample);
-    const deck = await repo.getDefaultDeck();
-    expect(await repo.listCards(deck.id)).toHaveLength(2);
-    for (const card of await repo.listCards(deck.id)) await repo.deleteCard(card.id);
-    await ensureDefaultDeck(db, sample);
-    expect(await repo.listCards(deck.id)).toHaveLength(0);
-  });
-
-  it("すでに自分の単語帳がある場合（古い版から更新した場合）は、何も追加しない", async () => {
-    const { db, repo } = await setup();
-    const existing = await repo.createDeck("既存");
-    await repo.addCard(existing.id, { term: "mine", meaning: "私の" });
-    await ensureDefaultDeck(db, sample);
-    expect((await repo.listDecks()).map((d) => [d.name, d.cardCount])).toEqual([["既存", 1]]);
-  });
-
-  it("既定の単語を渡さなければ（テストや開発）、空の単語帳を1つ作るだけ", async () => {
-    const { db, repo } = await setup();
     await ensureDefaultDeck(db);
+    const repo = createRepository(db);
     expect((await repo.listDecks()).map((d) => d.cardCount)).toEqual([0]);
+    expect((await repo.homeStats("2026-10-23")).total).toBe(0);
   });
 
-  it("本物の既定の単語（800語台）も、1回の初回起動で、全部入る（品詞の数もそのまま）", async () => {
-    const { db, repo } = await setup();
-    await ensureDefaultDeck(db, words);
-    const deck = await repo.getDefaultDeck();
-    expect((await repo.listCards(deck.id)).length).toBe(words.length);
-    const stats = await repo.homeStats("2026-10-23");
-    expect(stats.total).toBe(words.length);
+  it("二度目の起動では、単語帳を増やさない。自分の単語帳がすでにあれば、作らない", async () => {
+    const db = await createTestDb();
+    await migrate(db);
+    await ensureDefaultDeck(db);
+    await ensureDefaultDeck(db);
+    const repo = createRepository(db);
+    expect(await repo.listDecks()).toHaveLength(1);
+
+    const other = await createTestDb();
+    await migrate(other);
+    const otherRepo = createRepository(other);
+    await otherRepo.createDeck("既存");
+    await ensureDefaultDeck(other);
+    expect((await otherRepo.listDecks()).map((d) => d.name)).toEqual(["既存"]);
   });
 });

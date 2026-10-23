@@ -3,14 +3,13 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 import { SQLiteProvider, useSQLiteContext, type SQLiteDatabase } from "expo-sqlite";
 import { migrate } from "./migrations";
-import { ensureDefaultDeck, syncPresets, type DefaultWord, type PresetData } from "./presets";
+import { ensureDefaultDeck, syncPresets, type PresetData } from "./presets";
 import { createRepository, type Repository } from "./repository";
 import type { Db, SqlParam } from "./database";
 
 import presetIngOrTo from "../assets/presets/ing-or-to.json";
 import presetTips from "../assets/presets/tips.json";
 import presetVersion from "../assets/presets/version.json";
-import presetDefaultWords from "../assets/presets/default-words.json";
 
 const DATABASE_NAME = "vocabook.db";
 
@@ -37,7 +36,7 @@ async function initialize(database: SQLiteDatabase) {
   await db.execAsync("PRAGMA foreign_keys = ON");
   await migrate(db);
   await syncPresets(db, presets);
-  await ensureDefaultDeck(db, presetDefaultWords as DefaultWord[]);
+  await ensureDefaultDeck(db);
 }
 
 const hideSplash = () => {
