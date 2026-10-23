@@ -1,7 +1,7 @@
 import Papa from "papaparse";
 import { validateCardInput, ValidationError } from "./repository";
-import type { CardInput, PartOfSpeech } from "./types";
-import { PARTS_OF_SPEECH } from "./types";
+import type { CardInput, IngOrToAnswer, PartOfSpeech } from "./types";
+import { ingOrToLabel, PARTS_OF_SPEECH } from "./types";
 
 /**
  * 取り込み（貼り付け・CSV）の処理
@@ -13,7 +13,7 @@ import { PARTS_OF_SPEECH } from "./types";
 export const IMPORT_LIMITS = { maxRows: 5000, maxBytes: 5 * 1024 * 1024 } as const;
 
 /** 取り込める項目。必須は term と meaning */
-export type ImportField = "term" | "meaning" | "partOfSpeech" | "example" | "exampleTranslation" | "note";
+export type ImportField = "term" | "meaning" | "partOfSpeech" | "example" | "exampleTranslation" | "note" | "answer";
 
 export const IMPORT_FIELDS: { key: ImportField; label: string; required: boolean }[] = [
   { key: "term", label: "単語", required: true },
@@ -22,6 +22,7 @@ export const IMPORT_FIELDS: { key: ImportField; label: string; required: boolean
   { key: "example", label: "例文", required: false },
   { key: "exampleTranslation", label: "例文の訳", required: false },
   { key: "note", label: "メモ", required: false },
+  { key: "answer", label: "ing or to", required: false },
 ];
 
 /** 見出し名の別名（小文字・空白なしで比べる）。列の並びが違っても、名前で見つける */
@@ -32,6 +33,7 @@ const HEADER_ALIASES: Record<ImportField, string[]> = {
   example: ["例文", "example", "examples", "sentence", "英文"],
   exampleTranslation: ["例文の訳", "例文訳", "例文和訳", "exampletranslation", "sentencetranslation", "訳文"],
   note: ["メモ", "補足", "備考", "note", "notes", "supplement", "comment"],
+  answer: ["ingorto", "ing/to", "後ろの形", "後ろに続く形"],
 };
 
 /** 品詞の別名。日本語の名前や、英語の短縮形でも受け付ける */
@@ -47,6 +49,21 @@ const POS_ALIASES: Record<PartOfSpeech, string[]> = {
 };
 
 const normalizeKey = (text: string) => text.toLowerCase().replace(/[\s_\-・:：]/g, "");
+
+/** ing or to の答えの別名（「～ing」「to～」のほか、ing / to / 動名詞 / 不定詞 なども受け付ける） */
+const ING_OR_TO_ALIASES: Record<IngOrToAnswer, string[]> = {
+  ing: ["ing", "～ing", "~ing", "doing", "動名詞"],
+  to: ["to", "to～", "to~", "todo", "不定詞"],
+};
+
+/** ing or to の文字を、答え（"ing" / "to"）にする。空や、分からない文字なら null */
+export function parseIngOrTo(text: string): IngOrToAnswer | null {
+  const key = normalizeKey(text);
+  if (!key) return null;
+  if (ING_OR_TO_ALIASES.ing.includes(key)) return "ing";
+  if (ING_OR_TO_ALIASES.to.includes(key)) return "to";
+  return null;
+}
 
 /** 品詞の文字を、アプリの品詞キーにする。分からなければ null */
 export function parsePartOfSpeech(text: string): PartOfSpeech | null {
@@ -155,6 +172,8 @@ export function buildPreview(table: string[][], mapping: ColumnMapping, hasHeade
 
     const rawPos = cell("partOfSpeech");
     const partOfSpeech = parsePartOfSpeech(rawPos);
+    const rawAnswer = cell("answer");
+    const answer = parseIngOrTo(rawAnswer);
     const input: CardInput = {
       term: cell("term"),
       meaning: cell("meaning"),
@@ -162,10 +181,12 @@ export function buildPreview(table: string[][], mapping: ColumnMapping, hasHeade
       example: cell("example"),
       exampleTranslation: cell("exampleTranslation"),
       note: cell("note"),
+      answer,
     };
 
-    // 品詞が分からない文字は、捨てずにメモへ残す（情報を失わないため）
+    // 品詞や ing or to の分からない文字は、捨てずにメモへ残す（情報を失わないため）
     if (rawPos && !partOfSpeech) input.note = [input.note, `品詞: ${rawPos}`].filter(Boolean).join("\n");
+    if (rawAnswer && !answer) input.note = [input.note, `ing or to: ${rawAnswer}`].filter(Boolean).join("\n");
 
     try {
       const value = validateCardInput(input, { allowEmptyMeaning: true });
@@ -195,10 +216,12 @@ export function exportFileName(deckName: string): string {
 }
 
 /** 単語帳の単語を CSV にする（バックアップ用）。Excel で文字化けしないよう、先頭に BOM を付ける */
-export function cardsToCsv(cards: { term: string; meaning: string; partOfSpeech: PartOfSpeech | null; example: string; exampleTranslation: string; note: string }[]): string {
-  const header = ["単語", "意味", "品詞", "例文", "例文の訳", "メモ"];
+export function cardsToCsv(
+  cards: { term: string; meaning: string; partOfSpeech: PartOfSpeech | null; example: string; exampleTranslation: string; note: string; answer?: string }[]
+): string {
+  const header = ["単語", "意味", "品詞", "例文", "例文の訳", "メモ", "ing or to"];
   const posLabel = (key: PartOfSpeech | null) => PARTS_OF_SPEECH.find((p) => p.key === key)?.label ?? "";
-  const rows = cards.map((c) => [c.term, c.meaning, posLabel(c.partOfSpeech), c.example, c.exampleTranslation, c.note]);
+  const rows = cards.map((c) => [c.term, c.meaning, posLabel(c.partOfSpeech), c.example, c.exampleTranslation, c.note, ingOrToLabel(c.answer)]);
   // 数式として解釈されうる先頭文字（= + - @）を無害にする（CSV インジェクション対策）
   const safe = (value: string) => (/^[=+\-@\t\r]/.test(value) ? `'${value}` : value);
   return "﻿" + Papa.unparse([header, ...rows.map((row) => row.map(safe))], { newline: "\r\n" });

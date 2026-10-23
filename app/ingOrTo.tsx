@@ -4,12 +4,13 @@ import { QuizFrame } from "@/components/QuizFrame";
 import { colors } from "@/components/theme";
 import { useRepository } from "@/db/AppDatabase";
 import { nextQuestion, progress, startQuiz, type QuizState } from "@/db/quiz";
-import type { Card } from "@/db/types";
+import { ingOrToLabel, type Card } from "@/db/types";
 import { useGoBack } from "@/hooks/useGoBack";
 
 /**
  * ing or to の画面
- * 動詞のあとに ing と to のどちらが続くかを答える。問題は DB（アプリに同梱した「ing or to」）から読む
+ * 動詞のあとに ing と to のどちらが続くかを答える。問題は DB から読む
+ * （アプリに同梱した問題と、単語帳で「ing or to の問題」に答えを付けた自分の単語）
  * 答えを出す操作は、下の「答えを見る」ボタンだけ。見たあとは同じボタンが「次へ」になる
  */
 export default function IngOrToScreen() {
@@ -32,7 +33,7 @@ export default function IngOrToScreen() {
   }, [repository]);
 
   const current = quiz && quiz.order.length > 0 ? quiz.order[quiz.index] : null;
-  const answerLabel = current?.answer === "ing" ? "～ing" : current?.answer === "to" ? "to～" : "";
+  const answerLabel = ingOrToLabel(current?.answer);
 
   const handleNext = () => {
     setQuiz((prev) => (prev ? nextQuestion(prev) : prev));
@@ -61,8 +62,8 @@ export default function IngOrToScreen() {
           </View>
 
           {!!current.meaning && <Text style={styles.meaning}>{current.meaning}</Text>}
-          {!!current.example && <Text style={styles.example}>{current.example}</Text>}
 
+          {/* 例文には答え（～ing / to～）がそのまま入っているので、答えと一緒に出す */}
           {isAnswerVisible && (
             <View style={styles.answerPanel}>
               {!!answerLabel && (
@@ -70,6 +71,7 @@ export default function IngOrToScreen() {
                   {current.term} のあとは、<Text style={styles.answerStrong}>{answerLabel}</Text>
                 </Text>
               )}
+              {!!current.example && <Text style={styles.example}>{current.example}</Text>}
               {!!current.note && <Text style={styles.answerNote}>{current.note}</Text>}
             </View>
           )}

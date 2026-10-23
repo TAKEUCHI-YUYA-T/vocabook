@@ -21,6 +21,14 @@ export type PartOfSpeech = (typeof PARTS_OF_SPEECH)[number]["key"];
 export const partOfSpeechLabel = (key: string | null | undefined): string =>
   PARTS_OF_SPEECH.find((p) => p.key === key)?.label ?? "";
 
+/** ing or to の答え。動詞などのあとに続くのが「～ing」か「to～」か */
+export type IngOrToAnswer = "ing" | "to";
+
+/** ing or to の答えの表記（シート・画面・書き出しで共通） */
+export const ING_OR_TO_LABELS: Record<IngOrToAnswer, string> = { ing: "～ing", to: "to～" };
+
+export const ingOrToLabel = (answer: string | null | undefined): string => (answer === "ing" || answer === "to" ? ING_OR_TO_LABELS[answer] : "");
+
 /** 単語帳。preset は同梱（読み取り専用）、user はユーザーが作ったもの */
 export type DeckKind = "preset" | "user";
 
@@ -48,7 +56,10 @@ export type Card = {
   example: string;
   exampleTranslation: string;
   note: string;
-  /** ing_or_to の答え（"ing" または "to"） */
+  /**
+   * ing or to の答え（"ing" または "to"）
+   * ing_or_to（同梱の問題）は必ず入る。basic（自分の単語）は、ing or to の問題にも出すときだけ入る（空なら出さない）
+   */
   answer: string;
   position: number;
   createdAt: number;
@@ -63,6 +74,8 @@ export type CardInput = {
   example?: string;
   exampleTranslation?: string;
   note?: string;
+  /** ing or to の問題にも出すときの答え（null なら出さない） */
+  answer?: IngOrToAnswer | null;
 };
 
 /** ホームに出すヒント（同梱のみ） */

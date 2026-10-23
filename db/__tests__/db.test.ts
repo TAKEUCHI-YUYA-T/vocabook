@@ -137,6 +137,39 @@ describe("初回の空の単語帳", () => {
   });
 });
 
+describe("自分で足す ing or to の問題", () => {
+  it("答えを付けた単語は、同梱の問題と一緒に ing or to の問題に出る。答えのない単語は出ない", async () => {
+    const { repo, defaultDeck } = await setup();
+    await repo.addCard(defaultDeck.id, { term: "postpone", meaning: "延期する", partOfSpeech: "verb", answer: "ing" });
+    await repo.addCard(defaultDeck.id, { term: "keep", meaning: "保つ", partOfSpeech: "verb" });
+    const quiz = await repo.listIngOrToCards();
+    expect(quiz.map((c) => [c.term, c.answer]).sort()).toEqual([
+      ["avoid", "ing"],
+      ["decide", "to"],
+      ["postpone", "ing"],
+    ]);
+  });
+
+  it("編集で答えを外したり、単語を削除したりすると、問題に出なくなる", async () => {
+    const { repo, defaultDeck } = await setup();
+    const a = await repo.addCard(defaultDeck.id, { term: "postpone", meaning: "延期する", answer: "ing" });
+    const b = await repo.addCard(defaultDeck.id, { term: "agree", meaning: "同意する", answer: "to" });
+    await repo.updateCard(a.id, { term: "postpone", meaning: "延期する", answer: null });
+    await repo.deleteCard(b.id);
+    const terms = (await repo.listIngOrToCards()).map((c) => c.term);
+    expect(terms).not.toContain("postpone");
+    expect(terms).not.toContain("agree");
+    expect((await repo.getCard(a.id))?.answer).toBe("");
+  });
+
+  it("取り込みでも答えを保存し、正しくない答えは受け付けない", async () => {
+    const { repo, defaultDeck } = await setup();
+    await repo.importCards(defaultDeck.id, [{ term: "refuse", meaning: "拒む", answer: "to" }]);
+    expect((await repo.listCards(defaultDeck.id))[0].answer).toBe("to");
+    await expect(repo.addCard(defaultDeck.id, { term: "x", meaning: "y", answer: "both" as never })).rejects.toThrow("ing or to の答えが正しくありません");
+  });
+});
+
 describe("単語を入れる単語帳（1冊として扱う）", () => {
   it("自分の単語帳の先頭（作った順）を返し、ing or to の同梱データは選ばない", async () => {
     const { repo, defaultDeck } = await setup();

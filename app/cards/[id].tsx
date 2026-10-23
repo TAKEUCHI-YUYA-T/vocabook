@@ -20,6 +20,7 @@ const toFormValue = (card: Card): CardFormValue => ({
   example: card.example,
   exampleTranslation: card.exampleTranslation,
   note: card.note,
+  answer: card.answer === "ing" || card.answer === "to" ? card.answer : null,
 });
 
 /**

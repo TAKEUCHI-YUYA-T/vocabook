@@ -1,6 +1,6 @@
 import { newId, now, type Db, type SqlParam } from "./database";
 import { DEFAULT_DECK_NAME } from "./presets";
-import type { Card, CardInput, CardType, Deck, DeckKind, DeckSummary, PartOfSpeech, StudyFilter, Tip } from "./types";
+import type { Card, CardInput, CardType, Deck, DeckKind, DeckSummary, IngOrToAnswer, PartOfSpeech, StudyFilter, Tip } from "./types";
 import { PARTS_OF_SPEECH } from "./types";
 
 /** 入力できる長さの上限。極端に長い値でアプリが重くならないようにする */
@@ -47,7 +47,7 @@ export type ValidateOptions = { allowEmptyMeaning?: boolean };
 export function validateCardInput(
   input: CardInput,
   options: ValidateOptions = {}
-): Required<Omit<CardInput, "partOfSpeech">> & { partOfSpeech: PartOfSpeech | null } {
+): Required<Omit<CardInput, "partOfSpeech" | "answer">> & { partOfSpeech: PartOfSpeech | null; answer: IngOrToAnswer | null } {
   const term = input.term.trim();
   const meaning = input.meaning.trim();
   const example = (input.example ?? "").trim();
@@ -66,7 +66,10 @@ export function validateCardInput(
   const pos = input.partOfSpeech ?? null;
   if (pos !== null && !PARTS_OF_SPEECH.some((p) => p.key === pos)) throw new ValidationError("品詞が正しくありません");
 
-  return { term, meaning, example, exampleTranslation, note, partOfSpeech: pos };
+  const answer = input.answer ?? null;
+  if (answer !== null && answer !== "ing" && answer !== "to") throw new ValidationError("ing or to の答えが正しくありません");
+
+  return { term, meaning, example, exampleTranslation, note, partOfSpeech: pos, answer };
 }
 
 /** 単語帳・単語・ヒントの読み書きをまとめたもの。画面は DB を直接触らず、これを通す */
@@ -95,7 +98,7 @@ export function createRepository(db: Db) {
         `SELECT d.id, d.name, d.kind, d.created_at, d.updated_at,
            (SELECT COUNT(*) FROM cards c WHERE c.deck_id = d.id AND c.deleted_at IS NULL) AS card_count
          FROM decks d WHERE d.deleted_at IS NULL AND d.kind = 'user'
-         ORDER BY d.created_at`
+         ORDER BY d.created_at, d.id`
       );
       return rows.map((row) => ({ ...toDeck(row), cardCount: row.card_count ?? 0 }));
     },
@@ -175,8 +178,8 @@ export function createRepository(db: Db) {
       const last = await db.getFirstAsync<{ max_position: number | null }>("SELECT MAX(position) AS max_position FROM cards WHERE deck_id = ?", [deckId]);
       const position = (last?.max_position ?? -1) + 1;
       await db.runAsync(
-        `INSERT INTO cards (${CARD_COLUMNS}) VALUES (?, ?, 'basic', ?, ?, ?, ?, ?, ?, '', ?, ?, ?)`,
-        [id, deckId, value.term, value.meaning, value.partOfSpeech, value.example, value.exampleTranslation, value.note, position, timestamp, timestamp]
+        `INSERT INTO cards (${CARD_COLUMNS}) VALUES (?, ?, 'basic', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [id, deckId, value.term, value.meaning, value.partOfSpeech, value.example, value.exampleTranslation, value.note, value.answer ?? "", position, timestamp, timestamp]
       );
       return (await repo.getCard(id)) as Card;
     },
@@ -199,9 +202,9 @@ export function createRepository(db: Db) {
           const chunk = values.slice(start, start + perStatement);
           const params: SqlParam[] = [];
           for (const value of chunk) {
-            params.push(newId(), deckId, value.term, value.meaning, value.partOfSpeech, value.example, value.exampleTranslation, value.note, position++, timestamp, timestamp);
+            params.push(newId(), deckId, value.term, value.meaning, value.partOfSpeech, value.example, value.exampleTranslation, value.note, value.answer ?? "", position++, timestamp, timestamp);
           }
-          const placeholders = chunk.map(() => "(?, ?, 'basic', ?, ?, ?, ?, ?, ?, '', ?, ?, ?)").join(", ");
+          const placeholders = chunk.map(() => "(?, ?, 'basic', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ");
           await db.runAsync(`INSERT INTO cards (${CARD_COLUMNS}) VALUES ${placeholders}`, params);
         }
       });
@@ -214,8 +217,8 @@ export function createRepository(db: Db) {
       await requireEditableDeck(existing.deckId);
       const value = validateCardInput(input, { allowEmptyMeaning: existing.meaning === "" });
       await db.runAsync(
-        "UPDATE cards SET term = ?, meaning = ?, part_of_speech = ?, example = ?, example_translation = ?, note = ?, updated_at = ? WHERE id = ?",
-        [value.term, value.meaning, value.partOfSpeech, value.example, value.exampleTranslation, value.note, now(), id]
+        "UPDATE cards SET term = ?, meaning = ?, part_of_speech = ?, example = ?, example_translation = ?, note = ?, answer = ?, updated_at = ? WHERE id = ?",
+        [value.term, value.meaning, value.partOfSpeech, value.example, value.exampleTranslation, value.note, value.answer ?? "", now(), id]
       );
       return (await repo.getCard(id)) as Card;
     },
@@ -241,9 +244,13 @@ export function createRepository(db: Db) {
       return rows.map(toCard);
     },
 
-    /** ing or to の問題 */
+    /** ing or to の問題（同梱の問題と、ing or to の答えを付けた自分の単語） */
     async listIngOrToCards(): Promise<Card[]> {
-      const rows = await db.getAllAsync<CardRow>(`SELECT ${CARD_COLUMNS} FROM cards WHERE type = 'ing_or_to' AND deleted_at IS NULL ORDER BY position`);
+      const rows = await db.getAllAsync<CardRow>(
+        `SELECT ${CARD_COLUMNS} FROM cards
+         WHERE deleted_at IS NULL AND (type = 'ing_or_to' OR (type = 'basic' AND answer IN ('ing', 'to')))
+         ORDER BY position`
+      );
       return rows.map(toCard);
     },
 

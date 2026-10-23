@@ -1,4 +1,4 @@
-import { buildPreview, cardsToCsv, detectColumns, exportFileName, IMPORT_LIMITS, parsePartOfSpeech, parseTable } from "../importing";
+import { buildPreview, cardsToCsv, detectColumns, exportFileName, IMPORT_LIMITS, parseIngOrTo, parsePartOfSpeech, parseTable } from "../importing";
 import { migrate } from "../migrations";
 import { createRepository } from "../repository";
 import { createTestDb } from "../testing/testDb";
@@ -167,8 +167,49 @@ describe("書き込みと書き出し", () => {
     const again = preview(csv);
     expect(again.errors).toEqual([]);
     expect(again.valid.map((v) => v.input)).toEqual([
-      { term: "-ing", meaning: "=動名詞の語尾", partOfSpeech: "idiom", example: "He said \"stop\",\nthen left.", exampleTranslation: "「止まれ」と言って去った", note: "+メモ" },
-      { term: "apple", meaning: "りんご", partOfSpeech: null, example: "", exampleTranslation: "", note: "" },
+      { term: "-ing", meaning: "=動名詞の語尾", partOfSpeech: "idiom", example: "He said \"stop\",\nthen left.", exampleTranslation: "「止まれ」と言って去った", note: "+メモ", answer: null },
+      { term: "apple", meaning: "りんご", partOfSpeech: null, example: "", exampleTranslation: "", note: "", answer: null },
+    ]);
+  });
+
+  it("ing or to の答えも書き出し、取り込み直すと同じ答えに戻る", async () => {
+    const db = await createTestDb();
+    await migrate(db);
+    const repo = createRepository(db);
+    const deck = await repo.createDeck("テスト");
+    await repo.importCards(deck.id, [
+      { term: "avoid", meaning: "避ける", partOfSpeech: "verb", answer: "ing" },
+      { term: "decide", meaning: "決める", partOfSpeech: "verb", answer: "to" },
+      { term: "apple", meaning: "りんご" },
+    ]);
+    const csv = cardsToCsv(await repo.listCards(deck.id));
+    expect(csv.split("\r\n")[0]).toBe("﻿単語,意味,品詞,例文,例文の訳,メモ,ing or to");
+    expect(preview(csv).valid.map((v) => [v.input.term, v.input.answer])).toEqual([
+      ["avoid", "ing"],
+      ["decide", "to"],
+      ["apple", null],
+    ]);
+  });
+});
+
+describe("ing or to の列", () => {
+  it("シートの ingOrTo タブの見出し（words / ing or to / meaning / example / 空欄 / supplement）から、答えの列を見つける", () => {
+    const { mapping, hasHeader } = detectColumns([["words", "ing or to", "meaning", "example", "", "supplement"]]);
+    expect(hasHeader).toBe(true);
+    expect(mapping).toMatchObject({ term: 0, answer: 1, meaning: 2, example: 3, note: 5 });
+  });
+
+  it("「～ing」「to～」のほか、ing / to / 動名詞 / 不定詞 も答えとして読む", () => {
+    expect(["～ing", "ing", "-ing", "動名詞"].map(parseIngOrTo)).toEqual(["ing", "ing", "ing", "ing"]);
+    expect(["to～", "to", "to do", "不定詞"].map(parseIngOrTo)).toEqual(["to", "to", "to", "to"]);
+    expect(["", "  ", "stop", "両方"].map(parseIngOrTo)).toEqual([null, null, null, null]);
+  });
+
+  it("分からない答えの文字は、捨てずにメモへ残す", () => {
+    const result = preview("単語,意味,ing or to\nbegin,始める,両方\navoid,避ける,～ing");
+    expect(result.valid.map((v) => [v.input.term, v.input.answer, v.input.note])).toEqual([
+      ["begin", null, "ing or to: 両方"],
+      ["avoid", "ing", ""],
     ]);
   });
 });

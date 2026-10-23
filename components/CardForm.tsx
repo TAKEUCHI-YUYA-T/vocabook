@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator 
 import { Feather } from "@expo/vector-icons";
 import type { CardAutoFillState } from "@/db/autofill";
 import { LIMITS } from "@/db/repository";
-import { PARTS_OF_SPEECH, type PartOfSpeech } from "@/db/types";
+import { ING_OR_TO_LABELS, PARTS_OF_SPEECH, type IngOrToAnswer, type PartOfSpeech } from "@/db/types";
 import { colors } from "./theme";
 
 export type CardFormValue = {
@@ -13,6 +13,8 @@ export type CardFormValue = {
   example: string;
   exampleTranslation: string;
   note: string;
+  /** ing or to の問題にも出すときの答え（null なら出さない） */
+  answer: IngOrToAnswer | null;
 };
 
 export const emptyCardForm = (partOfSpeech: PartOfSpeech | null = null): CardFormValue => ({
@@ -22,7 +24,15 @@ export const emptyCardForm = (partOfSpeech: PartOfSpeech | null = null): CardFor
   example: "",
   exampleTranslation: "",
   note: "",
+  answer: null,
 });
+
+/** ing or to の問題の選択肢（出さない・～ing・to～） */
+const ING_OR_TO_CHOICES: { key: IngOrToAnswer | null; label: string }[] = [
+  { key: null, label: "出さない" },
+  { key: "ing", label: ING_OR_TO_LABELS.ing },
+  { key: "to", label: ING_OR_TO_LABELS.to },
+];
 
 type Props = {
   value: CardFormValue;
@@ -47,7 +57,9 @@ type Props = {
  */
 export function CardForm({ value, onChange, editable, duplicateWarning, autoFocus, expanded, meaningBadge, meaningHint, autoFill }: Props) {
   const meaningRef = useRef<React.ComponentRef<typeof TextInput>>(null);
-  const hasDetails = !!(value.partOfSpeech || value.example || value.exampleTranslation || value.note);
+  const hasDetails = !!(value.partOfSpeech || value.example || value.exampleTranslation || value.note || value.answer);
+  // ing or to の問題は、動詞と熟語のときに選べる（すでに選んであれば、品詞を変えても、外せるよう出しておく）
+  const showIngOrTo = value.partOfSpeech === "verb" || value.partOfSpeech === "idiom" || value.answer !== null;
   const [showDetails, setShowDetails] = useState(hasDetails);
   const [termFocused, setTermFocused] = useState(false);
 
@@ -139,6 +151,30 @@ export function CardForm({ value, onChange, editable, duplicateWarning, autoFocu
               })}
             </View>
           </View>
+
+          {showIngOrTo && (
+            <View style={styles.field}>
+              <Text style={styles.label}>ing or to の問題</Text>
+              <View style={styles.chips}>
+                {ING_OR_TO_CHOICES.map((choice) => {
+                  const selected = value.answer === choice.key;
+                  return (
+                    <TouchableOpacity
+                      key={choice.label}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                      disabled={!editable}
+                      style={[styles.chip, selected && styles.chipSelected]}
+                      onPress={() => set("answer", choice.key)}
+                    >
+                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{choice.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              <Text style={styles.hint}>後ろに続く形を選ぶと、ing or to の問題にも出ます。</Text>
+            </View>
+          )}
 
           <View style={styles.field}>
             <Text style={styles.label}>例文</Text>
