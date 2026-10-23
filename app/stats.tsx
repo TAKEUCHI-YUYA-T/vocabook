@@ -1,6 +1,5 @@
 import React, { useCallback, useMemo, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
-import { Feather } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BarChart, type BarDatum } from "@/components/BarChart";
@@ -35,7 +34,7 @@ const shortDay = (day: string) => {
  * 学習の記録の画面（グラフ）
  * - 学習した単語: 日ごとに、答えを見た単語の数（同じ日に同じ単語は1回）
  * - 覚えた単語: その日までに「覚えた」にした単語の数（累計）
- * 棒を押すと、その日の数を出す（2つのグラフで、同じ日を選ぶ）。表でも見られる
+ * 棒を押すと、その日の数を出す（2つのグラフで、同じ日を選ぶ）
  */
 export default function StatsScreen() {
   const repository = useRepository();
@@ -45,7 +44,6 @@ export default function StatsScreen() {
   const [period, setPeriod] = useState(PERIODS[0].days);
   const [rows, setRows] = useState<DailyRow[]>([]);
   const [selected, setSelected] = useState(PERIODS[0].days - 1);
-  const [showTable, setShowTable] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -76,7 +74,6 @@ export default function StatsScreen() {
   const learnedData = useMemo(() => toData("learned", (r) => `覚えた単語 ${r.learned}語`), [rows]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const current = rows[selected];
-  const totalStudied = rows.reduce((sum, row) => sum + row.studied, 0);
 
   return (
     <View style={styles.container}>
@@ -108,7 +105,6 @@ export default function StatsScreen() {
             <Text style={styles.readoutUnit}> 語</Text>
           </Text>
           <BarChart data={studiedData} selectedIndex={selected} onSelect={setSelected} />
-          <Text style={styles.caption}>期間の合計 {totalStudied}語（日ごとに数えた合計）</Text>
         </View>
 
         <View style={styles.card}>
@@ -119,30 +115,7 @@ export default function StatsScreen() {
             <Text style={styles.readoutUnit}> 語</Text>
           </Text>
           <BarChart data={learnedData} selectedIndex={selected} onSelect={setSelected} />
-          <Text style={styles.caption}>フラグを「覚えた」にした日で数えます。あとでフラグを外した単語は、数えません。</Text>
         </View>
-
-        <TouchableOpacity accessibilityRole="button" accessibilityState={{ expanded: showTable }} style={styles.tableToggle} onPress={() => setShowTable((v) => !v)}>
-          <Feather name={showTable ? "chevron-up" : "chevron-down"} size={18} color={colors.secondary} />
-          <Text style={styles.tableToggleText}>{showTable ? "表を閉じる" : "表で見る"}</Text>
-        </TouchableOpacity>
-
-        {showTable && (
-          <View style={styles.table}>
-            <View style={[styles.tableRow, styles.tableHead]}>
-              <Text style={[styles.cell, styles.cellDay, styles.cellHead]}>日付</Text>
-              <Text style={[styles.cell, styles.cellNum, styles.cellHead]}>学習</Text>
-              <Text style={[styles.cell, styles.cellNum, styles.cellHead]}>覚えた（累計）</Text>
-            </View>
-            {[...rows].reverse().map((row) => (
-              <View key={row.day} style={[styles.tableRow, styles.tableRowBorder]}>
-                <Text style={[styles.cell, styles.cellDay]}>{shortDay(row.day)}</Text>
-                <Text style={[styles.cell, styles.cellNum]}>{row.studied}</Text>
-                <Text style={[styles.cell, styles.cellNum]}>{row.learned}</Text>
-              </View>
-            ))}
-          </View>
-        )}
       </ScrollView>
     </View>
   );
@@ -161,15 +134,4 @@ const styles = StyleSheet.create({
   readout: { fontSize: 14, color: colors.secondary },
   readoutValue: { fontSize: 26, fontWeight: "bold", color: colors.text },
   readoutUnit: { fontSize: 14, color: colors.secondary },
-  caption: { fontSize: 12, lineHeight: 18, color: colors.secondary },
-  tableToggle: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 44, alignSelf: "flex-start" },
-  tableToggleText: { fontSize: 15, fontWeight: "bold", color: colors.secondary },
-  table: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, overflow: "hidden" },
-  tableRow: { flexDirection: "row" },
-  tableHead: { backgroundColor: colors.panel },
-  tableRowBorder: { borderTopWidth: 1, borderTopColor: colors.border },
-  cell: { fontSize: 14, color: colors.text, paddingVertical: 8, paddingHorizontal: 12 },
-  cellHead: { fontWeight: "bold" },
-  cellDay: { flex: 3 },
-  cellNum: { flex: 2, textAlign: "right" },
 });
