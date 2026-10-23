@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, ScrollView, Modal, Pressable, Alert } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, ScrollView, Modal, Pressable } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
 import * as Sharing from "expo-sharing";
@@ -9,10 +9,7 @@ import { FlagTag } from "@/components/FlagTag";
 import { HeaderIconButton, ScreenHeader } from "@/components/ScreenHeader";
 import { colors } from "@/components/theme";
 import { useRepository } from "@/db/AppDatabase";
-import presetDefaultWords from "../../assets/presets/default-words.json";
-import { defaultWordToInput, findMissingDefaultWords } from "@/db/defaultWords";
 import { cardsToCsv, exportFileName } from "@/db/importing";
-import type { DefaultWord } from "@/db/presets";
 import { ValidationError } from "@/db/repository";
 import { ingOrToLabel, partOfSpeechLabel, PARTS_OF_SPEECH, type Card, type Deck } from "@/db/types";
 import { useDefaultDeck } from "@/hooks/useDefaultDeck";
@@ -98,37 +95,9 @@ export default function WordsScreen() {
       await Sharing.shareAsync(file.uri, { mimeType: "text/csv", dialogTitle: "単語帳を書き出す", UTI: "public.comma-separated-values-text" });
     });
 
-  /**
-   * 既定の単語のうち、単語帳にまだない単語を追加する
-   * 同じ単語・同じ品詞が、すでにあれば追加しない。追加する数を確かめてから入れる
-   */
-  const addDefaultWords = (target: Deck) =>
-    run(async () => {
-      const existing = await repository.listCards(target.id);
-      const missing = findMissingDefaultWords(existing, presetDefaultWords as DefaultWord[]);
-      if (missing.length === 0) {
-        Alert.alert("既定の単語", "追加できる単語はありません。既定の単語は、すべて単語帳に入っています。");
-        return;
-      }
-      Alert.alert("既定の単語を追加", `${missing.length}語を追加します。同じ単語・同じ品詞がすでにある単語は、追加しません。`, [
-        { text: "やめる", style: "cancel" },
-        {
-          text: "追加する",
-          onPress: () =>
-            void run(async () => {
-              const count = await repository.importCards(target.id, missing.map(defaultWordToInput));
-              setMessage(null);
-              load();
-              Alert.alert("追加しました", `${count}語を追加しました。`);
-            }),
-        },
-      ]);
-    });
-
   const menuItems = [
     { label: "取り込み（貼り付け・CSV）", icon: "download" as const, onPress: () => router.push("/words/import") },
     { label: "書き出し（CSV）", icon: "upload" as const, onPress: () => deck && exportCsv(deck) },
-    { label: "既定の単語を追加", icon: "plus-circle" as const, onPress: () => deck && addDefaultWords(deck) },
   ];
 
   return (
@@ -210,17 +179,7 @@ export default function WordsScreen() {
             </Text>
           </TouchableOpacity>
         )}
-        ListEmptyComponent={
-          <Text style={styles.empty}>
-            {deckError ??
-              message ??
-              (query || pos !== "all"
-                ? "見つかりませんでした"
-                : deck
-                  ? "単語がありません。「単語を追加」のほか、右上の「⋮」→「既定の単語を追加」で、TOEIC 対策の単語を入れられます。"
-                  : "読み込み中...")}
-          </Text>
-        }
+        ListEmptyComponent={<Text style={styles.empty}>{deckError ?? message ?? (query || pos !== "all" ? "見つかりませんでした" : deck ? "単語がありません" : "読み込み中...")}</Text>}
       />
 
       {!!message && cards.length > 0 && <Text style={styles.error}>{message}</Text>}

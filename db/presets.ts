@@ -98,7 +98,7 @@ export async function syncPresets(db: Db, data: PresetData): Promise<boolean> {
   return true;
 }
 
-/** 既定の単語（presets-src/default-words の Markdown から作る）。単語帳の「既定の単語を追加」で、追加できる */
+/** 既定の単語（presets-src/default-words の Markdown から作る）。いまは、アプリでは使っていない（記録として置いている） */
 export type DefaultWord = {
   term: string;
   meaning: string;

@@ -66,7 +66,7 @@ describe("既定の単語（presets-src/default-words → assets/presets/default
 });
 
 describe("初回起動", () => {
-  it("新規インストールは、既定の単語を入れず、空の単語帳から始まる（既定の単語は、「既定の単語を追加」で、利用者が選んで追加する）", async () => {
+  it("新規インストールは、既定の単語を入れず、空の単語帳から始まる", async () => {
     const db = await createTestDb();
     await migrate(db);
     await ensureDefaultDeck(db);

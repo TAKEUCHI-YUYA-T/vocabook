@@ -6,14 +6,14 @@ Google スプレッドシートは使いません。このフォルダの Markdo
 |---|---|---|
 | `tips.md` | ホームの「今日のヒント」 | `node scripts/build-presets.js` → `assets/presets/tips.json` |
 | `ing-or-to.md` | ing or to の問題 | 同上 → `assets/presets/ing-or-to.json` |
-| `default-words/*.md` | 既定の単語（品詞ごと。TOEIC 対策の範囲。「既定の単語を追加」で追加できる） | 同上 → `assets/presets/default-words.json` |
+| `default-words/*.md` | 既定の単語（品詞ごと。TOEIC 対策の範囲。アプリでは未使用） | 同上 → `assets/presets/default-words.json` |
 | `words/*.md` | 自分の単語（品詞ごと。個人のデータ） | `node scripts/words-md-to-csv.js` → アプリの「取り込み」で読める CSV |
 
 `words/` は個人のデータなので、git の対象外です（`.gitignore`）。`default-words/` は、アプリに同梱して配るので、git で管理します。
 
 ### 既定の単語について
-- 初回起動では、入りません（新規インストールは、空の単語帳から始まります）。
-- 単語帳の「⋮」→「既定の単語を追加」で、利用者が選んで追加します。同じ単語・同じ品詞がすでにある単語は、追加しません。追加した単語は、ふつうの単語として、編集・削除・フラグの付け外しができます。
+- **いまは、アプリでは使っていません**（新規インストールは、空の単語帳から始まります。アプリに追加する操作もありません）。内容の記録として、置いています。
+- アプリに組み込むときは、`assets/presets/default-words.json`（`node scripts/build-presets.js` で作る）を読みます。
 - `default-words/*.md` は、自分の単語（`words/`）から選んで作ったものです（`node scripts/build-default-words.js`。一度だけ使う）。以後は、`default-words/` を直接直します。
 - 公開して配るので、意味が空・品詞名そのもの・重複・綴りミスは入れません（テストが確かめます）。
 
