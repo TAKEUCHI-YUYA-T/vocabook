@@ -621,13 +621,6 @@
   "exampleTranslation": "我社の人権費は収入よりも急増しているため大幅な削減がぜひとも必要です。"
  },
  {
-  "term": "higher-up",
-  "meaning": "上位、優良、目上、上役",
-  "partOfSpeech": "noun",
-  "example": "The administrative assistant mistakenly disconnected her higher-up’s telephone conversation.",
-  "exampleTranslation": "役員秘書のミスで、上司の通話は切られてしまいました。"
- },
- {
   "term": "bulletin board",
   "meaning": "掲示板",
   "partOfSpeech": "noun",
@@ -2651,13 +2644,6 @@
   "exampleTranslation": "私は買い物でほとんどデビットカードやクレジットカードを使います。"
  },
  {
-  "term": "full on",
-  "meaning": "全力で",
-  "partOfSpeech": "adverb",
-  "example": "You gotta go for it and do it full on.",
-  "exampleTranslation": "そのために向かって、全力でやりなさい。"
- },
- {
   "term": "dare",
   "meaning": "あえて…する、思い切って…する",
   "partOfSpeech": "adverb"
@@ -2892,11 +2878,6 @@
   "partOfSpeech": "adjective",
   "example": "I heard a weird shriek.",
   "exampleTranslation": "変な悲鳴が聞こえた。"
- },
- {
-  "term": "coed",
-  "meaning": "coeducational の省略形",
-  "partOfSpeech": "adjective"
  },
  {
   "term": "coeducational",
@@ -3605,13 +3586,6 @@
   "exampleTranslation": "①多くの学生があえてその難関試験に挑戦した。\n\n②ナンシーはあえて彼に話しかけなかった。"
  },
  {
-  "term": "something tells me…",
-  "meaning": "…という気がする",
-  "partOfSpeech": "idiom",
-  "example": "Something tells me this decision is going to lead to success.",
-  "exampleTranslation": "この決定が成功に導く気がする。"
- },
- {
   "term": "cry one's eyes out",
   "meaning": "号泣する",
   "partOfSpeech": "idiom",
@@ -3666,13 +3640,6 @@
   "partOfSpeech": "idiom",
   "example": "She is concerned about conflicts between those countries.",
   "exampleTranslation": "彼女はそれらの国の間に起こっている衝突について心配している。"
- },
- {
-  "term": "sneak a peek at…",
-  "meaning": "…を盗み見る",
-  "partOfSpeech": "idiom",
-  "example": "I couldn't help but sneak a peek at the script while the director was out of the room.",
-  "exampleTranslation": "私は監督が部屋を出ている間に脚本をこっそりのぞかずにはいられませんでした。"
  },
  {
   "term": "look over…",
@@ -3738,20 +3705,6 @@
   "exampleTranslation": "①すべての材料を使い切らなければならない、期限が切れる前に。\n\n②彼女はプリンターの紙を使い切ったので、もっと買わなければなりません。\n\n③彼は年末までに休暇の日数を使い切ることができました。\n\n④チームはプロジェクトの初期段階で予算を使い切りました。"
  },
  {
-  "term": "nod off",
-  "meaning": "眠り込む、眠る",
-  "partOfSpeech": "idiom",
-  "example": "①He nodded off during the long meeting and missed most of the discussion.\n\n②She was so tired that she nodded off on the couch while watching TV.\n\n③I could see him nod off at his desk, so I gently woke him up.\n\n④The lecture was so monotonous that several students nodded off.",
-  "exampleTranslation": "①長い会議の間に彼は居眠りをし、議論のほとんどを逃しました。\n\n②彼女はとても疲れていて、テレビを見ながらソファで居眠りをしてしまいました。\n\n③彼が机の前で居眠りをしているのが見えたので、優しく起こしました。\n\n④講義があまりにも単調だったので、何人かの学生が居眠りをしました。"
- },
- {
-  "term": "swing by",
-  "meaning": "立ち寄る",
-  "partOfSpeech": "idiom",
-  "example": "You wanna see pain? Swing by first methodist,Tuesdays.See the guys with testicular cancer.",
-  "exampleTranslation": "痛みが見たいなら火曜日のファースト・メソジスト教会に立ち寄って、精巣癌の患者を見てみなさい。"
- },
- {
   "term": "head start",
   "meaning": "幸先の良いスタート",
   "partOfSpeech": "idiom",
@@ -3764,13 +3717,6 @@
   "partOfSpeech": "idiom",
   "example": "①A guy came up to me with a gun and took all my money. I was pretty scared.\n　- That’s too bad. But it could’ve been worse. You might’ve been killed.\n\n②Hey, Bob! How are things going?\n　- Hey Mike, it could be worse.",
   "exampleTranslation": "①銃を持った男が近づいて来て、あり金全部取られたんだ。本当に怖かったよ。\n　-それは気の毒に。でもそれで済んでよかったじゃないか。殺されてたかもしれないよ。\n\n②やぁ、ボブ！最近どう？\n　-やぁマイク！　悪くないよ。"
- },
- {
-  "term": "dream co-star",
-  "meaning": "夢の共演",
-  "partOfSpeech": "idiom",
-  "example": "The doubles by Rafael Nadal and Roger Federer was just a dream co-star.",
-  "exampleTranslation": "ラファエル・ナダル選手とロジャー・フェデラー選手によるダブルスは、まさに夢の共演だった。"
  },
  {
   "term": "stand for",
@@ -3843,20 +3789,6 @@
   "exampleTranslation": "もし私が言わなければならないとしたら、旅行の一番良かった部分は地元の市場を探検したことだと思います。"
  },
  {
-  "term": "can't unsee",
-  "meaning": "脳裏から離れない",
-  "partOfSpeech": "idiom",
-  "example": "①Once I saw that scary image, I couldn’t unsee it; it kept haunting my thoughts.\n\n②After watching the documentary, I couldn’t unsee the environmental impact of plastic pollution.\n\n③He tried to ignore the error in the report, but once he saw it, he couldn’t unsee it.\n\n④The graphic details of the accident were so vivid that I can’t unsee them no matter how hard I try.",
-  "exampleTranslation": "①あの怖い画像を一度見てしまうと、忘れられず、ずっと心に残っていました。\n\n②ドキュメンタリーを見た後、プラスチック汚染の環境への影響をどうしても忘れられませんでした。\n\n③彼はレポートのエラーを無視しようとしましたが、一度見てしまうと忘れられませんでした。\n\n④事故のグラフィックな詳細があまりにも鮮明で、どんなに努力しても忘れられません。"
- },
- {
-  "term": "bold of you to assume…",
-  "meaning": "～だと決めつけるなんてあなたは大胆ですね、～だと思うなんてあなたはずうずうしいですね",
-  "partOfSpeech": "idiom",
-  "example": "Can I copy your homework?\n　- Bold of you to assume I did thehomework.",
-  "exampleTranslation": "宿題写させてくれない？\n　- 俺が宿題をしたと思うとは大胆だな。"
- },
- {
   "term": "no longer",
   "meaning": "もはや…しないで",
   "partOfSpeech": "idiom",
@@ -3869,20 +3801,6 @@
   "partOfSpeech": "idiom",
   "example": "①The documents are being reviewed by the team.\n\n②The new software is being developed by our IT department.\n\n③The house is being renovated to improve its energy efficiency.\n\n④The patient is being treated with a new medication.",
   "exampleTranslation": "①書類はチームによって見直されています。\n\n②新しいソフトウェアは私たちのIT部門によって開発されています。\n\n③その家はエネルギー効率を改善するために改装されています。\n\n④患者は新しい薬で治療されています。"
- },
- {
-  "term": "just curious",
-  "meaning": "特に意味はないが、ちょっと知りたかっただけ",
-  "partOfSpeech": "idiom",
-  "example": "Will you pick your brother up tonight?\n　- No I won’t. Why?\n　- Just curious.",
-  "exampleTranslation": "今夜、あなたの兄弟を車で迎えに行きますか。\n　- 行きませんが、どうしてですか。\n　- ちょっと知りたかっただけです。"
- },
- {
-  "term": "strike it rich",
-  "meaning": "（思いがけなく）大金を得る、一攫千金",
-  "partOfSpeech": "idiom",
-  "example": "I'm up to strike it rich on an investment.",
-  "exampleTranslation": "投資で一攫千金を狙います。"
  },
  {
   "term": "ought to do",
@@ -3906,14 +3824,6 @@
   "partOfSpeech": "idiom",
   "example": "According to the weather forecast, it’s going to rain tomorrow.",
   "exampleTranslation": "天気予報によれば、明日は雨が降るそうです。"
- },
- {
-  "term": "How come",
-  "meaning": "なぜ",
-  "partOfSpeech": "idiom",
-  "example": "How come you left so eary?",
-  "exampleTranslation": "なぜそんなに早く帰ったんだい？",
-  "note": "https://nativecamp.net/blog/20201103_How_come#Why%E3%81%A8How-come%E3%81%AE%E9%81%95%E3%81%84%E3%81%A8%E3%81%AF"
  },
  {
   "term": "but for",
@@ -4790,13 +4700,6 @@
   "exampleTranslation": "12歳のときは、1日何時間くらい練習してましたか？\n　- 2日に2時間くらいかな。"
  },
  {
-  "term": "and stuff",
-  "meaning": "～など、",
-  "partOfSpeech": "idiom",
-  "example": "Dream big. You know, sometimes we don't dream big enough that it's possible because we think there is barriers and stuff.",
-  "exampleTranslation": "夢を大きくみよう。壁やものがあると思っていて、実現可能なほど大きな夢を見ないこともある。"
- },
- {
   "term": "be apt to do",
   "meaning": "～する傾向にある・～しがちだ",
   "partOfSpeech": "idiom",
@@ -5029,21 +4932,6 @@
   "exampleTranslation": "もっと自信をつけるためにチャレンジャーに出場し、もっと試合に出て、またツアーに戻れるようにしたい。来年はトップ100、それが僕の目標だ。だから、この2つの勝利は確実に助けになるよ。"
  },
  {
-  "term": "sort of",
-  "meaning": "多少、いくらか、まあまあ、幾分、ある程度、やや、少し、ちょっと",
-  "partOfSpeech": "idiom",
-  "example": "I sort of dislike those guys.",
-  "exampleTranslation": "あの連中はあまり好きじゃない。",
-  "note": "動詞・形容詞の前に置かれる"
- },
- {
-  "term": "we'll see",
-  "meaning": "もう少し様子を見よう、そのうちわかるよ、考えておきます、どうなることやら",
-  "partOfSpeech": "idiom",
-  "example": "I'm hoping to play Houston, but we'll see.",
-  "exampleTranslation": "ヒューストンではプレーしたいと思っているけど、どうなることやら......。"
- },
- {
   "term": "be capable of",
   "meaning": "～の能力がある、～の才能がある、～ができる",
   "partOfSpeech": "idiom",
@@ -5264,13 +5152,6 @@
   "exampleTranslation": "新しい車を買うためだけに借金はしたくない。"
  },
  {
-  "term": "get in the zone",
-  "meaning": "集中状態（ゾーン）に入る",
-  "partOfSpeech": "idiom",
-  "example": "Before serving, tennis players try to get in the zone to focus fully.",
-  "exampleTranslation": "サーブを打つ前に、テニス選手は完全に集中したゾーンに入ろうとします。"
- },
- {
   "term": "make a difference",
   "meaning": "大きな違いを生む、影響を与える",
   "partOfSpeech": "idiom",
@@ -5297,13 +5178,6 @@
   "partOfSpeech": "idiom",
   "example": "A simple ritual can be enough to calm a nervous player.",
   "exampleTranslation": "簡単なルーティンが緊張した選手を落ち着かせるのに十分なこともあります。"
- },
- {
-  "term": "know enough to be dangerous",
-  "meaning": "ある分野について浅く危険なほど知っている、中途半端な知識がある",
-  "partOfSpeech": "idiom",
-  "example": "He joked that he knows enough to be dangerous about tennis science.",
-  "exampleTranslation": "彼はテニス科学について「危ない程度には知っている」と冗談を言いました。"
  },
  {
   "term": "pull something out of a hat",

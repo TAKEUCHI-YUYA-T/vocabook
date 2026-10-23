@@ -8,6 +8,7 @@
  *   - 意味が空の単語は外す
  *   - 品詞名そのもの（noun・verb など。表の見出し行の混入）は外す
  *   - 同じ単語・同じ品詞の重複は、意味をまとめて1件にする（例文・メモは、最初の入っているもの）
+ *   - スラング・ネット用語・会話でしか使わない言い回しは外す（下の SLANG の一覧）。くだけていても、標準的に使われる表現は残す
  *   - 長すぎるメモ（150字超）と、絵文字などの装飾つきのメモは、メモだけ外す（単語は残す）
  * 外した・まとめた内容は、標準出力に報告する
  */
@@ -36,7 +37,31 @@ const POS_NAMES = new Set(["noun", "verb", "adverb", "adjective", "preposition",
 const DECORATION = /[\u{1F300}-\u{1FAFF}☀-➿]/u;
 const MAX_NOTE = 150;
 
-const report = { emptyMeaning: [], posNames: [], merged: [], notesDropped: [] };
+/** 既定の単語に入れない、スラング・ネット用語・会話でしか使わない言い回し（大文字小文字・アポストロフィの種類は区別しない） */
+const SLANG = [
+  "can't unsee", // ネット用語
+  "bold of you to assume…", // ネットのミーム
+  "and stuff", // 口語（など）
+  "get in the zone", // スポーツ・口語
+  "swing by", // くだけた口語（立ち寄る）
+  "just curious", // くだけた口語
+  "how come", // くだけた口語（なぜ）
+  "we'll see", // 会話の決まり文句
+  "sort of", // くだけた口語（多少）
+  "nod off", // くだけた口語（眠り込む）
+  "strike it rich", // くだけた口語
+  "sneak a peek at…", // くだけた口語
+  "full on", // スラング
+  "higher-up", // くだけた口語（上層部の人）
+  "something tells me…", // 会話の決まり文句
+  "know enough to be dangerous", // 口語の言い回し
+  "dream co-star", // 慣用句ではない（夢の共演）
+  "coed", // 古い口語（男女共学の女子学生）
+];
+const normalize = (text) => text.toLowerCase().replace(/[’‘]/g, "'").trim();
+const SLANG_SET = new Set(SLANG.map(normalize));
+
+const report = { emptyMeaning: [], posNames: [], slang: [], merged: [], notesDropped: [] };
 
 /** 意味を、「、」で区切った要素の和にする。すでに含まれる要素は足さない */
 const mergeMeanings = (a, b) => {
@@ -55,6 +80,10 @@ for (const [key, label] of POS) {
   for (const entry of entries) {
     if (POS_NAMES.has(entry.term.toLowerCase())) {
       report.posNames.push(`${entry.term}（${label}）`);
+      continue;
+    }
+    if (SLANG_SET.has(normalize(entry.term))) {
+      report.slang.push(`${entry.term}（${label}）`);
       continue;
     }
     if (!entry.meaning) {
@@ -88,5 +117,6 @@ for (const [key, label] of POS) {
 console.log(`合計 ${total} 語`);
 console.log(`外した（意味が空）: ${report.emptyMeaning.join("、") || "なし"}`);
 console.log(`外した（品詞名そのもの）: ${report.posNames.join("、") || "なし"}`);
+console.log(`外した（スラング・口語）: ${report.slang.join("、") || "なし"}`);
 console.log(`重複をまとめた: ${report.merged.length} 件（${report.merged.join("、")}）`);
 console.log(`メモだけ外した: ${report.notesDropped.join("、") || "なし"}`);

@@ -1,6 +1,6 @@
 # 名詞（noun）
 
-アプリの初回起動で、単語帳に入れる既定の単語（TOEIC 対策の範囲）。205 語。書き方は presets-src/README.md を参照。
+アプリの初回起動で、単語帳に入れる既定の単語（TOEIC 対策の範囲）。204 語。書き方は presets-src/README.md を参照。
 
 ## beverage
 
@@ -631,12 +631,6 @@
 - 意味: (賃金を得るための)労働、勤労、(肉体的・精神的な)骨折り、苦心、労苦、労力、仕事、(資本家・企業に対して)労働者、労働階級、(英国の)労働党
 - 例文: Our company’s labor costs have increased faster than its revenue, and drastic cutbacks are required.
 - 例文の訳: 我社の人権費は収入よりも急増しているため大幅な削減がぜひとも必要です。
-
-## higher-up
-
-- 意味: 上位、優良、目上、上役
-- 例文: The administrative assistant mistakenly disconnected her higher-up’s telephone conversation.
-- 例文の訳: 役員秘書のミスで、上司の通話は切られてしまいました。
 
 ## bulletin board
 

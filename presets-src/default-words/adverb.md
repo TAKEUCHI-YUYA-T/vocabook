@@ -1,6 +1,6 @@
 # 副詞（adverb）
 
-アプリの初回起動で、単語帳に入れる既定の単語（TOEIC 対策の範囲）。54 語。書き方は presets-src/README.md を参照。
+アプリの初回起動で、単語帳に入れる既定の単語（TOEIC 対策の範囲）。53 語。書き方は presets-src/README.md を参照。
 
 ## actually
 
@@ -196,12 +196,6 @@
 - 意味: たいてい
 - 例文: I mostly use a debit card or a credit card for my shopping.
 - 例文の訳: 私は買い物でほとんどデビットカードやクレジットカードを使います。
-
-## full on
-
-- 意味: 全力で
-- 例文: You gotta go for it and do it full on.
-- 例文の訳: そのために向かって、全力でやりなさい。
 
 ## dare
 

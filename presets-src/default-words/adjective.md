@@ -1,6 +1,6 @@
 # 形容詞（adjective）
 
-アプリの初回起動で、単語帳に入れる既定の単語（TOEIC 対策の範囲）。105 語。書き方は presets-src/README.md を参照。
+アプリの初回起動で、単語帳に入れる既定の単語（TOEIC 対策の範囲）。104 語。書き方は presets-src/README.md を参照。
 
 ## anxious
 
@@ -90,10 +90,6 @@
 - 意味: (幽霊など超自然的なものを思わせて)異様な、気味の悪い、この世のものでない、変な、奇妙な
 - 例文: I heard a weird shriek.
 - 例文の訳: 変な悲鳴が聞こえた。
-
-## coed
-
-- 意味: coeducational の省略形
 
 ## coeducational
 

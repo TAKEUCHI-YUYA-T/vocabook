@@ -1,12 +1,6 @@
 # 熟語（idiom）
 
-アプリの初回起動で、単語帳に入れる既定の単語（TOEIC 対策の範囲）。252 語。書き方は presets-src/README.md を参照。
-
-## something tells me…
-
-- 意味: …という気がする
-- 例文: Something tells me this decision is going to lead to success.
-- 例文の訳: この決定が成功に導く気がする。
+アプリの初回起動で、単語帳に入れる既定の単語（TOEIC 対策の範囲）。237 語。書き方は presets-src/README.md を参照。
 
 ## cry one's eyes out
 
@@ -55,12 +49,6 @@
 - 意味: …について心配している、…を気にする
 - 例文: She is concerned about conflicts between those countries.
 - 例文の訳: 彼女はそれらの国の間に起こっている衝突について心配している。
-
-## sneak a peek at…
-
-- 意味: …を盗み見る
-- 例文: I couldn't help but sneak a peek at the script while the director was out of the room.
-- 例文の訳: 私は監督が部屋を出ている間に脚本をこっそりのぞかずにはいられませんでした。
 
 ## look over…
 
@@ -140,30 +128,6 @@
 
   ④チームはプロジェクトの初期段階で予算を使い切りました。
 
-## nod off
-
-- 意味: 眠り込む、眠る
-- 例文: ①He nodded off during the long meeting and missed most of the discussion.
-
-  ②She was so tired that she nodded off on the couch while watching TV.
-
-  ③I could see him nod off at his desk, so I gently woke him up.
-
-  ④The lecture was so monotonous that several students nodded off.
-- 例文の訳: ①長い会議の間に彼は居眠りをし、議論のほとんどを逃しました。
-
-  ②彼女はとても疲れていて、テレビを見ながらソファで居眠りをしてしまいました。
-
-  ③彼が机の前で居眠りをしているのが見えたので、優しく起こしました。
-
-  ④講義があまりにも単調だったので、何人かの学生が居眠りをしました。
-
-## swing by
-
-- 意味: 立ち寄る
-- 例文: You wanna see pain? Swing by first methodist,Tuesdays.See the guys with testicular cancer.
-- 例文の訳: 痛みが見たいなら火曜日のファースト・メソジスト教会に立ち寄って、精巣癌の患者を見てみなさい。
-
 ## head start
 
 - 意味: 幸先の良いスタート
@@ -196,12 +160,6 @@
 
   ②やぁ、ボブ！最近どう？
   　-やぁマイク！　悪くないよ。
-
-## dream co-star
-
-- 意味: 夢の共演
-- 例文: The doubles by Rafael Nadal and Roger Federer was just a dream co-star.
-- 例文の訳: ラファエル・ナダル選手とロジャー・フェデラー選手によるダブルスは、まさに夢の共演だった。
 
 ## stand for
 
@@ -328,32 +286,6 @@
 - 例文: If I had to say, I think the best part of the trip was exploring the local markets.
 - 例文の訳: もし私が言わなければならないとしたら、旅行の一番良かった部分は地元の市場を探検したことだと思います。
 
-## can't unsee
-
-- 意味: 脳裏から離れない
-- 例文: ①Once I saw that scary image, I couldn’t unsee it; it kept haunting my thoughts.
-
-  ②After watching the documentary, I couldn’t unsee the environmental impact of plastic pollution.
-
-  ③He tried to ignore the error in the report, but once he saw it, he couldn’t unsee it.
-
-  ④The graphic details of the accident were so vivid that I can’t unsee them no matter how hard I try.
-- 例文の訳: ①あの怖い画像を一度見てしまうと、忘れられず、ずっと心に残っていました。
-
-  ②ドキュメンタリーを見た後、プラスチック汚染の環境への影響をどうしても忘れられませんでした。
-
-  ③彼はレポートのエラーを無視しようとしましたが、一度見てしまうと忘れられませんでした。
-
-  ④事故のグラフィックな詳細があまりにも鮮明で、どんなに努力しても忘れられません。
-
-## bold of you to assume…
-
-- 意味: ～だと決めつけるなんてあなたは大胆ですね、～だと思うなんてあなたはずうずうしいですね
-- 例文: Can I copy your homework?
-  　- Bold of you to assume I did thehomework.
-- 例文の訳: 宿題写させてくれない？
-  　- 俺が宿題をしたと思うとは大胆だな。
-
 ## no longer
 
 - 意味: もはや…しないで
@@ -389,22 +321,6 @@
   ③その家はエネルギー効率を改善するために改装されています。
 
   ④患者は新しい薬で治療されています。
-
-## just curious
-
-- 意味: 特に意味はないが、ちょっと知りたかっただけ
-- 例文: Will you pick your brother up tonight?
-  　- No I won’t. Why?
-  　- Just curious.
-- 例文の訳: 今夜、あなたの兄弟を車で迎えに行きますか。
-  　- 行きませんが、どうしてですか。
-  　- ちょっと知りたかっただけです。
-
-## strike it rich
-
-- 意味: （思いがけなく）大金を得る、一攫千金
-- 例文: I'm up to strike it rich on an investment.
-- 例文の訳: 投資で一攫千金を狙います。
 
 ## ought to do
 
@@ -445,13 +361,6 @@
 - 意味: ～によると
 - 例文: According to the weather forecast, it’s going to rain tomorrow.
 - 例文の訳: 天気予報によれば、明日は雨が降るそうです。
-
-## How come
-
-- 意味: なぜ
-- 例文: How come you left so eary?
-- 例文の訳: なぜそんなに早く帰ったんだい？
-- メモ: https://nativecamp.net/blog/20201103_How_come#Why%E3%81%A8How-come%E3%81%AE%E9%81%95%E3%81%84%E3%81%A8%E3%81%AF
 
 ## but for
 
@@ -1417,12 +1326,6 @@
 - 例文の訳: 12歳のときは、1日何時間くらい練習してましたか？
   　- 2日に2時間くらいかな。
 
-## and stuff
-
-- 意味: ～など、
-- 例文: Dream big. You know, sometimes we don't dream big enough that it's possible because we think there is barriers and stuff.
-- 例文の訳: 夢を大きくみよう。壁やものがあると思っていて、実現可能なほど大きな夢を見ないこともある。
-
 ## be apt to do
 
 - 意味: ～する傾向にある・～しがちだ
@@ -1671,19 +1574,6 @@
 - 意味: 確実に、確かに
 - 例文: I will play some Challengers to get more confidence, play more matches hopefully, and hope I can get back on the tour again. Top 100 next year, that's what I'm aiming for. So these two wins will help for sure.
 - 例文の訳: もっと自信をつけるためにチャレンジャーに出場し、もっと試合に出て、またツアーに戻れるようにしたい。来年はトップ100、それが僕の目標だ。だから、この2つの勝利は確実に助けになるよ。
-
-## sort of
-
-- 意味: 多少、いくらか、まあまあ、幾分、ある程度、やや、少し、ちょっと
-- 例文: I sort of dislike those guys.
-- 例文の訳: あの連中はあまり好きじゃない。
-- メモ: 動詞・形容詞の前に置かれる
-
-## we'll see
-
-- 意味: もう少し様子を見よう、そのうちわかるよ、考えておきます、どうなることやら
-- 例文: I'm hoping to play Houston, but we'll see.
-- 例文の訳: ヒューストンではプレーしたいと思っているけど、どうなることやら......。
 
 ## be capable of
 
@@ -1943,12 +1833,6 @@
 - 例文: I don't want to go into debt just to buy a new car.
 - 例文の訳: 新しい車を買うためだけに借金はしたくない。
 
-## get in the zone
-
-- 意味: 集中状態（ゾーン）に入る
-- 例文: Before serving, tennis players try to get in the zone to focus fully.
-- 例文の訳: サーブを打つ前に、テニス選手は完全に集中したゾーンに入ろうとします。
-
 ## make a difference
 
 - 意味: 大きな違いを生む、影響を与える
@@ -1972,12 +1856,6 @@
 - 意味: 〜するのに十分である
 - 例文: A simple ritual can be enough to calm a nervous player.
 - 例文の訳: 簡単なルーティンが緊張した選手を落ち着かせるのに十分なこともあります。
-
-## know enough to be dangerous
-
-- 意味: ある分野について浅く危険なほど知っている、中途半端な知識がある
-- 例文: He joked that he knows enough to be dangerous about tennis science.
-- 例文の訳: 彼はテニス科学について「危ない程度には知っている」と冗談を言いました。
 
 ## pull something out of a hat
 

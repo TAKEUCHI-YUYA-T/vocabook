@@ -46,6 +46,15 @@ describe("既定の単語（presets-src/default-words → assets/presets/default
     }
   });
 
+  it("スラング・ネット用語・会話でしか使わない言い回しは、入っていない（scripts/build-default-words.js の SLANG と同じ一覧）", () => {
+    const banned = [
+      "can't unsee", "bold of you to assume…", "and stuff", "get in the zone", "swing by", "just curious", "how come", "we'll see", "sort of", "nod off",
+      "strike it rich", "sneak a peek at…", "full on", "higher-up", "something tells me…", "know enough to be dangerous", "dream co-star", "coed",
+    ];
+    const terms = new Set(words.map((w) => w.term.toLowerCase().replace(/[’‘]/g, "'")));
+    expect(banned.filter((term) => terms.has(term))).toEqual([]);
+  });
+
   it("品質: 単語に綴りミスの疑い（辞書にない語）がない。例文の訳が、例文なしに入っていない。メモは長すぎない", () => {
     const data: PosDictionaryData = JSON.parse(fs.readFileSync(path.join(ROOT, "assets", "dictionary", "pos.json"), "utf8"));
     const dictionary = buildPosDictionary(data);
