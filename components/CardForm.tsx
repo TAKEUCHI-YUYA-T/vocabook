@@ -4,6 +4,7 @@ import { Feather } from "@expo/vector-icons";
 import type { CardAutoFillState } from "@/db/autofill";
 import { LIMITS } from "@/db/repository";
 import { FLAG_LABELS, ING_OR_TO_LABELS, PARTS_OF_SPEECH, type CardFlag, type IngOrToAnswer, type PartOfSpeech } from "@/db/types";
+import type { SpellingWarning } from "@/hooks/useSpellingWarning";
 import { SpeakButton } from "./SpeakButton";
 import { colors } from "./theme";
 
@@ -31,6 +32,12 @@ export const emptyCardForm = (partOfSpeech: PartOfSpeech | null = null): CardFor
   flag: "",
 });
 
+/** 単語の中の、綴りミスの語を、候補に置き換える（大文字小文字は区別しない。ほかの語の一部は置き換えない） */
+export function replaceWord(term: string, word: string, replacement: string): string {
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return term.replace(new RegExp(`(^|[^A-Za-z])${escaped}(?![A-Za-z])`, "i"), (_, before: string) => `${before}${replacement}`);
+}
+
 /** フラグの選択肢（なし・覚えた・要復習） */
 const FLAG_CHOICES: { key: CardFlag; label: string }[] = [
   { key: "", label: "フラグなし" },
@@ -51,6 +58,8 @@ type Props = {
   editable: boolean;
   /** 同じ単語がすでにあるときの警告（保存は止めない） */
   duplicateWarning?: string | null;
+  /** 綴りミスの疑い（辞書にない語と、近い綴りの候補）。候補を押すと、単語の綴りを直す。登録は止めない */
+  spellingWarning?: SpellingWarning | null;
   autoFocus?: boolean;
   /** 品詞・例文・メモを、最初から開いておく（編集画面） */
   expanded?: boolean;
@@ -64,7 +73,7 @@ type Props = {
  * 単語の入力フォーム（追加・編集・他のアプリから登録で共通）
  * 必須は「単語」と「意味」だけ。品詞・例文・メモは「詳細」に折りたたむ
  */
-export function CardForm({ value, onChange, editable, duplicateWarning, autoFocus, expanded, showFlag, autoFill }: Props) {
+export function CardForm({ value, onChange, editable, duplicateWarning, spellingWarning, autoFocus, expanded, showFlag, autoFill }: Props) {
   const meaningRef = useRef<React.ComponentRef<typeof TextInput>>(null);
   const hasDetails = !!(value.partOfSpeech || value.example || value.exampleTranslation || value.note || value.answer);
   // ing or to の問題は、動詞と熟語のときに選べる（すでに選んであれば、品詞を変えても、外せるよう出しておく）
@@ -86,7 +95,7 @@ export function CardForm({ value, onChange, editable, duplicateWarning, autoFocu
       <View style={styles.field}>
         <View style={styles.labelRow}>
           <Text style={styles.label}>単語（必須）</Text>
-          <SpeakButton text={value.term} label="単語を読み上げる" />
+          <SpeakButton text={value.term} label="単語を読み上げる" warn={!!spellingWarning} />
         </View>
         <TextInput
           style={[styles.termInput, termFocused && styles.termInputFocused]}
@@ -105,6 +114,32 @@ export function CardForm({ value, onChange, editable, duplicateWarning, autoFocu
           placeholder="例: abolish"
         />
       </View>
+
+      {!!spellingWarning && (
+        <View style={styles.warning} accessibilityRole="alert">
+          <Feather name="alert-circle" size={18} color={colors.warningText} style={styles.warningIcon} />
+          <View style={styles.spellingBody}>
+            <Text style={styles.warningText}>「{spellingWarning.word}」は辞書にありません。綴りを確認してください。</Text>
+            {spellingWarning.suggestions.length > 0 && (
+              <View style={styles.suggestionRow}>
+                <Text style={styles.warningText}>もしかして:</Text>
+                {spellingWarning.suggestions.map((suggestion) => (
+                  <TouchableOpacity
+                    key={suggestion}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${spellingWarning.word}を${suggestion}に直す`}
+                    disabled={!editable}
+                    style={styles.suggestionChip}
+                    onPress={() => onChange({ ...value, term: replaceWord(value.term, spellingWarning.word, suggestion) })}
+                  >
+                    <Text style={styles.suggestionText}>{suggestion}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+        </View>
+      )}
 
       {!!duplicateWarning && (
         <View style={styles.warning} accessibilityRole="alert">
@@ -314,7 +349,11 @@ const styles = StyleSheet.create({
   detailInput: { minHeight: 64, fontSize: 15 },
   warning: { flexDirection: "row", alignItems: "flex-start", gap: 8, backgroundColor: colors.panel, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12, marginTop: -8 },
   warningIcon: { marginTop: 2 },
-  warningText: { flex: 1, fontSize: 14, lineHeight: 22, color: colors.warningText },
+  warningText: { fontSize: 14, lineHeight: 22, color: colors.warningText },
+  spellingBody: { flex: 1, gap: 6 },
+  suggestionRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8 },
+  suggestionChip: { minHeight: 36, paddingHorizontal: 12, borderRadius: 18, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.warningText, justifyContent: "center" },
+  suggestionText: { fontSize: 15, fontWeight: "bold", color: colors.warningText },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   chip: { minHeight: 40, paddingHorizontal: 12, borderRadius: 20, borderWidth: 1, borderColor: colors.inputBorder, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center" },
   chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },

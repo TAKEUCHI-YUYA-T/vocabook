@@ -14,6 +14,7 @@ import { decodeDirection, decodeFlags } from "@/db/studyRange";
 import { partOfSpeechLabel, PARTS_OF_SPEECH, type Card, type CardFlag, type PartOfSpeech } from "@/db/types";
 import { useGoBack } from "@/hooks/useGoBack";
 import { speakEnglish, stopSpeaking } from "@/lib/speech";
+import { spellingProblemsOnDevice } from "@/db/posDictionary";
 
 /**
  * 学習画面
@@ -68,6 +69,8 @@ export default function LearnScreen() {
   );
 
   const current = quiz && quiz.order.length > 0 ? quiz.order[quiz.index] : null;
+  // 辞書にない単語（綴りミスの疑い）は、読み上げボタンに目印を付ける
+  const termUnknown = !!current && spellingProblemsOnDevice(current.term).length > 0;
 
   // 聞き取りは、単語が変わるたびに、自動で読み上げる。画面を離れたら、読み上げを止める
   useEffect(() => {
@@ -149,7 +152,7 @@ export default function LearnScreen() {
             <>
               <View style={styles.termRow}>
                 <Text style={styles.term}>{current.term}</Text>
-                <SpeakButton text={current.term} label="単語を読み上げる" />
+                <SpeakButton text={current.term} label="単語を読み上げる" warn={termUnknown} />
               </View>
               {!!current.example && (
                 <View style={styles.exampleRow}>
@@ -181,7 +184,7 @@ export default function LearnScreen() {
               {direction !== "en-ja" && (
                 <View style={styles.termRow}>
                   <Text style={styles.term}>{current.term}</Text>
-                  <SpeakButton text={current.term} label="単語を読み上げる" />
+                  <SpeakButton text={current.term} label="単語を読み上げる" warn={termUnknown} />
                 </View>
               )}
               {direction !== "ja-en" && !!current.meaning && (

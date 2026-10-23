@@ -11,6 +11,7 @@ import { useCardAutoFill } from "@/hooks/useCardAutoFill";
 import { useDefaultDeck } from "@/hooks/useDefaultDeck";
 import { useDuplicateWarning } from "@/hooks/useDuplicateWarning";
 import { useGoBack } from "@/hooks/useGoBack";
+import { useSpellingWarning } from "@/hooks/useSpellingWarning";
 
 /** 「追加しました」の表示を出しておく時間（ミリ秒） */
 const NOTICE_MS = 2500;
@@ -34,6 +35,7 @@ export default function NewCardScreen() {
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const duplicateWarning = useDuplicateWarning(repository, deck?.id, value.term);
   const autoFill = useCardAutoFill(value, setValue);
+  const spellingWarning = useSpellingWarning(value.term);
 
   useEffect(() => {
     return () => {
@@ -82,7 +84,7 @@ export default function NewCardScreen() {
       />
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <CardForm key={formKey} value={value} onChange={setValue} editable autoFocus duplicateWarning={duplicateWarning} autoFill={autoFill} />
+        <CardForm key={formKey} value={value} onChange={setValue} editable autoFocus duplicateWarning={duplicateWarning} spellingWarning={spellingWarning} autoFill={autoFill} />
 
         {!!(error ?? deckError) && <Text style={styles.error}>{error ?? deckError}</Text>}
 

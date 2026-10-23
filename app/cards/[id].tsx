@@ -12,6 +12,7 @@ import { CardForm, type CardFormValue } from "@/components/CardForm";
 import { useCardAutoFill } from "@/hooks/useCardAutoFill";
 import { useDuplicateWarning } from "@/hooks/useDuplicateWarning";
 import { useGoBack } from "@/hooks/useGoBack";
+import { useSpellingWarning } from "@/hooks/useSpellingWarning";
 
 const toFormValue = (card: Card): CardFormValue => ({
   term: card.term,
@@ -77,6 +78,7 @@ function EditCardForm({ card, editable, goBack }: { card: Card; editable: boolea
   const duplicateWarning = useDuplicateWarning(repository, card.deckId, value.term, card.id);
   // 開いた時点の単語・例文では自動入力しない。あなたが直したときだけ、品詞や訳を入れる
   const autoFill = useCardAutoFill(value, setValue);
+  const spellingWarning = useSpellingWarning(value.term);
 
   const run = async (action: () => Promise<void>) => {
     if (isSaving) return;
@@ -130,6 +132,7 @@ function EditCardForm({ card, editable, goBack }: { card: Card; editable: boolea
           expanded
           showFlag={editable}
           duplicateWarning={editable ? duplicateWarning : null}
+          spellingWarning={editable ? spellingWarning : null}
           autoFill={editable ? autoFill : undefined}
         />
 

@@ -11,6 +11,7 @@ import { CardForm, emptyCardForm, type CardFormValue } from "@/components/CardFo
 import { useCardAutoFill } from "@/hooks/useCardAutoFill";
 import { useDefaultDeck } from "@/hooks/useDefaultDeck";
 import { useDuplicateWarning } from "@/hooks/useDuplicateWarning";
+import { useSpellingWarning } from "@/hooks/useSpellingWarning";
 import { returnToPreviousApp } from "../../modules/selected-text";
 
 /**
@@ -33,6 +34,7 @@ export default function CaptureScreen() {
   const duplicateWarning = useDuplicateWarning(repository, deck?.id, value.term);
   // 選んだ単語の意味・品詞も、最初から下書きする（例文を入れたときの訳も自動で入る）
   const autoFill = useCardAutoFill(value, setValue, { guessInitialTerm: true });
+  const spellingWarning = useSpellingWarning(value.term);
 
   /** 保存したあと、選択元のアプリに戻る。戻れない場合（アプリ内から開いたとき）は、ホームへ */
   const finish = () => {
@@ -73,7 +75,7 @@ export default function CaptureScreen() {
           </Text>
         ))}
 
-        <CardForm value={value} onChange={setValue} editable duplicateWarning={duplicateWarning} autoFill={autoFill} />
+        <CardForm value={value} onChange={setValue} editable duplicateWarning={duplicateWarning} spellingWarning={spellingWarning} autoFill={autoFill} />
 
         {!!(error ?? deckError) && <Text style={styles.error}>{error ?? deckError}</Text>}
       </ScrollView>

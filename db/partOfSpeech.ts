@@ -80,6 +80,11 @@ function guessInflected(word: string, dictionary: PosDictionary): PartOfSpeech |
   return null;
 }
 
+/** 辞書・前置詞などの一覧・変化形のどれかで、知っている語か（綴りの確認用。品詞は問わない） */
+export function isKnownWord(word: string, dictionary: PosDictionary): boolean {
+  return CLOSED_CLASS.has(word) || dictionary.has(word) || guessInflected(word, dictionary) !== null;
+}
+
 export function guessPartOfSpeech(term: string, dictionary: PosDictionary): PartOfSpeech | null {
   const text = withoutNotes(term);
   if (isPattern(text)) return "idiom";
