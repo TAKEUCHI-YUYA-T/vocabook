@@ -1,4 +1,5 @@
 import { newId, now, type Db, type SqlParam } from "./database";
+import { localDay } from "./day";
 import { DEFAULT_DECK_NAME } from "./presets";
 import type { Card, CardFlag, CardInput, CardType, Deck, DeckKind, DeckSummary, HomeStats, IngOrToAnswer, PartOfSpeech, StudyFilter, Tip } from "./types";
 import { PARTS_OF_SPEECH, toFlag } from "./types";
@@ -224,6 +225,7 @@ export function createRepository(db: Db) {
         "UPDATE cards SET term = ?, meaning = ?, part_of_speech = ?, example = ?, example_translation = ?, note = ?, answer = ?, flag = ?, updated_at = ? WHERE id = ?",
         [value.term, value.meaning, value.partOfSpeech, value.example, value.exampleTranslation, value.note, value.answer ?? "", value.flag ?? existing.flag, now(), id]
       );
+      if (value.flag !== undefined && value.flag !== existing.flag) await repo.setFlag(id, value.flag);
       return (await repo.getCard(id)) as Card;
     },
 
@@ -268,9 +270,35 @@ export function createRepository(db: Db) {
       return rows.map((row) => ({ partOfSpeech: row.part_of_speech ?? "", flag: row.flag, count: row.n, withMeaning: row.with_meaning ?? 0 }));
     },
 
-    /** 単語のフラグを付ける・外す（学習画面から） */
-    async setFlag(id: string, flag: CardFlag): Promise<void> {
-      await db.runAsync("UPDATE cards SET flag = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL", [toFlag(flag), now(), id]);
+    /**
+     * 単語のフラグを付ける・外す（学習画面・編集画面から）
+     * 「覚えた」にした日を記録する（すでに「覚えた」なら、最初の日のまま）。「覚えた」以外にしたら、日を消す
+     */
+    async setFlag(id: string, flag: CardFlag, day: string = localDay()): Promise<void> {
+      const next = toFlag(flag);
+      await db.runAsync(
+        `UPDATE cards SET flag = ?, learned_day = CASE WHEN ? = 'learned' THEN COALESCE(CASE WHEN flag = 'learned' THEN learned_day END, ?) ELSE NULL END, updated_at = ?
+         WHERE id = ? AND deleted_at IS NULL`,
+        [next, next, day, now(), id]
+      );
+    },
+
+    /**
+     * グラフ用の、日ごとの数（days は古い順の日付）
+     * - studied: その日に答えを見た単語の数（同じ単語は1回）
+     * - learned: その日の終わりに「覚えた」だった単語の数（今「覚えた」の単語を、覚えた日で数える。あとで外した単語は数えない）
+     */
+    async dailyStats(days: string[]): Promise<{ day: string; studied: number; learned: number }[]> {
+      if (days.length === 0) return [];
+      const studied = await db.getAllAsync<{ day: string; n: number }>(
+        `SELECT l.day AS day, COUNT(*) AS n FROM study_log l JOIN cards c ON c.id = l.card_id
+         WHERE c.deleted_at IS NULL AND c.type = 'basic' AND l.day BETWEEN ? AND ? GROUP BY l.day`,
+        [days[0], days[days.length - 1]]
+      );
+      const learned = await db.getAllAsync<{ day: string | null; n: number }>(
+        `SELECT learned_day AS day, COUNT(*) AS n FROM cards WHERE flag = 'learned' AND deleted_at IS NULL AND type = 'basic' GROUP BY learned_day`
+      );
+      return buildDailySeries(days, studied, learned);
     },
 
     /** 単語の答えを見たことを記録する（day は "YYYY-MM-DD"。同じ日に同じ単語を何度見ても、1回と数える） */
@@ -323,3 +351,20 @@ export function createRepository(db: Db) {
 }
 
 export type Repository = ReturnType<typeof createRepository>;
+
+/**
+ * 日ごとの数を、グラフの系列にする（DB から切り離して、テストできるようにしている）
+ * learned は累計。覚えた日が分からない単語（null）は、期間より前に覚えたものとして数える
+ */
+export function buildDailySeries(
+  days: string[],
+  studiedRows: { day: string; n: number }[],
+  learnedRows: { day: string | null; n: number }[]
+): { day: string; studied: number; learned: number }[] {
+  const studiedByDay = new Map(studiedRows.map((row) => [row.day, row.n]));
+  return days.map((day) => ({
+    day,
+    studied: studiedByDay.get(day) ?? 0,
+    learned: learnedRows.filter((row) => row.day === null || row.day <= day).reduce((sum, row) => sum + row.n, 0),
+  }));
+}

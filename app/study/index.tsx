@@ -185,7 +185,6 @@ export default function StudySelectScreen() {
           </>
         )}
 
-        <Text style={styles.hint}>フラグ・品詞は、複数選べます。「すべて」なら、その条件では絞りません。</Text>
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) + 16 }]}>

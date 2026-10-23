@@ -92,7 +92,12 @@ export default function Home() {
 
         {/* 今日の学習の記録 */}
         {stats && (
-          <View style={styles.stats} accessibilityLabel="学習の記録">
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={`学習の記録。今日の学習 ${stats.studiedToday}語、覚えた ${stats.learned}語。押すとグラフを開きます`}
+            style={styles.stats}
+            onPress={() => router.push("/stats")}
+          >
             <View style={styles.stat}>
               <Text style={styles.statLabel}>今日の学習</Text>
               <Text style={styles.statValue}>
@@ -107,7 +112,11 @@ export default function Home() {
                 <Text style={styles.statUnit}> 語</Text>
               </Text>
             </View>
-          </View>
+            <View style={styles.statChevron}>
+              <Feather name="bar-chart-2" size={20} color={colors.secondary} />
+              <Feather name="chevron-right" size={18} color={colors.secondary} />
+            </View>
+          </TouchableOpacity>
         )}
 
         <View style={styles.menu}>
@@ -158,7 +167,8 @@ const styles = StyleSheet.create({
   tipHeadingText: { fontSize: 13, fontWeight: "bold", color: colors.secondary },
   tipTitle: { fontSize: 17, fontWeight: "bold", color: colors.text },
   tipBody: { fontSize: 15, lineHeight: 24, color: colors.text },
-  stats: { flexDirection: "row", gap: 12 },
+  stats: { flexDirection: "row", alignItems: "center", gap: 12 },
+  statChevron: { alignItems: "center", gap: 2 },
   stat: { flex: 1, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 14 },
   statLabel: { fontSize: 13, fontWeight: "bold", color: colors.secondary },
   statValue: { fontSize: 28, fontWeight: "bold", lineHeight: 36, color: colors.text },

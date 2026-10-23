@@ -57,6 +57,11 @@ const MIGRATIONS: string[] = [
     PRIMARY KEY (day, card_id)
   );
   `,
+  // 3: 「覚えた」にした日（覚えた単語の推移のグラフ用）。すでに「覚えた」の単語は、更新した日にする
+  `
+  ALTER TABLE cards ADD COLUMN learned_day TEXT;
+  UPDATE cards SET learned_day = date('now', 'localtime') WHERE flag = 'learned';
+  `,
 ];
 
 export const LATEST_SCHEMA_VERSION = MIGRATIONS.length;

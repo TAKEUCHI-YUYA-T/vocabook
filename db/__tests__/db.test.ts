@@ -1,4 +1,5 @@
-import { localDay } from "../day";
+import { lastDays, localDay } from "../day";
+import { buildDailySeries } from "../repository";
 import { LATEST_SCHEMA_VERSION, migrate } from "../migrations";
 import {
   DEFAULT_DECK_NAME,
@@ -239,6 +240,53 @@ describe("学習の記録（ホームに出す数）", () => {
     expect(await repo.homeStats("2026-10-23")).toEqual({ studiedToday: 1, learned: 2, total: 3 });
     await repo.deleteCard(b.id);
     expect(await repo.homeStats("2026-10-23")).toEqual({ studiedToday: 0, learned: 1, total: 2 });
+  });
+
+  it("グラフ用に、覚えた日を記録する。すでに覚えた単語は最初の日のまま、外すと日を消す", async () => {
+    const { db, repo, defaultDeck } = await setup();
+    const a = await repo.addCard(defaultDeck.id, { term: "a", meaning: "あ" });
+    const learnedDay = async () => (await db.getFirstAsync<{ d: string | null }>("SELECT learned_day AS d FROM cards WHERE id = ?", [a.id]))?.d;
+    await repo.setFlag(a.id, "learned", "2026-10-20");
+    await repo.setFlag(a.id, "learned", "2026-10-22");
+    expect(await learnedDay()).toBe("2026-10-20");
+    await repo.setFlag(a.id, "review", "2026-10-23");
+    expect(await learnedDay()).toBeNull();
+    // 編集画面で「覚えた」にしても、記録する
+    await repo.updateCard(a.id, { term: "a", meaning: "あ", flag: "learned" });
+    expect(await learnedDay()).toBe(localDay());
+  });
+
+  it("日ごとの数: 学習は日ごと、覚えた単語は累計（覚えた日で数え、外した単語は数えない）", async () => {
+    const { repo, defaultDeck } = await setup();
+    const a = await repo.addCard(defaultDeck.id, { term: "a", meaning: "あ" });
+    const b = await repo.addCard(defaultDeck.id, { term: "b", meaning: "い" });
+    const c = await repo.addCard(defaultDeck.id, { term: "c", meaning: "う" });
+    await repo.recordStudied(a.id, "2026-10-21");
+    await repo.recordStudied(b.id, "2026-10-21");
+    await repo.recordStudied(a.id, "2026-10-23");
+    await repo.setFlag(a.id, "learned", "2026-10-21");
+    await repo.setFlag(b.id, "learned", "2026-10-23");
+    await repo.setFlag(c.id, "learned", "2026-10-22");
+    await repo.setFlag(c.id, "", "2026-10-23");
+    expect(await repo.dailyStats(["2026-10-21", "2026-10-22", "2026-10-23"])).toEqual([
+      { day: "2026-10-21", studied: 2, learned: 1 },
+      { day: "2026-10-22", studied: 0, learned: 1 },
+      { day: "2026-10-23", studied: 1, learned: 2 },
+    ]);
+    expect(await repo.dailyStats([])).toEqual([]);
+  });
+
+  it("覚えた日が分からない単語（取り込みで「覚えた」など）は、期間より前に覚えたものとして数える", () => {
+    expect(buildDailySeries(["2026-10-22", "2026-10-23"], [], [{ day: null, n: 3 }, { day: "2026-10-23", n: 1 }])).toEqual([
+      { day: "2026-10-22", studied: 0, learned: 3 },
+      { day: "2026-10-23", studied: 0, learned: 4 },
+    ]);
+  });
+
+  it("グラフの期間は、今日を最後とする日付を古い順に並べる（月・年をまたいでも暦どおり）", () => {
+    expect(lastDays(3, new Date(2026, 9, 23))).toEqual(["2026-10-21", "2026-10-22", "2026-10-23"]);
+    expect(lastDays(3, new Date(2027, 0, 1))).toEqual(["2026-12-30", "2026-12-31", "2027-01-01"]);
+    expect(lastDays(30, new Date(2026, 9, 23))).toHaveLength(30);
   });
 
   it("日付は、端末の日付（YYYY-MM-DD）にする", () => {
