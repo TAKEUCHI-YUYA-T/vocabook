@@ -1,4 +1,5 @@
 import { newId, now, type Db, type SqlParam } from "./database";
+import type { PartOfSpeech } from "./types";
 
 /**
  * アプリに同梱するデータ（scripts/build-presets.js の出力）
@@ -97,11 +98,23 @@ export async function syncPresets(db: Db, data: PresetData): Promise<boolean> {
   return true;
 }
 
+/** 初回起動で、単語帳に入れる既定の単語（presets-src/default-words の Markdown から作る） */
+export type DefaultWord = {
+  term: string;
+  meaning: string;
+  partOfSpeech: PartOfSpeech;
+  example?: string;
+  exampleTranslation?: string;
+  note?: string;
+};
+
 /**
- * 初回起動時に、空の単語帳を1つ用意する（すぐに単語を追加できるように）
- * 一度用意したら、ユーザーが単語帳をすべて削除しても作り直さない
+ * 初回起動時に、単語帳を1つ用意し、既定の単語（TOEIC 対策の範囲）を入れる
+ * - 初回だけ。一度用意したら、ユーザーが単語や単語帳を削除しても、入れ直さない（アプリを更新した既存のユーザーにも入れない）
+ * - すでに自分の単語帳がある場合（古い版から更新した場合など）は、何も追加しない
+ * 入れた単語は、ふつうの単語として、編集・削除・フラグの付け外しができる
  */
-export async function ensureDefaultDeck(db: Db): Promise<void> {
+export async function ensureDefaultDeck(db: Db, defaultWords: readonly DefaultWord[] = []): Promise<void> {
   const done = await db.getFirstAsync<{ value: string }>("SELECT value FROM meta WHERE key = ?", [META_DEFAULT_DECK_CREATED]);
   if (done) return;
 
@@ -109,9 +122,19 @@ export async function ensureDefaultDeck(db: Db): Promise<void> {
   await db.withTransactionAsync(async () => {
     const existing = await db.getFirstAsync<{ n: number }>("SELECT COUNT(*) AS n FROM decks WHERE kind = 'user' AND deleted_at IS NULL");
     if ((existing?.n ?? 0) === 0) {
+      const deckId = newId();
       await db.runAsync("INSERT INTO decks (id, name, kind, created_at, updated_at) VALUES (?, ?, 'user', ?, ?)", [
-        newId(), DEFAULT_DECK_NAME, timestamp, timestamp,
+        deckId, DEFAULT_DECK_NAME, timestamp, timestamp,
       ]);
+      await insertRows(
+        db,
+        `INSERT INTO cards
+          (id, deck_id, type, term, meaning, part_of_speech, example, example_translation, note, answer, position, created_at, updated_at)`,
+        defaultWords.map((word, index): SqlParam[] => [
+          newId(), deckId, "basic", word.term, word.meaning, word.partOfSpeech, word.example ?? "", word.exampleTranslation ?? "", word.note ?? "",
+          "", index, timestamp, timestamp,
+        ])
+      );
     }
     await db.runAsync("INSERT INTO meta (key, value) VALUES (?, '1') ON CONFLICT(key) DO UPDATE SET value = excluded.value", [
       META_DEFAULT_DECK_CREATED,
