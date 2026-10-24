@@ -6,16 +6,9 @@ Google スプレッドシートは使いません。このフォルダの Markdo
 |---|---|---|
 | `tips.md` | ホームの「今日のヒント」 | `node scripts/build-presets.js` → `assets/presets/tips.json` |
 | `ing-or-to.md` | ing or to の問題 | 同上 → `assets/presets/ing-or-to.json` |
-| `default-words/*.md` | 既定の単語（品詞ごと。TOEIC 対策の範囲。アプリでは未使用） | 同上 → `assets/presets/default-words.json` |
 | `words/*.md` | 自分の単語（品詞ごと。個人のデータ） | `node scripts/words-md-to-csv.js` → アプリの「取り込み」で読める CSV |
 
-`words/` は個人のデータなので、git の対象外です（`.gitignore`）。`default-words/` は、アプリに同梱して配るので、git で管理します。
-
-### 既定の単語について
-- **いまは、アプリでは使っていません**（新規インストールは、空の単語帳から始まります。アプリに追加する操作もありません）。内容の記録として、置いています。
-- アプリに組み込むときは、`assets/presets/default-words.json`（`node scripts/build-presets.js` で作る）を読みます。
-- `default-words/*.md` は、自分の単語（`words/`）から選んで作ったものです（`node scripts/build-default-words.js`。一度だけ使う）。以後は、`default-words/` を直接直します。
-- 公開して配るので、意味が空・品詞名そのもの・重複・綴りミスは入れません（テストが確かめます）。
+`words/` は個人のデータなので、git の対象外です（`.gitignore`）。
 
 ## 書き方
 
@@ -46,7 +39,7 @@ whichかthatで悩んだ場合、…
 
 ### 単語（`words/*.md`）
 ファイル名が品詞です（`noun.md`、`verb.md`、`adverb.md`、`adjective.md`、`preposition.md`、`conjunction.md`、`auxiliaryVerb.md`、`idiom.md`）。
-項目は、`意味`・`例文`・`例文の訳`・`メモ`（ing or to の問題にも出すなら `ing or to`）です。`default-words/` も同じ書き方です。
+項目は、`意味`・`例文`・`例文の訳`・`メモ`（ing or to の問題にも出すなら `ing or to`）です。
 単語が2行にわたる場合は、`- 単語の続き:` に2行目以降を書きます。
 
 ## 反映のしかた

@@ -1,5 +1,4 @@
 import { newId, now, type Db, type SqlParam } from "./database";
-import type { PartOfSpeech } from "./types";
 
 /**
  * アプリに同梱するデータ（scripts/build-presets.js の出力）
@@ -97,16 +96,6 @@ export async function syncPresets(db: Db, data: PresetData): Promise<boolean> {
   });
   return true;
 }
-
-/** 既定の単語（presets-src/default-words の Markdown から作る）。いまは、アプリでは使っていない（記録として置いている） */
-export type DefaultWord = {
-  term: string;
-  meaning: string;
-  partOfSpeech: PartOfSpeech;
-  example?: string;
-  exampleTranslation?: string;
-  note?: string;
-};
 
 /**
  * 初回起動時に、空の単語帳を1つ用意する（すぐに単語を追加できるように。単語は入れない）
