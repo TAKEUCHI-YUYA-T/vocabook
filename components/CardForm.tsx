@@ -2,6 +2,7 @@ import React, { useRef, useState } from "react";
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import type { CardAutoFillState } from "@/db/autofill";
+import { MAX_EXAMPLES, type Example } from "@/db/examples";
 import { LIMITS } from "@/db/repository";
 import { FLAG_LABELS, ING_OR_TO_LABELS, PARTS_OF_SPEECH, type CardFlag, type IngOrToAnswer, type PartOfSpeech } from "@/db/types";
 import type { SpellingWarning } from "@/hooks/useSpellingWarning";
@@ -12,8 +13,8 @@ export type CardFormValue = {
   term: string;
   meaning: string;
   partOfSpeech: PartOfSpeech | null;
-  example: string;
-  exampleTranslation: string;
+  /** 例文（1〜3つ。英文と、その和訳の対。空の例文は、保存のときに除かれる） */
+  examples: Example[];
   note: string;
   /** ing or to の問題にも出すときの答え（null なら出さない） */
   answer: IngOrToAnswer | null;
@@ -25,8 +26,7 @@ export const emptyCardForm = (partOfSpeech: PartOfSpeech | null = null): CardFor
   term: "",
   meaning: "",
   partOfSpeech,
-  example: "",
-  exampleTranslation: "",
+  examples: [{ text: "", translation: "" }],
   note: "",
   answer: null,
   flag: "",
@@ -75,7 +75,7 @@ type Props = {
  */
 export function CardForm({ value, onChange, editable, duplicateWarning, spellingWarning, autoFocus, expanded, showFlag, autoFill }: Props) {
   const meaningRef = useRef<React.ComponentRef<typeof TextInput>>(null);
-  const hasDetails = !!(value.partOfSpeech || value.example || value.exampleTranslation || value.note || value.answer);
+  const hasDetails = !!(value.partOfSpeech || value.examples.some((e) => e.text || e.translation) || value.note || value.answer);
   // ing or to の問題は、動詞と熟語のときに選べる（すでに選んであれば、品詞を変えても、外せるよう出しておく）
   const showIngOrTo = value.partOfSpeech === "verb" || value.partOfSpeech === "idiom" || value.answer !== null;
   const [showDetails, setShowDetails] = useState(hasDetails);
@@ -85,10 +85,17 @@ export function CardForm({ value, onChange, editable, duplicateWarning, spelling
   const isAutoPartOfSpeech = !!autoFill && value.partOfSpeech !== null && value.partOfSpeech === autoFill.autoPartOfSpeech;
   const isAutoMeaning = !!autoFill && value.meaning !== "" && value.meaning === autoFill.autoMeaning;
   const meaningStatus = autoFill?.meaningStatus;
-  const isAutoTranslation = !!autoFill && value.exampleTranslation !== "" && value.exampleTranslation === autoFill.autoTranslation;
-  const translationStatus = autoFill?.translationStatus;
 
   const set = <K extends keyof CardFormValue>(key: K, next: CardFormValue[K]) => onChange({ ...value, [key]: next });
+
+  // 例文は、いつも1つは欄を出す。足すのは3つまで
+  const exampleBlocks: Example[] = value.examples.length > 0 ? value.examples : [{ text: "", translation: "" }];
+  const setExample = (index: number, patch: Partial<Example>) =>
+    set("examples", exampleBlocks.map((example, i) => (i === index ? { ...example, ...patch } : example)));
+  const removeExample = (index: number) => {
+    const next = exampleBlocks.filter((_, i) => i !== index);
+    set("examples", next.length > 0 ? next : [{ text: "", translation: "" }]);
+  };
 
   return (
     <View style={styles.form}>
@@ -255,48 +262,77 @@ export function CardForm({ value, onChange, editable, duplicateWarning, spelling
             </View>
           )}
 
-          <View style={styles.field}>
-            <View style={styles.labelRow}>
-              <Text style={styles.label}>例文</Text>
-              <SpeakButton text={value.example} label="例文を読み上げる" />
-            </View>
-            <TextInput
-              style={[styles.input, styles.multiline, styles.detailInput]}
-              value={value.example}
-              onChangeText={(text) => set("example", text)}
-              editable={editable}
-              multiline
-              autoCapitalize="sentences"
-              maxLength={LIMITS.example}
-            />
-          </View>
-
-          <View style={styles.field}>
-            <View style={styles.labelRow}>
-              <Text style={styles.label}>例文の訳</Text>
-              {isAutoTranslation && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>自動翻訳の下書き</Text>
+          {exampleBlocks.map((example, index) => {
+            const isAutoTranslation = !!autoFill && example.translation !== "" && example.translation === autoFill.autoTranslations[index];
+            const translationStatus = autoFill?.translationStatuses[index];
+            const name = exampleBlocks.length > 1 ? `例文${index + 1}` : "例文";
+            return (
+              <View key={index} style={styles.exampleBlock}>
+                <View style={styles.labelRow}>
+                  <Text style={styles.label}>{name}</Text>
+                  <SpeakButton text={example.text} label={`${name}を読み上げる`} />
+                  {exampleBlocks.length > 1 && (
+                    <TouchableOpacity
+                      accessibilityRole="button"
+                      accessibilityLabel={`${name}を削除`}
+                      disabled={!editable}
+                      hitSlop={8}
+                      style={styles.removeButton}
+                      onPress={() => removeExample(index)}
+                    >
+                      <Feather name="trash-2" size={18} color={colors.secondary} />
+                    </TouchableOpacity>
+                  )}
                 </View>
-              )}
-            </View>
-            <TextInput
-              style={[styles.input, styles.multiline, styles.detailInput]}
-              value={value.exampleTranslation}
-              onChangeText={(text) => set("exampleTranslation", text)}
-              editable={editable}
-              multiline
-              maxLength={LIMITS.example}
-            />
-            {translationStatus?.state === "loading" && (
-              <View style={styles.statusRow}>
-                <ActivityIndicator size="small" color={colors.secondary} />
-                <Text style={styles.hint}>訳を作っています…</Text>
+                <TextInput
+                  style={[styles.input, styles.multiline, styles.detailInput]}
+                  value={example.text}
+                  onChangeText={(text) => setExample(index, { text })}
+                  editable={editable}
+                  multiline
+                  autoCapitalize="sentences"
+                  maxLength={LIMITS.example}
+                  placeholder="英文"
+                />
+                <View style={styles.labelRow}>
+                  <Text style={styles.label}>{name}の訳</Text>
+                  {isAutoTranslation && (
+                    <View style={styles.badge}>
+                      <Text style={styles.badgeText}>自動翻訳の下書き</Text>
+                    </View>
+                  )}
+                </View>
+                <TextInput
+                  style={[styles.input, styles.multiline, styles.detailInput]}
+                  value={example.translation}
+                  onChangeText={(translation) => setExample(index, { translation })}
+                  editable={editable}
+                  multiline
+                  maxLength={LIMITS.example}
+                  placeholder="和訳"
+                />
+                {translationStatus?.state === "loading" && (
+                  <View style={styles.statusRow}>
+                    <ActivityIndicator size="small" color={colors.secondary} />
+                    <Text style={styles.hint}>訳を作っています…</Text>
+                  </View>
+                )}
+                {translationStatus?.state === "failed" && !!translationStatus.message && <Text style={styles.failure}>{translationStatus.message}</Text>}
+                {isAutoTranslation && translationStatus?.state !== "loading" && <Text style={styles.hint}>下書きです。内容を確認して、必要なら直してから、保存してください。</Text>}
               </View>
-            )}
-            {translationStatus?.state === "failed" && !!translationStatus.message && <Text style={styles.failure}>{translationStatus.message}</Text>}
-            {isAutoTranslation && translationStatus?.state !== "loading" && <Text style={styles.hint}>内容を確認して、必要なら直してください。</Text>}
-          </View>
+            );
+          })}
+          {exampleBlocks.length < MAX_EXAMPLES && (
+            <TouchableOpacity
+              accessibilityRole="button"
+              disabled={!editable}
+              style={styles.detailsToggle}
+              onPress={() => set("examples", [...exampleBlocks, { text: "", translation: "" }])}
+            >
+              <Feather name="plus" size={20} color={colors.secondary} />
+              <Text style={styles.detailsToggleText}>例文を追加する（あと{MAX_EXAMPLES - exampleBlocks.length}つ）</Text>
+            </TouchableOpacity>
+          )}
 
           <View style={styles.field}>
             <Text style={styles.label}>メモ</Text>
@@ -347,6 +383,8 @@ const styles = StyleSheet.create({
   multiline: { textAlignVertical: "top" },
   meaningInput: { minHeight: 96, fontSize: 17 },
   detailInput: { minHeight: 64, fontSize: 15 },
+  exampleBlock: { gap: 6, borderLeftWidth: 3, borderLeftColor: colors.border, paddingLeft: 10 },
+  removeButton: { width: 32, height: 32, alignItems: "center", justifyContent: "center" },
   warning: { flexDirection: "row", alignItems: "flex-start", gap: 8, backgroundColor: colors.panel, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12, marginTop: -8 },
   warningIcon: { marginTop: 2 },
   warningText: { fontSize: 14, lineHeight: 22, color: colors.warningText },

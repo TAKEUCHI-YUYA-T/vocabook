@@ -147,8 +147,8 @@ describe("書き込みと書き出し", () => {
     await expect(repo.addCard(deck.id, { term: "manual", meaning: "" })).rejects.toThrow("意味を入力してください");
 
     const [empty] = await repo.listCards(deck.id);
-    const edited = await repo.updateCard(empty.id, { term: "void", meaning: "", example: "The contract is void." });
-    expect(edited).toMatchObject({ meaning: "", example: "The contract is void." });
+    const edited = await repo.updateCard(empty.id, { term: "void", meaning: "", examples: [{ text: "The contract is void.", translation: "" }] });
+    expect(edited).toMatchObject({ meaning: "", examples: [{ text: "The contract is void.", translation: "" }] });
 
     const filled = await repo.addCard(deck.id, { term: "full", meaning: "満ちた" });
     await expect(repo.updateCard(filled.id, { term: "full", meaning: "" })).rejects.toThrow("意味を入力してください");
@@ -157,8 +157,17 @@ describe("書き込みと書き出し", () => {
   it("書き出した CSV を取り込み直すと、同じ内容に戻る（数式のように見える値も含めて）", async () => {
     const { repo, deck } = await setup();
     await repo.importCards(deck.id, [
-      { term: "-ing", meaning: "=動名詞の語尾", partOfSpeech: "idiom", example: "He said \"stop\",\nthen left.", exampleTranslation: "「止まれ」と言って去った", note: "+メモ" },
+      { term: "-ing", meaning: "=動名詞の語尾", partOfSpeech: "idiom", examples: [{ text: "He said \"stop\", then left.", translation: "「止まれ」と言って去った" }], note: "+メモ" },
       { term: "apple", meaning: "りんご" },
+      {
+        term: "concern",
+        meaning: "心配",
+        examples: [
+          { text: "I have a concern.", translation: "懸念がある。" },
+          { text: "Our chief concern is the weather.", translation: "" },
+          { text: "It is of no concern to me.", translation: "私には関係ない。" },
+        ],
+      },
     ]);
     const csv = cardsToCsv(await repo.listCards(deck.id));
     expect(csv.startsWith("﻿")).toBe(true);
@@ -167,8 +176,21 @@ describe("書き込みと書き出し", () => {
     const again = preview(csv);
     expect(again.errors).toEqual([]);
     expect(again.valid.map((v) => v.input)).toEqual([
-      { term: "-ing", meaning: "=動名詞の語尾", partOfSpeech: "idiom", example: "He said \"stop\",\nthen left.", exampleTranslation: "「止まれ」と言って去った", note: "+メモ", answer: null, flag: "" },
-      { term: "apple", meaning: "りんご", partOfSpeech: null, example: "", exampleTranslation: "", note: "", answer: null, flag: "" },
+      { term: "-ing", meaning: "=動名詞の語尾", partOfSpeech: "idiom", examples: [{ text: "He said \"stop\", then left.", translation: "「止まれ」と言って去った" }], note: "+メモ", answer: null, flag: "" },
+      { term: "apple", meaning: "りんご", partOfSpeech: null, examples: [], note: "", answer: null, flag: "" },
+      {
+        term: "concern",
+        meaning: "心配",
+        partOfSpeech: null,
+        examples: [
+          { text: "I have a concern.", translation: "懸念がある。" },
+          { text: "Our chief concern is the weather.", translation: "" },
+          { text: "It is of no concern to me.", translation: "私には関係ない。" },
+        ],
+        note: "",
+        answer: null,
+        flag: "",
+      },
     ]);
   });
 

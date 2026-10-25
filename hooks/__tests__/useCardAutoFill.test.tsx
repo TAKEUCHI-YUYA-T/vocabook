@@ -195,70 +195,109 @@ describe("意味の自動入力", () => {
   });
 });
 
+/** index 番目の例文の英文だけを入力して、待ち時間が過ぎるまで進める */
+const typeExample = async (text: string, ms: number, index = 0) => {
+  await act(async () => {
+    api.setValue((prev) => {
+      const examples = [...prev.examples];
+      while (examples.length <= index) examples.push({ text: "", translation: "" });
+      examples[index] = { ...examples[index], text };
+      return { ...prev, examples };
+    });
+  });
+  await act(async () => {
+    jest.advanceTimersByTime(ms);
+  });
+};
+
+/** index 番目の例文の訳を、手で書き換える */
+const editTranslation = async (translation: string, index = 0) => {
+  await act(async () => {
+    api.setValue((prev) => ({ ...prev, examples: prev.examples.map((e, i) => (i === index ? { ...e, translation } : e)) }));
+  });
+};
+
+const translationOf = (index = 0) => api.value.examples[index]?.translation ?? "";
+const withExample = (example: { text: string; translation: string }): CardFormValue => ({ ...emptyCardForm(), examples: [example] });
+
 describe("例文の訳の自動入力", () => {
   const SENTENCE = "I agree with the plan.";
 
-  it("英語の例文を入力・貼り付けて待つと、訳が空の欄に入る", async () => {
+  it("英語の例文を入力・貼り付けて待つと、訳が空の欄に入る（下書き）", async () => {
     const translate = translation({ [SENTENCE]: "私はその案に賛成です。" });
     await mount(emptyCardForm(), { guess, translate });
-    await typeAndWait({ example: SENTENCE }, EXAMPLE_DELAY_MS);
-    expect(api.value.exampleTranslation).toBe("私はその案に賛成です。");
-    expect(api.fill.autoTranslation).toBe("私はその案に賛成です。");
-    expect(api.fill.translationStatus.state).toBe("idle");
+    await typeExample(SENTENCE, EXAMPLE_DELAY_MS);
+    expect(translationOf()).toBe("私はその案に賛成です。");
+    expect(api.fill.autoTranslations[0]).toBe("私はその案に賛成です。");
+    expect(api.fill.translationStatuses[0].state).toBe("idle");
     expect(translate).toHaveBeenCalledWith({ input: SENTENCE, sourceLangCode: "en", targetLangCode: "ja" });
   });
 
-  it("訳している間は loading になる", async () => {
+  it("例文1〜3は、それぞれ別に訳す。1つの訳が、ほかの例文に入らない", async () => {
+    const translate = translation({ "First one.": "訳1", "Second one.": "訳2", "Third one.": "訳3" });
+    await mount(emptyCardForm(), { guess, translate });
+    await typeExample("First one.", EXAMPLE_DELAY_MS, 0);
+    await typeExample("Second one.", EXAMPLE_DELAY_MS, 1);
+    await typeExample("Third one.", EXAMPLE_DELAY_MS, 2);
+    expect([0, 1, 2].map((i) => translationOf(i))).toEqual(["訳1", "訳2", "訳3"]);
+    expect(api.fill.autoTranslations).toEqual(["訳1", "訳2", "訳3"]);
+
+    // 2つ目の例文だけ直すと、2つ目の訳だけが入れ替わる
+    translate.mockClear();
+    await typeExample("Second again.", EXAMPLE_DELAY_MS, 1);
+    expect(translate).toHaveBeenCalledTimes(1);
+    expect([0, 1, 2].map((i) => translationOf(i))).toEqual(["訳1", "（訳）", "訳3"]);
+  });
+
+  it("訳している間は、その例文の欄だけが loading になる", async () => {
     let finish!: (value: Awaited<ReturnType<TranslateFn>>) => void;
     const translate: TranslateFn = () => new Promise((resolve) => (finish = resolve));
     await mount(emptyCardForm(), { guess, translate });
-    await typeAndWait({ example: SENTENCE }, EXAMPLE_DELAY_MS);
-    expect(api.fill.translationStatus.state).toBe("loading");
+    await typeExample(SENTENCE, EXAMPLE_DELAY_MS, 1);
+    expect(api.fill.translationStatuses.map((s) => s.state)).toEqual(["idle", "loading", "idle"]);
     await act(async () => finish({ translatedTexts: "訳", sourceLanguage: "en" }));
-    expect(api.fill.translationStatus.state).toBe("idle");
-    expect(api.value.exampleTranslation).toBe("訳");
+    expect(api.fill.translationStatuses[1].state).toBe("idle");
+    expect(translationOf(1)).toBe("訳");
   });
 
   it("あなたが入力した訳は、上書きしない", async () => {
-    await mount({ ...emptyCardForm(), exampleTranslation: "自分の訳" }, { guess, translate: translation({}) });
-    await typeAndWait({ example: SENTENCE }, EXAMPLE_DELAY_MS);
-    expect(api.value.exampleTranslation).toBe("自分の訳");
+    await mount(withExample({ text: "", translation: "自分の訳" }), { guess, translate: translation({}) });
+    await typeExample(SENTENCE, EXAMPLE_DELAY_MS);
+    expect(translationOf()).toBe("自分の訳");
   });
 
   it("自動で入れた訳は、例文を直すと入れ直し、例文を消すと一緒に消える", async () => {
     const translate = translation({ [SENTENCE]: "訳A", "I agree.": "訳B" });
     await mount(emptyCardForm(), { guess, translate });
-    await typeAndWait({ example: SENTENCE }, EXAMPLE_DELAY_MS);
-    await typeAndWait({ example: "I agree." }, EXAMPLE_DELAY_MS);
-    expect(api.value.exampleTranslation).toBe("訳B");
-    await typeAndWait({ example: "" }, EXAMPLE_DELAY_MS);
-    expect(api.value.exampleTranslation).toBe("");
-    expect(api.fill.autoTranslation).toBeNull();
+    await typeExample(SENTENCE, EXAMPLE_DELAY_MS);
+    await typeExample("I agree.", EXAMPLE_DELAY_MS);
+    expect(translationOf()).toBe("訳B");
+    await typeExample("", EXAMPLE_DELAY_MS);
+    expect(translationOf()).toBe("");
+    expect(api.fill.autoTranslations[0]).toBeNull();
   });
 
   it("訳を手で直したあとは、例文を変えても上書きしない", async () => {
     const translate = translation({ [SENTENCE]: "訳A" });
     await mount(emptyCardForm(), { guess, translate });
-    await typeAndWait({ example: SENTENCE }, EXAMPLE_DELAY_MS);
-    await act(async () => {
-      api.setValue((prev) => ({ ...prev, exampleTranslation: "訳Aを手で直した" }));
-    });
-    await typeAndWait({ example: "I agree." }, EXAMPLE_DELAY_MS);
-    expect(api.value.exampleTranslation).toBe("訳Aを手で直した");
+    await typeExample(SENTENCE, EXAMPLE_DELAY_MS);
+    await editTranslation("訳Aを手で直した");
+    await typeExample("I agree.", EXAMPLE_DELAY_MS);
+    expect(translationOf()).toBe("訳Aを手で直した");
   });
 
   it("日本語の例文は訳さない。開いた時点の例文でも訳さない（編集画面）", async () => {
     const translate = translation({});
     await mount(emptyCardForm(), { guess, translate });
-    await typeAndWait({ example: "彼は来た。" }, EXAMPLE_DELAY_MS);
+    await typeExample("彼は来た。", EXAMPLE_DELAY_MS);
     expect(translate).not.toHaveBeenCalled();
 
-    await mount({ ...emptyCardForm(), example: SENTENCE }, { guess, translate });
+    await mount(withExample({ text: SENTENCE, translation: "" }), { guess, translate });
     await act(async () => {
       jest.advanceTimersByTime(EXAMPLE_DELAY_MS * 2);
     });
     expect(translate).not.toHaveBeenCalled();
-    expect(api.value.exampleTranslation).toBe("");
+    expect(translationOf()).toBe("");
   });
 
   it("翻訳が失敗しても、例外にせず、理由を出して、入力はそのまま続けられる", async () => {
@@ -266,32 +305,33 @@ describe("例文の訳の自動入力", () => {
       throw new Error("PARAMETER_ERROR: something");
     };
     await mount(emptyCardForm(), { guess, translate });
-    await typeAndWait({ example: SENTENCE }, EXAMPLE_DELAY_MS);
-    expect(api.fill.translationStatus).toEqual({ state: "failed", message: "翻訳できませんでした。訳は手で入力してください" });
-    expect(api.value.exampleTranslation).toBe("");
+    await typeExample(SENTENCE, EXAMPLE_DELAY_MS);
+    expect(api.fill.translationStatuses[0]).toEqual({ state: "failed", message: "翻訳できませんでした。訳は手で入力してください" });
+    expect(translationOf()).toBe("");
   });
 
   it("訳している間に例文が変わったら、古い訳は入れず、新しい例文の訳を入れる", async () => {
     const resolvers: Record<string, (value: Awaited<ReturnType<TranslateFn>>) => void> = {};
     const translate: TranslateFn = ({ input }) => new Promise((resolve) => (resolvers[input] = resolve));
     await mount(emptyCardForm(), { guess, translate });
-    await typeAndWait({ example: SENTENCE }, EXAMPLE_DELAY_MS);
-    await typeAndWait({ example: "I agree." }, EXAMPLE_DELAY_MS);
+    await typeExample(SENTENCE, EXAMPLE_DELAY_MS);
+    await typeExample("I agree.", EXAMPLE_DELAY_MS);
     await act(async () => resolvers[SENTENCE]({ translatedTexts: "古い訳", sourceLanguage: "en" }));
-    expect(api.value.exampleTranslation).toBe("");
+    expect(translationOf()).toBe("");
     await act(async () => resolvers["I agree."]({ translatedTexts: "新しい訳", sourceLanguage: "en" }));
-    expect(api.value.exampleTranslation).toBe("新しい訳");
+    expect(translationOf()).toBe("新しい訳");
   });
 
   it("reset で、自動入力の記録を消せる（続けて追加するとき）", async () => {
     await mount(emptyCardForm(), { guess, translate: translation({ [SENTENCE]: "訳A" }) });
-    await typeAndWait({ term: "abolish", example: SENTENCE }, EXAMPLE_DELAY_MS);
+    await typeAndWait({ term: "abolish" }, EXAMPLE_DELAY_MS);
+    await typeExample(SENTENCE, EXAMPLE_DELAY_MS);
     expect(api.fill.autoPartOfSpeech).toBe("verb");
     await act(async () => {
       api.setValue(emptyCardForm());
       api.fill.reset();
     });
     expect(api.fill.autoPartOfSpeech).toBeNull();
-    expect(api.fill.autoTranslation).toBeNull();
+    expect(api.fill.autoTranslations).toEqual([null, null, null]);
   });
 });

@@ -1,4 +1,5 @@
 import { newId, now, type Db, type SqlParam } from "./database";
+import { compactExamples, MAX_EXAMPLES, type Example } from "./examples";
 import { localDay } from "./day";
 import { DEFAULT_DECK_NAME } from "./presets";
 import type { Card, CardFlag, CardInput, CardType, Deck, DeckKind, DeckSummary, HomeStats, IngOrToAnswer, PartOfSpeech, StudyFilter, Tip } from "./types";
@@ -6,14 +7,27 @@ import { PARTS_OF_SPEECH, toFlag } from "./types";
 
 /** 入力できる長さの上限。極端に長い値でアプリが重くならないようにする */
 export const LIMITS = { term: 200, meaning: 1000, example: 2000, note: 2000, deckName: 100 } as const;
+export { MAX_EXAMPLES };
 
 export class ValidationError extends Error {}
 
 type DeckRow = { id: string; name: string; kind: DeckKind; created_at: number; updated_at: number; card_count?: number };
 type CardRow = {
   id: string; deck_id: string; type: CardType; term: string; meaning: string; part_of_speech: string | null;
-  example: string; example_translation: string; note: string; answer: string; position: number; created_at: number; updated_at: number; flag: string;
+  example: string; example_translation: string; example2: string; example2_translation: string; example3: string; example3_translation: string;
+  note: string; answer: string; position: number; created_at: number; updated_at: number; flag: string;
 };
+
+/** 例文の列（例文1〜3の、英文と訳）を、配列にする。空の例文は除く */
+const rowExamples = (row: CardRow): Example[] =>
+  compactExamples([
+    { text: row.example, translation: row.example_translation },
+    { text: row.example2, translation: row.example2_translation },
+    { text: row.example3, translation: row.example3_translation },
+  ]);
+
+/** 例文の配列を、列の並び（例文1〜3の、英文と訳）にする。足りない分は空 */
+const exampleParams = (examples: Example[]): SqlParam[] => [0, 1, 2].flatMap((i): SqlParam[] => [examples[i]?.text ?? "", examples[i]?.translation ?? ""]);
 
 const toDeck = (row: DeckRow): Deck => ({ id: row.id, name: row.name, kind: row.kind, createdAt: row.created_at, updatedAt: row.updated_at });
 
@@ -24,8 +38,7 @@ const toCard = (row: CardRow): Card => ({
   term: row.term,
   meaning: row.meaning,
   partOfSpeech: PARTS_OF_SPEECH.some((p) => p.key === row.part_of_speech) ? (row.part_of_speech as PartOfSpeech) : null,
-  example: row.example,
-  exampleTranslation: row.example_translation,
+  examples: rowExamples(row),
   note: row.note,
   answer: row.answer,
   flag: toFlag(row.flag),
@@ -35,7 +48,10 @@ const toCard = (row: CardRow): Card => ({
 });
 
 const CARD_COLUMNS =
-  "id, deck_id, type, term, meaning, part_of_speech, example, example_translation, note, answer, position, created_at, updated_at, flag";
+  "id, deck_id, type, term, meaning, part_of_speech, example, example_translation, example2, example2_translation, example3, example3_translation, note, answer, position, created_at, updated_at, flag";
+
+/** INSERT の、1行ぶんの値の ? の並び（CARD_COLUMNS の並びと同じ。type は 'basic' 固定） */
+const CARD_PLACEHOLDERS = "(?, ?, 'basic', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
 /** LIKE の特殊文字（% と _）を、ふつうの文字として検索するための処理 */
 const escapeLike = (text: string) => text.replace(/[\\%_]/g, (char) => `\\${char}`);
@@ -49,18 +65,18 @@ export type ValidateOptions = { allowEmptyMeaning?: boolean };
 export function validateCardInput(
   input: CardInput,
   options: ValidateOptions = {}
-): Required<Omit<CardInput, "partOfSpeech" | "answer" | "flag">> & { partOfSpeech: PartOfSpeech | null; answer: IngOrToAnswer | null; flag: CardFlag | undefined } {
+): Required<Omit<CardInput, "partOfSpeech" | "answer" | "flag" | "examples">> & { examples: Example[]; partOfSpeech: PartOfSpeech | null; answer: IngOrToAnswer | null; flag: CardFlag | undefined } {
   const term = input.term.trim();
   const meaning = input.meaning.trim();
-  const example = (input.example ?? "").trim();
-  const exampleTranslation = (input.exampleTranslation ?? "").trim();
+  const examples = compactExamples(input.examples);
   const note = (input.note ?? "").trim();
 
   if (!term) throw new ValidationError("単語を入力してください");
   if (!meaning && !options.allowEmptyMeaning) throw new ValidationError("意味を入力してください");
   if (term.length > LIMITS.term) throw new ValidationError(`単語は${LIMITS.term}文字以内で入力してください`);
   if (meaning.length > LIMITS.meaning) throw new ValidationError(`意味は${LIMITS.meaning}文字以内で入力してください`);
-  if (example.length > LIMITS.example || exampleTranslation.length > LIMITS.example) {
+  if (examples.length > MAX_EXAMPLES) throw new ValidationError(`例文は${MAX_EXAMPLES}つまでです`);
+  if (examples.some((e) => e.text.length > LIMITS.example || e.translation.length > LIMITS.example)) {
     throw new ValidationError(`例文は${LIMITS.example}文字以内で入力してください`);
   }
   if (note.length > LIMITS.note) throw new ValidationError(`メモは${LIMITS.note}文字以内で入力してください`);
@@ -74,7 +90,7 @@ export function validateCardInput(
   const flag = input.flag;
   if (flag !== undefined && flag !== "" && flag !== "learned" && flag !== "review") throw new ValidationError("フラグが正しくありません");
 
-  return { term, meaning, example, exampleTranslation, note, partOfSpeech: pos, answer, flag };
+  return { term, meaning, examples, note, partOfSpeech: pos, answer, flag };
 }
 
 /** 単語帳・単語・ヒントの読み書きをまとめたもの。画面は DB を直接触らず、これを通す */
@@ -153,9 +169,9 @@ export function createRepository(db: Db) {
       let where = "deck_id = ? AND deleted_at IS NULL";
       const trimmed = query.trim();
       if (trimmed) {
-        where += " AND (term LIKE ? ESCAPE '\\' OR meaning LIKE ? ESCAPE '\\' OR example LIKE ? ESCAPE '\\')";
+        where += " AND (term LIKE ? ESCAPE '\\' OR meaning LIKE ? ESCAPE '\\' OR example LIKE ? ESCAPE '\\' OR example2 LIKE ? ESCAPE '\\' OR example3 LIKE ? ESCAPE '\\')";
         const pattern = `%${escapeLike(trimmed)}%`;
-        params.push(pattern, pattern, pattern);
+        params.push(pattern, pattern, pattern, pattern, pattern);
       }
       const rows = await db.getAllAsync<CardRow>(`SELECT ${CARD_COLUMNS} FROM cards WHERE ${where} ORDER BY position, created_at`, params);
       return rows.map(toCard);
@@ -183,8 +199,8 @@ export function createRepository(db: Db) {
       const last = await db.getFirstAsync<{ max_position: number | null }>("SELECT MAX(position) AS max_position FROM cards WHERE deck_id = ?", [deckId]);
       const position = (last?.max_position ?? -1) + 1;
       await db.runAsync(
-        `INSERT INTO cards (${CARD_COLUMNS}) VALUES (?, ?, 'basic', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [id, deckId, value.term, value.meaning, value.partOfSpeech, value.example, value.exampleTranslation, value.note, value.answer ?? "", position, timestamp, timestamp, value.flag ?? ""]
+        `INSERT INTO cards (${CARD_COLUMNS}) VALUES ${CARD_PLACEHOLDERS}`,
+        [id, deckId, value.term, value.meaning, value.partOfSpeech, ...exampleParams(value.examples), value.note, value.answer ?? "", position, timestamp, timestamp, value.flag ?? ""]
       );
       return (await repo.getCard(id)) as Card;
     },
@@ -207,9 +223,9 @@ export function createRepository(db: Db) {
           const chunk = values.slice(start, start + perStatement);
           const params: SqlParam[] = [];
           for (const value of chunk) {
-            params.push(newId(), deckId, value.term, value.meaning, value.partOfSpeech, value.example, value.exampleTranslation, value.note, value.answer ?? "", position++, timestamp, timestamp, value.flag ?? "");
+            params.push(newId(), deckId, value.term, value.meaning, value.partOfSpeech, ...exampleParams(value.examples), value.note, value.answer ?? "", position++, timestamp, timestamp, value.flag ?? "");
           }
-          const placeholders = chunk.map(() => "(?, ?, 'basic', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(", ");
+          const placeholders = chunk.map(() => CARD_PLACEHOLDERS).join(", ");
           await db.runAsync(`INSERT INTO cards (${CARD_COLUMNS}) VALUES ${placeholders}`, params);
         }
       });
@@ -222,8 +238,8 @@ export function createRepository(db: Db) {
       await requireEditableDeck(existing.deckId);
       const value = validateCardInput(input, { allowEmptyMeaning: existing.meaning === "" });
       await db.runAsync(
-        "UPDATE cards SET term = ?, meaning = ?, part_of_speech = ?, example = ?, example_translation = ?, note = ?, answer = ?, flag = ?, updated_at = ? WHERE id = ?",
-        [value.term, value.meaning, value.partOfSpeech, value.example, value.exampleTranslation, value.note, value.answer ?? "", value.flag ?? existing.flag, now(), id]
+        "UPDATE cards SET term = ?, meaning = ?, part_of_speech = ?, example = ?, example_translation = ?, example2 = ?, example2_translation = ?, example3 = ?, example3_translation = ?, note = ?, answer = ?, flag = ?, updated_at = ? WHERE id = ?",
+        [value.term, value.meaning, value.partOfSpeech, ...exampleParams(value.examples), value.note, value.answer ?? "", value.flag ?? existing.flag, now(), id]
       );
       if (value.flag !== undefined && value.flag !== existing.flag) await repo.setFlag(id, value.flag);
       return (await repo.getCard(id)) as Card;

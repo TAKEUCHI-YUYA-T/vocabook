@@ -71,7 +71,7 @@ export default function IngOrToScreen() {
                   {current.term} のあとは、<Text style={styles.answerStrong}>{answerLabel}</Text>
                 </Text>
               )}
-              {!!current.example && <Text style={styles.example}>{current.example}</Text>}
+              {!!current.examples[0]?.text && <Text style={styles.example}>{current.examples[0].text}</Text>}
               {!!current.note && <Text style={styles.answerNote}>{current.note}</Text>}
             </View>
           )}

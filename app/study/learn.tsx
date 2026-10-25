@@ -5,6 +5,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { FlagTag } from "@/components/FlagTag";
 import { HeaderIconButton } from "@/components/ScreenHeader";
 import { QuizFrame } from "@/components/QuizFrame";
+import { ExampleList } from "@/components/ExampleList";
 import { SpeakButton } from "@/components/SpeakButton";
 import { colors } from "@/components/theme";
 import { useRepository } from "@/db/AppDatabase";
@@ -154,18 +155,18 @@ export default function LearnScreen() {
                 <Text style={styles.term}>{current.term}</Text>
                 <SpeakButton text={current.term} label="単語を読み上げる" warn={termUnknown} />
               </View>
-              {!!current.example && (
-                <View style={styles.exampleRow}>
-                  <Text style={styles.example}>{current.example}</Text>
-                  <SpeakButton text={current.example} label="例文を読み上げる" size={20} />
-                </View>
-              )}
+              {current.examples.length > 0 && <ExampleList examples={current.examples} />}
             </>
           )}
           {direction === "ja-en" && (
             <>
               <Text style={styles.questionMeaning}>{current.meaning}</Text>
-              {!!current.exampleTranslation && <Text style={styles.hintText}>例文の訳: {current.exampleTranslation}</Text>}
+              {current.examples.some((e) => e.translation) && (
+                <>
+                  <Text style={styles.hintText}>例文の訳</Text>
+                  <ExampleList examples={current.examples} showText={false} showTranslation />
+                </>
+              )}
             </>
           )}
           {direction === "listen" && (
@@ -193,19 +194,16 @@ export default function LearnScreen() {
                   <Text style={styles.meaning}>{current.meaning}</Text>
                 </>
               )}
-              {direction !== "en-ja" && !!current.example && (
+              {direction !== "en-ja" && current.examples.some((e) => e.text) && (
                 <>
                   <Text style={[styles.label, styles.labelGap]}>例文</Text>
-                  <View style={styles.exampleRow}>
-                    <Text style={styles.example}>{current.example}</Text>
-                    <SpeakButton text={current.example} label="例文を読み上げる" size={20} />
-                  </View>
+                  <ExampleList examples={current.examples} showTranslation={direction !== "ja-en"} />
                 </>
               )}
-              {direction !== "ja-en" && !!current.exampleTranslation && (
+              {direction === "en-ja" && current.examples.some((e) => e.translation) && (
                 <>
                   <Text style={[styles.label, styles.labelGap]}>例文の訳</Text>
-                  <Text style={styles.translation}>{current.exampleTranslation}</Text>
+                  <ExampleList examples={current.examples} showText={false} showTranslation />
                 </>
               )}
               {!!current.note && (
@@ -228,8 +226,6 @@ const styles = StyleSheet.create({
   tagText: { fontSize: 13, fontWeight: "bold", color: colors.secondary },
   termRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   term: { flexShrink: 1, fontSize: 32, fontWeight: "bold", lineHeight: 40, color: colors.text },
-  exampleRow: { flexDirection: "row", alignItems: "flex-start", gap: 6 },
-  example: { flex: 1, fontSize: 16, lineHeight: 27, color: colors.text },
   questionMeaning: { fontSize: 26, fontWeight: "bold", lineHeight: 38, color: colors.text },
   hintText: { fontSize: 14, lineHeight: 22, color: colors.secondary },
   listen: { alignItems: "center", gap: 12, paddingVertical: 24 },

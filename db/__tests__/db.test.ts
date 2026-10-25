@@ -365,9 +365,10 @@ describe("単語帳と単語の読み書き", () => {
     const card = await repo.addCard(defaultDeck.id, { term: "  banana ", meaning: " バナナ ", partOfSpeech: "noun" });
     expect(card).toMatchObject({ term: "banana", meaning: "バナナ", partOfSpeech: "noun", type: "basic" });
 
-    const updated = await repo.updateCard(card.id, { term: "banana", meaning: "バナナ（果物）", example: "I like bananas." });
+    const updated = await repo.updateCard(card.id, { term: "banana", meaning: "バナナ（果物）", examples: [{ text: "I like bananas.", translation: "私はバナナが好きだ。" }] });
     expect(updated.meaning).toBe("バナナ（果物）");
     expect(updated.partOfSpeech).toBeNull();
+    expect(updated.examples).toEqual([{ text: "I like bananas.", translation: "私はバナナが好きだ。" }]);
 
     await repo.deleteCard(card.id);
     expect(await repo.getCard(card.id)).toBeNull();
@@ -396,7 +397,7 @@ describe("単語帳と単語の読み書き", () => {
     const deck = await repo.createDeck("検索");
     await repo.addCard(deck.id, { term: "100%", meaning: "ひゃくパーセント" });
     await repo.addCard(deck.id, { term: "snake_case", meaning: "命名規則" });
-    await repo.addCard(deck.id, { term: "other", meaning: "ほか", example: "contains Apple inside" });
+    await repo.addCard(deck.id, { term: "other", meaning: "ほか", examples: [{ text: "contains Apple inside", translation: "" }] });
 
     expect((await repo.listCards(deck.id, "%")).map((c) => c.term)).toEqual(["100%"]);
     expect((await repo.listCards(deck.id, "_")).map((c) => c.term)).toEqual(["snake_case"]);

@@ -1,11 +1,52 @@
 import type { Db } from "./database";
+import { appendExtraToNote, pairExamples } from "./examples";
 
 /**
  * データ構造の変更履歴
  * 公開後は、既存ユーザーのデータを壊さないよう、過去の項目は書き換えず、
  * 新しい番号の変更を末尾に足していく。PRAGMA user_version で適用済みの番号を管理する
  */
-const MIGRATIONS: string[] = [
+/** 変更は、SQL か、SQL だけでは書けないデータの整形（関数）。関数も、変更ごとのトランザクションの中で動く */
+type Migration = string | ((db: Db) => Promise<void>);
+
+/**
+ * 4: 例文を、最大3つに分ける（英文と和訳の対）。例文1は、これまでの example / example_translation の列をそのまま使う
+ * 今までは、1つの欄に「①…②…」と並べていた。番号と空行で分けて、例文ごとの列に入れ直す。
+ * 4つ目以降の例文は、メモの末尾に移す（捨てない）
+ * 整形の前の値は、example_migration_backup に残す（戻せるように。画面からは使わない）
+ */
+async function splitExamplesMigration(db: Db): Promise<void> {
+  await db.execAsync(`
+    ALTER TABLE cards ADD COLUMN example2 TEXT NOT NULL DEFAULT '';
+    ALTER TABLE cards ADD COLUMN example2_translation TEXT NOT NULL DEFAULT '';
+    ALTER TABLE cards ADD COLUMN example3 TEXT NOT NULL DEFAULT '';
+    ALTER TABLE cards ADD COLUMN example3_translation TEXT NOT NULL DEFAULT '';
+    CREATE TABLE example_migration_backup (
+      card_id TEXT PRIMARY KEY NOT NULL,
+      example TEXT NOT NULL,
+      example_translation TEXT NOT NULL,
+      note TEXT NOT NULL
+    );
+  `);
+  const rows = await db.getAllAsync<{ id: string; example: string; example_translation: string; note: string }>(
+    "SELECT id, example, example_translation, note FROM cards WHERE type = 'basic' AND (example <> '' OR example_translation <> '')"
+  );
+  for (const row of rows) {
+    const { examples, extra } = pairExamples(row.example, row.example_translation);
+    const [first, second, third] = [examples[0], examples[1], examples[2]];
+    const unchanged = examples.length === 1 && first.text === row.example.trim() && first.translation === row.example_translation.trim();
+    if (unchanged) continue;
+    await db.runAsync("INSERT INTO example_migration_backup (card_id, example, example_translation, note) VALUES (?, ?, ?, ?)", [
+      row.id, row.example, row.example_translation, row.note,
+    ]);
+    await db.runAsync(
+      "UPDATE cards SET example = ?, example_translation = ?, example2 = ?, example2_translation = ?, example3 = ?, example3_translation = ?, note = ? WHERE id = ?",
+      [first?.text ?? "", first?.translation ?? "", second?.text ?? "", second?.translation ?? "", third?.text ?? "", third?.translation ?? "", appendExtraToNote(row.note, extra), row.id]
+    );
+  }
+}
+
+const MIGRATIONS: Migration[] = [
   // 1: 初期構造
   `
   CREATE TABLE decks (
@@ -62,6 +103,8 @@ const MIGRATIONS: string[] = [
   ALTER TABLE cards ADD COLUMN learned_day TEXT;
   UPDATE cards SET learned_day = date('now', 'localtime') WHERE flag = 'learned';
   `,
+  // 4: 例文を最大3つに分ける
+  splitExamplesMigration,
 ];
 
 export const LATEST_SCHEMA_VERSION = MIGRATIONS.length;
@@ -81,7 +124,9 @@ export async function migrate(db: Db, upTo: number = LATEST_SCHEMA_VERSION): Pro
 
   for (let version = current + 1; version <= Math.min(upTo, LATEST_SCHEMA_VERSION); version++) {
     await db.withTransactionAsync(async () => {
-      await db.execAsync(MIGRATIONS[version - 1]);
+      const migration = MIGRATIONS[version - 1];
+      if (typeof migration === "string") await db.execAsync(migration);
+      else await migration(db);
       // PRAGMA はバインド変数を使えないため、整数であることを確かめて埋め込む
       await db.execAsync(`PRAGMA user_version = ${Number(version)}`);
     });

@@ -31,9 +31,10 @@ export type CardAutoFillState = {
   /** 最後に、自動で入れた意味 */
   autoMeaning: string | null;
   meaningStatus: TranslationStatus;
-  /** 最後に、自動で入れた例文の訳 */
-  autoTranslation: string | null;
-  translationStatus: TranslationStatus;
+  /** 例文ごと（例文1〜3）の、最後に、自動で入れた訳 */
+  autoTranslations: (string | null)[];
+  /** 例文ごと（例文1〜3）の、訳を作っている状態 */
+  translationStatuses: TranslationStatus[];
 };
 
 /**

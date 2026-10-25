@@ -1,4 +1,5 @@
 import Papa from "papaparse";
+import { appendExtraToNote, joinNumbered, pairExamples, type Example } from "./examples";
 import { validateCardInput, ValidationError } from "./repository";
 import type { CardFlag, CardInput, IngOrToAnswer, PartOfSpeech } from "./types";
 import { flagLabel, ingOrToLabel, PARTS_OF_SPEECH } from "./types";
@@ -193,13 +194,15 @@ export function buildPreview(table: string[][], mapping: ColumnMapping, hasHeade
     const answer = parseIngOrTo(rawAnswer);
     const rawFlag = cell("flag");
     const flag = parseFlag(rawFlag);
+    const paired = pairExamples(cell("example"), cell("exampleTranslation"));
     const input: CardInput = {
       term: cell("term"),
       meaning: cell("meaning"),
       partOfSpeech,
-      example: cell("example"),
-      exampleTranslation: cell("exampleTranslation"),
-      note: cell("note"),
+      // 例文の欄に「①…②…」と並んでいれば、例文ごとに分ける（訳の欄も同じ番号で対応づける）
+      examples: paired.examples,
+      // 4つ目以降の例文は、捨てず、メモに残す
+      note: appendExtraToNote(cell("note"), paired.extra),
       answer,
       flag: flag ?? "",
     };
@@ -238,11 +241,11 @@ export function exportFileName(deckName: string): string {
 
 /** 単語帳の単語を CSV にする（バックアップ用）。Excel で文字化けしないよう、先頭に BOM を付ける */
 export function cardsToCsv(
-  cards: { term: string; meaning: string; partOfSpeech: PartOfSpeech | null; example: string; exampleTranslation: string; note: string; answer?: string; flag?: string }[]
+  cards: { term: string; meaning: string; partOfSpeech: PartOfSpeech | null; examples: Example[]; note: string; answer?: string; flag?: string }[]
 ): string {
   const header = ["単語", "意味", "品詞", "例文", "例文の訳", "メモ", "ing or to", "フラグ"];
   const posLabel = (key: PartOfSpeech | null) => PARTS_OF_SPEECH.find((p) => p.key === key)?.label ?? "";
-  const rows = cards.map((c) => [c.term, c.meaning, posLabel(c.partOfSpeech), c.example, c.exampleTranslation, c.note, ingOrToLabel(c.answer), flagLabel(c.flag)]);
+  const rows = cards.map((c) => [c.term, c.meaning, posLabel(c.partOfSpeech), joinNumbered(c.examples.map((e) => e.text)), joinNumbered(c.examples.map((e) => e.translation)), c.note, ingOrToLabel(c.answer), flagLabel(c.flag)]);
   // 数式として解釈されうる先頭文字（= + - @）を無害にする（CSV インジェクション対策）
   const safe = (value: string) => (/^[=+\-@\t\r]/.test(value) ? `'${value}` : value);
   return "﻿" + Papa.unparse([header, ...rows.map((row) => row.map(safe))], { newline: "\r\n" });

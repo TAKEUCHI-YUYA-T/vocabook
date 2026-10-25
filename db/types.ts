@@ -21,6 +21,9 @@ export type PartOfSpeech = (typeof PARTS_OF_SPEECH)[number]["key"];
 export const partOfSpeechLabel = (key: string | null | undefined): string =>
   PARTS_OF_SPEECH.find((p) => p.key === key)?.label ?? "";
 
+import type { Example } from "./examples";
+export type { Example } from "./examples";
+
 /** 学習のフラグ。"" は未設定、learned は「覚えた」、review は「要復習」 */
 export type CardFlag = "" | "learned" | "review";
 
@@ -64,8 +67,8 @@ export type Card = {
   term: string;
   meaning: string;
   partOfSpeech: PartOfSpeech | null;
-  example: string;
-  exampleTranslation: string;
+  /** 例文（最大3つ。英文と和訳の対）。なければ空の配列 */
+  examples: Example[];
   note: string;
   /**
    * ing or to の答え（"ing" または "to"）
@@ -84,8 +87,8 @@ export type CardInput = {
   term: string;
   meaning: string;
   partOfSpeech?: PartOfSpeech | null;
-  example?: string;
-  exampleTranslation?: string;
+  /** 例文（最大3つ。英文と和訳の対。空の例文は、保存しない） */
+  examples?: Example[];
   note?: string;
   /** ing or to の問題にも出すときの答え（null なら出さない） */
   answer?: IngOrToAnswer | null;
