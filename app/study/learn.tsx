@@ -6,11 +6,13 @@ import { FlagTag } from "@/components/FlagTag";
 import { HeaderIconButton } from "@/components/ScreenHeader";
 import { QuizFrame } from "@/components/QuizFrame";
 import { ExampleList } from "@/components/ExampleList";
+import { ExamplesByPartOfSpeech, MeaningByPartOfSpeech, OtherPartsPanel } from "@/components/SameTermSections";
 import { SpeakButton } from "@/components/SpeakButton";
 import { colors } from "@/components/theme";
 import { useRepository } from "@/db/AppDatabase";
 import { localDay } from "@/db/day";
 import { nextQuestion, progress, startQuiz, type QuizState } from "@/db/quiz";
+import { groupByTerm, oneCardPerTerm, otherPartsOfSpeech, sameTermCards } from "@/db/sameTerm";
 import { decodeDirection, decodeFlags } from "@/db/studyRange";
 import { partOfSpeechLabel, PARTS_OF_SPEECH, type Card, type CardFlag, type PartOfSpeech } from "@/db/types";
 import { useGoBack } from "@/hooks/useGoBack";
@@ -23,6 +25,9 @@ import { spellingProblemsOnDevice } from "@/db/posDictionary";
  * - 答えを出す操作は、下の「答えを見る」ボタンだけ（見たら、その単語を「今日見た」として記録する）
  * - 答えを見たあとは、「要復習」「覚えた」のフラグを付けて次へ進む。フラグを変えずに進むこともできる
  * - 向きは、英語→日本語、日本語→英語、聞き取り（音声を聞いて意味を思い出す）
+ * - 同じ綴りで、品詞が違う単語（別のカード）がある場合
+ *   英→日・日→英: 答えの面の一番下に、「ほかの品詞」として、その意味を並べる
+ *   聞き取り: 同じ綴りは1回だけ出題し、答えの面に、全品詞の意味と例文を、品詞ごとに並べる。フラグと記録は、同じ綴りの全カードに付ける
  */
 export default function LearnScreen() {
   const router = useRouter();
@@ -33,6 +38,8 @@ export default function LearnScreen() {
   const direction = decodeDirection(params.dir);
 
   const [quiz, setQuiz] = useState<QuizState<Card> | null>(null);
+  /** 同じ綴りの単語が2つ以上ある単語の、綴りごとのまとまり（絞り込みに関係なく、単語帳の全体から） */
+  const [groups, setGroups] = useState<Map<string, Card[]>>(() => new Map());
   const [isAnswerVisible, setIsAnswerVisible] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,10 +56,15 @@ export default function LearnScreen() {
         .filter((p): p is PartOfSpeech => PARTS_OF_SPEECH.some((part) => part.key === p));
       const flagFilter: CardFlag[] = decodeFlags(flags);
 
-      repository
-        .listStudyCards({ deckIds, partsOfSpeech, flags: flagFilter, requireMeaning: direction === "ja-en" })
-        .then((cards) => {
+      Promise.all([
+        repository.listStudyCards({ deckIds, partsOfSpeech, flags: flagFilter, requireMeaning: direction === "ja-en" }),
+        repository.listCardsSharingTerm(deckIds),
+      ])
+        .then(([found, sharing]) => {
           if (!active) return;
+          // 聞き取りは、同じ綴りを1回だけ出題する（同じ音を、品詞の数だけ聞かせない）
+          const cards = direction === "listen" ? oneCardPerTerm(found) : found;
+          setGroups(groupByTerm(sharing));
           setError(null);
           setQuiz((prev) => {
             if (!prev) return startQuiz(cards);
@@ -70,6 +82,11 @@ export default function LearnScreen() {
   );
 
   const current = quiz && quiz.order.length > 0 ? quiz.order[quiz.index] : null;
+  /** 同じ綴りの単語すべて（いま出している単語を含む。品詞の並び） */
+  const sameTerm = current ? sameTermCards(current, groups) : [];
+  /** フラグと「今日見た」の記録を付ける単語。聞き取りは、同じ綴りの全カード（答えの面に、全品詞を出すため） */
+  const targetIds = current ? (direction === "listen" ? sameTerm.map((card) => card.id) : [current.id]) : [];
+  const otherParts = current ? otherPartsOfSpeech(current, groups) : [];
   // 辞書にない単語（綴りミスの疑い）は、読み上げボタンに目印を付ける
   const termUnknown = !!current && spellingProblemsOnDevice(current.term).length > 0;
 
@@ -87,15 +104,15 @@ export default function LearnScreen() {
   /** 答えを見る。見た単語として、今日の記録に残す（記録に失敗しても、学習は続けられる） */
   const reveal = () => {
     setIsAnswerVisible(true);
-    if (current) repository.recordStudied(current.id, localDay()).catch((e) => console.warn("[study] 学習の記録に失敗:", e));
+    for (const id of targetIds) repository.recordStudied(id, localDay()).catch((e) => console.warn("[study] 学習の記録に失敗:", e));
   };
 
   /** フラグを付けて、次の問題へ進む */
   const mark = async (flag: CardFlag) => {
     if (!current) return;
     try {
-      await repository.setFlag(current.id, flag);
-      setQuiz((prev) => (prev ? { ...prev, order: prev.order.map((card) => (card.id === current.id ? { ...card, flag } : card)) } : prev));
+      for (const id of targetIds) await repository.setFlag(id, flag);
+      setQuiz((prev) => (prev ? { ...prev, order: prev.order.map((card) => (targetIds.includes(card.id) ? { ...card, flag } : card)) } : prev));
     } catch (e) {
       console.warn("[study] フラグを付けられませんでした:", e);
     }
@@ -140,7 +157,7 @@ export default function LearnScreen() {
       {!!current && (
         <>
           <View style={styles.tags}>
-            {!!current.partOfSpeech && (
+            {!!current.partOfSpeech && direction !== "listen" && (
               <View style={styles.tag}>
                 <Text style={styles.tagText}>{partOfSpeechLabel(current.partOfSpeech)}</Text>
               </View>
@@ -188,22 +205,43 @@ export default function LearnScreen() {
                   <SpeakButton text={current.term} label="単語を読み上げる" warn={termUnknown} />
                 </View>
               )}
-              {direction !== "ja-en" && !!current.meaning && (
+              {direction === "listen" ? (
                 <>
-                  <Text style={styles.label}>意味</Text>
-                  <Text style={styles.meaning}>{current.meaning}</Text>
+                  {sameTerm.some((card) => card.meaning.trim() !== "") && (
+                    <>
+                      <Text style={styles.label}>意味</Text>
+                      <MeaningByPartOfSpeech cards={sameTerm} />
+                    </>
+                  )}
+                  {sameTerm.some((card) => card.examples.some((e) => e.text)) && (
+                    <>
+                      <Text style={[styles.label, styles.labelGap]}>例文</Text>
+                      <ExamplesByPartOfSpeech cards={sameTerm} />
+                    </>
+                  )}
                 </>
-              )}
-              {direction !== "en-ja" && current.examples.some((e) => e.text) && (
+              ) : (
                 <>
-                  <Text style={[styles.label, styles.labelGap]}>例文</Text>
-                  <ExampleList examples={current.examples} showTranslation={direction !== "ja-en"} />
-                </>
-              )}
-              {direction === "en-ja" && current.examples.some((e) => e.translation) && (
-                <>
-                  <Text style={[styles.label, styles.labelGap]}>例文の訳</Text>
-                  <ExampleList examples={current.examples} showText={false} showTranslation />
+                  {direction === "en-ja" && !!current.meaning && (
+                    <>
+                      <Text style={styles.label}>意味</Text>
+                      <Text style={styles.meaning}>{current.meaning}</Text>
+                    </>
+                  )}
+                  {direction === "ja-en" && current.examples.some((e) => e.text) && (
+                    <>
+                      <Text style={[styles.label, styles.labelGap]}>例文</Text>
+                      <ExampleList examples={current.examples} />
+                    </>
+                  )}
+                  {direction === "en-ja" && current.examples.some((e) => e.translation) && (
+                    <>
+                      <Text style={[styles.label, styles.labelGap]}>例文の訳</Text>
+                      <ExampleList examples={current.examples} showText={false} showTranslation />
+                    </>
+                  )}
+                  {/* ほかの品詞は、答えの面の一番下（例文・例文の訳の下）。メモの前 */}
+                  <OtherPartsPanel cards={otherParts} />
                 </>
               )}
               {!!current.note && (

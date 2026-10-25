@@ -312,6 +312,26 @@ export function createRepository(db: Db) {
     },
 
     /**
+     * 同じ綴りの単語が2つ以上ある単語（品詞が違う単語。basic のみ）をすべて取り出す
+     * 学習の答えの面で、ほかの品詞の意味を並べるために使う。絞り込みには関係なく、単語帳の全体から探す
+     */
+    async listCardsSharingTerm(deckIds: string[]): Promise<Card[]> {
+      if (deckIds.length === 0) return [];
+      const marks = deckIds.map(() => "?").join(", ");
+      const rows = await db.getAllAsync<CardRow>(
+        `SELECT ${CARD_COLUMNS} FROM cards
+         WHERE type = 'basic' AND deleted_at IS NULL AND deck_id IN (${marks})
+           AND LOWER(TRIM(term)) IN (
+             SELECT LOWER(TRIM(term)) FROM cards
+             WHERE type = 'basic' AND deleted_at IS NULL AND deck_id IN (${marks})
+             GROUP BY LOWER(TRIM(term)) HAVING COUNT(*) > 1
+           )`,
+        [...deckIds, ...deckIds]
+      );
+      return withExamples(rows);
+    },
+
+    /**
      * 出題の絞り込み画面の集計。品詞とフラグの組み合わせごとの、単語の数（意味のある単語の数も）
      * 画面で、選んだ条件に合う数を、組み合わせから計算する（db/studyRange.ts）
      */
