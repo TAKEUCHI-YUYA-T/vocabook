@@ -228,7 +228,7 @@ describe("例文の訳の自動入力", () => {
     await mount(emptyCardForm(), { guess, translate });
     await typeExample(SENTENCE, EXAMPLE_DELAY_MS);
     expect(translationOf()).toBe("私はその案に賛成です。");
-    expect(api.fill.autoTranslations[0]).toBe("私はその案に賛成です。");
+    expect(api.value.examples[0].draft).toBe("私はその案に賛成です。");
     expect(api.fill.translationStatuses[0].state).toBe("idle");
     expect(translate).toHaveBeenCalledWith({ input: SENTENCE, sourceLangCode: "en", targetLangCode: "ja" });
   });
@@ -240,7 +240,7 @@ describe("例文の訳の自動入力", () => {
     await typeExample("Second one.", EXAMPLE_DELAY_MS, 1);
     await typeExample("Third one.", EXAMPLE_DELAY_MS, 2);
     expect([0, 1, 2].map((i) => translationOf(i))).toEqual(["訳1", "訳2", "訳3"]);
-    expect(api.fill.autoTranslations).toEqual(["訳1", "訳2", "訳3"]);
+    expect(api.value.examples.map((e) => e.draft)).toEqual(["訳1", "訳2", "訳3"]);
 
     // 2つ目の例文だけ直すと、2つ目の訳だけが入れ替わる
     translate.mockClear();
@@ -254,7 +254,7 @@ describe("例文の訳の自動入力", () => {
     const translate: TranslateFn = () => new Promise((resolve) => (finish = resolve));
     await mount(emptyCardForm(), { guess, translate });
     await typeExample(SENTENCE, EXAMPLE_DELAY_MS, 1);
-    expect(api.fill.translationStatuses.map((s) => s.state)).toEqual(["idle", "loading", "idle"]);
+    expect(api.fill.translationStatuses.map((s) => s.state)).toEqual(["idle", "loading"]);
     await act(async () => finish({ translatedTexts: "訳", sourceLanguage: "en" }));
     expect(api.fill.translationStatuses[1].state).toBe("idle");
     expect(translationOf(1)).toBe("訳");
@@ -274,7 +274,7 @@ describe("例文の訳の自動入力", () => {
     expect(translationOf()).toBe("訳B");
     await typeExample("", EXAMPLE_DELAY_MS);
     expect(translationOf()).toBe("");
-    expect(api.fill.autoTranslations[0]).toBeNull();
+    expect(api.value.examples[0].draft).toBeUndefined();
   });
 
   it("訳を手で直したあとは、例文を変えても上書きしない", async () => {
@@ -332,6 +332,39 @@ describe("例文の訳の自動入力", () => {
       api.fill.reset();
     });
     expect(api.fill.autoPartOfSpeech).toBeNull();
-    expect(api.fill.autoTranslations).toEqual([null, null, null]);
+    expect(api.fill.translationStatuses).toEqual([]);
+  });
+
+  it("例文は20個まで、1つずつ訳す（5番目の例文も訳す）。ほかの例文の入力で、待っている翻訳をやり直さない", async () => {
+    const translate = translation({ "Fifth.": "訳5", "Second.": "訳2" });
+    await mount(emptyCardForm(), { guess, translate });
+    await typeExample("Second.", EXAMPLE_DELAY_MS / 2, 1);
+    await typeExample("Fifth.", EXAMPLE_DELAY_MS / 2, 4);
+    await act(async () => {
+      jest.advanceTimersByTime(EXAMPLE_DELAY_MS);
+    });
+    expect(api.value.examples).toHaveLength(5);
+    expect(translationOf(1)).toBe("訳2");
+    expect(translationOf(4)).toBe("訳5");
+    expect(translate).toHaveBeenCalledTimes(2);
+  });
+
+  it("例文を削除しても、下書きの記録は例文と一緒に動く（手で直した訳を、下書きと間違えない）", async () => {
+    const translate = translation({ "One.": "訳1", "Two.": "訳2", "Three.": "訳3" });
+    await mount(emptyCardForm(), { guess, translate });
+    await typeExample("One.", EXAMPLE_DELAY_MS, 0);
+    await typeExample("Two.", EXAMPLE_DELAY_MS, 1);
+    await typeExample("Three.", EXAMPLE_DELAY_MS, 2);
+    await editTranslation("手で直した訳2", 1);
+
+    await act(async () => {
+      api.setValue((prev) => ({ ...prev, examples: prev.examples.filter((_, i) => i !== 0) }));
+    });
+    await act(async () => {
+      jest.advanceTimersByTime(EXAMPLE_DELAY_MS * 2);
+    });
+    expect(api.value.examples.map((e) => [e.text, e.translation])).toEqual([["Two.", "手で直した訳2"], ["Three.", "訳3"]]);
+    expect(api.value.examples[0].translation === api.value.examples[0].draft).toBe(false); // 手で直した訳は、下書きではない
+    expect(api.value.examples[1].translation === api.value.examples[1].draft).toBe(true);
   });
 });

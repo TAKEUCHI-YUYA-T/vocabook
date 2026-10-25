@@ -14,31 +14,19 @@ export class ValidationError extends Error {}
 type DeckRow = { id: string; name: string; kind: DeckKind; created_at: number; updated_at: number; card_count?: number };
 type CardRow = {
   id: string; deck_id: string; type: CardType; term: string; meaning: string; part_of_speech: string | null;
-  example: string; example_translation: string; example2: string; example2_translation: string; example3: string; example3_translation: string;
   note: string; answer: string; position: number; created_at: number; updated_at: number; flag: string;
 };
 
-/** 例文の列（例文1〜3の、英文と訳）を、配列にする。空の例文は除く */
-const rowExamples = (row: CardRow): Example[] =>
-  compactExamples([
-    { text: row.example, translation: row.example_translation },
-    { text: row.example2, translation: row.example2_translation },
-    { text: row.example3, translation: row.example3_translation },
-  ]);
-
-/** 例文の配列を、列の並び（例文1〜3の、英文と訳）にする。足りない分は空 */
-const exampleParams = (examples: Example[]): SqlParam[] => [0, 1, 2].flatMap((i): SqlParam[] => [examples[i]?.text ?? "", examples[i]?.translation ?? ""]);
-
 const toDeck = (row: DeckRow): Deck => ({ id: row.id, name: row.name, kind: row.kind, createdAt: row.created_at, updatedAt: row.updated_at });
 
-const toCard = (row: CardRow): Card => ({
+const toCard = (row: CardRow, examples: Example[]): Card => ({
   id: row.id,
   deckId: row.deck_id,
   type: row.type,
   term: row.term,
   meaning: row.meaning,
   partOfSpeech: PARTS_OF_SPEECH.some((p) => p.key === row.part_of_speech) ? (row.part_of_speech as PartOfSpeech) : null,
-  examples: rowExamples(row),
+  examples,
   note: row.note,
   answer: row.answer,
   flag: toFlag(row.flag),
@@ -47,11 +35,14 @@ const toCard = (row: CardRow): Card => ({
   updatedAt: row.updated_at,
 });
 
-const CARD_COLUMNS =
-  "id, deck_id, type, term, meaning, part_of_speech, example, example_translation, example2, example2_translation, example3, example3_translation, note, answer, position, created_at, updated_at, flag";
+const CARD_COLUMNS = "id, deck_id, type, term, meaning, part_of_speech, note, answer, position, created_at, updated_at, flag";
 
 /** INSERT の、1行ぶんの値の ? の並び（CARD_COLUMNS の並びと同じ。type は 'basic' 固定） */
-const CARD_PLACEHOLDERS = "(?, ?, 'basic', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+const CARD_PLACEHOLDERS = "(?, ?, 'basic', ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+/** 1回の SQL に入れる行数の目安（変数の数の上限に当たらないように、小さく分ける） */
+const EXAMPLE_ROWS_PER_STATEMENT = 100;
+const IDS_PER_QUERY = 500;
 
 /** LIKE の特殊文字（% と _）を、ふつうの文字として検索するための処理 */
 const escapeLike = (text: string) => text.replace(/[\\%_]/g, (char) => `\\${char}`);
@@ -75,7 +66,7 @@ export function validateCardInput(
   if (!meaning && !options.allowEmptyMeaning) throw new ValidationError("意味を入力してください");
   if (term.length > LIMITS.term) throw new ValidationError(`単語は${LIMITS.term}文字以内で入力してください`);
   if (meaning.length > LIMITS.meaning) throw new ValidationError(`意味は${LIMITS.meaning}文字以内で入力してください`);
-  if (examples.length > MAX_EXAMPLES) throw new ValidationError(`例文は${MAX_EXAMPLES}つまでです`);
+  if (examples.length > MAX_EXAMPLES) throw new ValidationError(`例文は${MAX_EXAMPLES}個までです`);
   if (examples.some((e) => e.text.length > LIMITS.example || e.translation.length > LIMITS.example)) {
     throw new ValidationError(`例文は${LIMITS.example}文字以内で入力してください`);
   }
@@ -105,6 +96,44 @@ export function createRepository(db: Db) {
   async function getDeck(id: string): Promise<Deck | null> {
     const row = await db.getFirstAsync<DeckRow>("SELECT id, name, kind, created_at, updated_at FROM decks WHERE id = ? AND deleted_at IS NULL", [id]);
     return row ? toDeck(row) : null;
+  }
+
+  /** 単語の例文を、まとめて読む（単語の id → 例文の並び） */
+  async function loadExamples(cardIds: string[]): Promise<Map<string, Example[]>> {
+    const map = new Map<string, Example[]>();
+    for (let start = 0; start < cardIds.length; start += IDS_PER_QUERY) {
+      const ids = cardIds.slice(start, start + IDS_PER_QUERY);
+      const rows = await db.getAllAsync<{ card_id: string; text: string; translation: string }>(
+        `SELECT card_id, text, translation FROM card_examples WHERE card_id IN (${ids.map(() => "?").join(", ")}) ORDER BY card_id, position`,
+        ids
+      );
+      for (const row of rows) {
+        const list = map.get(row.card_id) ?? [];
+        list.push({ text: row.text, translation: row.translation });
+        map.set(row.card_id, list);
+      }
+    }
+    return map;
+  }
+
+  /** 単語の行を、例文つきの単語にする */
+  async function withExamples(rows: CardRow[]): Promise<Card[]> {
+    const examples = await loadExamples(rows.map((row) => row.id));
+    return rows.map((row) => toCard(row, examples.get(row.id) ?? []));
+  }
+
+  /** 例文の行（[単語の id, 例文の並び]）を、まとめて書き込む。位置は、並びの順 */
+  async function insertExamples(entries: { cardId: string; examples: Example[] }[]): Promise<void> {
+    const rows: SqlParam[][] = entries.flatMap(({ cardId, examples }) =>
+      examples.map((example, position): SqlParam[] => [newId(), cardId, position, example.text, example.translation])
+    );
+    for (let start = 0; start < rows.length; start += EXAMPLE_ROWS_PER_STATEMENT) {
+      const chunk = rows.slice(start, start + EXAMPLE_ROWS_PER_STATEMENT);
+      await db.runAsync(
+        `INSERT INTO card_examples (id, card_id, position, text, translation) VALUES ${chunk.map(() => "(?, ?, ?, ?, ?)").join(", ")}`,
+        chunk.flat()
+      );
+    }
   }
 
   const repo = {
@@ -169,17 +198,17 @@ export function createRepository(db: Db) {
       let where = "deck_id = ? AND deleted_at IS NULL";
       const trimmed = query.trim();
       if (trimmed) {
-        where += " AND (term LIKE ? ESCAPE '\\' OR meaning LIKE ? ESCAPE '\\' OR example LIKE ? ESCAPE '\\' OR example2 LIKE ? ESCAPE '\\' OR example3 LIKE ? ESCAPE '\\')";
+        where += " AND (term LIKE ? ESCAPE '\\' OR meaning LIKE ? ESCAPE '\\' OR EXISTS (SELECT 1 FROM card_examples e WHERE e.card_id = cards.id AND e.text LIKE ? ESCAPE '\\'))";
         const pattern = `%${escapeLike(trimmed)}%`;
-        params.push(pattern, pattern, pattern, pattern, pattern);
+        params.push(pattern, pattern, pattern);
       }
       const rows = await db.getAllAsync<CardRow>(`SELECT ${CARD_COLUMNS} FROM cards WHERE ${where} ORDER BY position, created_at`, params);
-      return rows.map(toCard);
+      return withExamples(rows);
     },
 
     async getCard(id: string): Promise<Card | null> {
       const row = await db.getFirstAsync<CardRow>(`SELECT ${CARD_COLUMNS} FROM cards WHERE id = ? AND deleted_at IS NULL`, [id]);
-      return row ? toCard(row) : null;
+      return row ? (await withExamples([row]))[0] : null;
     },
 
     /** 同じ単語（大文字小文字を区別しない）がすでにあるか。追加時の重複警告に使う */
@@ -188,7 +217,7 @@ export function createRepository(db: Db) {
         `SELECT ${CARD_COLUMNS} FROM cards WHERE deck_id = ? AND deleted_at IS NULL AND LOWER(term) = LOWER(?) AND id <> ?`,
         [deckId, term.trim(), excludeCardId ?? ""]
       );
-      return rows.map(toCard);
+      return withExamples(rows);
     },
 
     async addCard(deckId: string, input: CardInput): Promise<Card> {
@@ -198,10 +227,13 @@ export function createRepository(db: Db) {
       const timestamp = now();
       const last = await db.getFirstAsync<{ max_position: number | null }>("SELECT MAX(position) AS max_position FROM cards WHERE deck_id = ?", [deckId]);
       const position = (last?.max_position ?? -1) + 1;
-      await db.runAsync(
-        `INSERT INTO cards (${CARD_COLUMNS}) VALUES ${CARD_PLACEHOLDERS}`,
-        [id, deckId, value.term, value.meaning, value.partOfSpeech, ...exampleParams(value.examples), value.note, value.answer ?? "", position, timestamp, timestamp, value.flag ?? ""]
-      );
+      await db.withTransactionAsync(async () => {
+        await db.runAsync(
+          `INSERT INTO cards (${CARD_COLUMNS}) VALUES ${CARD_PLACEHOLDERS}`,
+          [id, deckId, value.term, value.meaning, value.partOfSpeech, value.note, value.answer ?? "", position, timestamp, timestamp, value.flag ?? ""]
+        );
+        await insertExamples([{ cardId: id, examples: value.examples }]);
+      });
       return (await repo.getCard(id)) as Card;
     },
 
@@ -222,11 +254,15 @@ export function createRepository(db: Db) {
         for (let start = 0; start < values.length; start += perStatement) {
           const chunk = values.slice(start, start + perStatement);
           const params: SqlParam[] = [];
+          const entries: { cardId: string; examples: Example[] }[] = [];
           for (const value of chunk) {
-            params.push(newId(), deckId, value.term, value.meaning, value.partOfSpeech, ...exampleParams(value.examples), value.note, value.answer ?? "", position++, timestamp, timestamp, value.flag ?? "");
+            const id = newId();
+            params.push(id, deckId, value.term, value.meaning, value.partOfSpeech, value.note, value.answer ?? "", position++, timestamp, timestamp, value.flag ?? "");
+            entries.push({ cardId: id, examples: value.examples });
           }
           const placeholders = chunk.map(() => CARD_PLACEHOLDERS).join(", ");
           await db.runAsync(`INSERT INTO cards (${CARD_COLUMNS}) VALUES ${placeholders}`, params);
+          await insertExamples(entries);
         }
       });
       return values.length;
@@ -237,10 +273,14 @@ export function createRepository(db: Db) {
       if (!existing) throw new ValidationError("単語が見つかりません");
       await requireEditableDeck(existing.deckId);
       const value = validateCardInput(input, { allowEmptyMeaning: existing.meaning === "" });
-      await db.runAsync(
-        "UPDATE cards SET term = ?, meaning = ?, part_of_speech = ?, example = ?, example_translation = ?, example2 = ?, example2_translation = ?, example3 = ?, example3_translation = ?, note = ?, answer = ?, flag = ?, updated_at = ? WHERE id = ?",
-        [value.term, value.meaning, value.partOfSpeech, ...exampleParams(value.examples), value.note, value.answer ?? "", value.flag ?? existing.flag, now(), id]
-      );
+      await db.withTransactionAsync(async () => {
+        await db.runAsync(
+          "UPDATE cards SET term = ?, meaning = ?, part_of_speech = ?, note = ?, answer = ?, flag = ?, updated_at = ? WHERE id = ?",
+          [value.term, value.meaning, value.partOfSpeech, value.note, value.answer ?? "", value.flag ?? existing.flag, now(), id]
+        );
+        await db.runAsync("DELETE FROM card_examples WHERE card_id = ?", [id]);
+        await insertExamples([{ cardId: id, examples: value.examples }]);
+      });
       if (value.flag !== undefined && value.flag !== existing.flag) await repo.setFlag(id, value.flag);
       return (await repo.getCard(id)) as Card;
     },
@@ -268,7 +308,7 @@ export function createRepository(db: Db) {
       }
       if (filter.requireMeaning) where += " AND meaning <> ''";
       const rows = await db.getAllAsync<CardRow>(`SELECT ${CARD_COLUMNS} FROM cards WHERE ${where}`, params);
-      return rows.map(toCard);
+      return withExamples(rows);
     },
 
     /**
@@ -342,7 +382,7 @@ export function createRepository(db: Db) {
          WHERE deleted_at IS NULL AND (type = 'ing_or_to' OR (type = 'basic' AND answer IN ('ing', 'to')))
          ORDER BY position`
       );
-      return rows.map(toCard);
+      return withExamples(rows);
     },
 
     /** 各品詞の単語数（出題の絞り込み画面に表示する） */

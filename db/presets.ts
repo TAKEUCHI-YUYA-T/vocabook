@@ -65,6 +65,7 @@ export async function syncPresets(db: Db, data: PresetData): Promise<boolean> {
 
   const timestamp = now();
   await db.withTransactionAsync(async () => {
+    await db.runAsync("DELETE FROM card_examples WHERE card_id IN (SELECT id FROM cards WHERE deck_id IN (SELECT id FROM decks WHERE kind = 'preset'))");
     await db.runAsync("DELETE FROM cards WHERE deck_id IN (SELECT id FROM decks WHERE kind = 'preset')");
     await db.runAsync("DELETE FROM decks WHERE kind = 'preset' AND id <> ?", [PRESET_ING_OR_TO_DECK_ID]);
     await db.runAsync("DELETE FROM tips");
@@ -77,11 +78,17 @@ export async function syncPresets(db: Db, data: PresetData): Promise<boolean> {
     await insertRows(
       db,
       `INSERT INTO cards
-        (id, deck_id, type, term, meaning, part_of_speech, example, example_translation, note, answer, position, created_at, updated_at)`,
+        (id, deck_id, type, term, meaning, part_of_speech, note, answer, position, created_at, updated_at)`,
       data.ingOrTo.map((item, index): SqlParam[] => [
         item.id, PRESET_ING_OR_TO_DECK_ID, "ing_or_to", item.term, item.meaning ?? "", null,
-        item.example ?? "", "", item.note ?? "", normalizeIngOrTo(item.answer), index, timestamp, timestamp,
+        item.note ?? "", normalizeIngOrTo(item.answer), index, timestamp, timestamp,
       ])
+    );
+    // 例文は、別の表に入れる（同梱の問題は、例文が1つ）
+    await insertRows(
+      db,
+      "INSERT INTO card_examples (id, card_id, position, text, translation)",
+      data.ingOrTo.filter((item) => item.example).map((item): SqlParam[] => [`${item.id}#example`, item.id, 0, item.example ?? "", ""])
     );
     await insertRows(
       db,

@@ -9,12 +9,15 @@ import type { SpellingWarning } from "@/hooks/useSpellingWarning";
 import { SpeakButton } from "./SpeakButton";
 import { colors } from "./theme";
 
+/** 入力中の例文。draft は、自動翻訳の下書き（訳が、この値のままなら、あなたが直していない下書き。保存されるのは、訳だけ） */
+export type FormExample = Example & { draft?: string };
+
 export type CardFormValue = {
   term: string;
   meaning: string;
   partOfSpeech: PartOfSpeech | null;
-  /** 例文（1〜3つ。英文と、その和訳の対。空の例文は、保存のときに除かれる） */
-  examples: Example[];
+  /** 例文（20個まで。英文と、その和訳の対。空の例文は、保存のときに除かれる） */
+  examples: FormExample[];
   note: string;
   /** ing or to の問題にも出すときの答え（null なら出さない） */
   answer: IngOrToAnswer | null;
@@ -89,7 +92,7 @@ export function CardForm({ value, onChange, editable, duplicateWarning, spelling
   const set = <K extends keyof CardFormValue>(key: K, next: CardFormValue[K]) => onChange({ ...value, [key]: next });
 
   // 例文は、いつも1つは欄を出す。足すのは3つまで
-  const exampleBlocks: Example[] = value.examples.length > 0 ? value.examples : [{ text: "", translation: "" }];
+  const exampleBlocks: FormExample[] = value.examples.length > 0 ? value.examples : [{ text: "", translation: "" }];
   const setExample = (index: number, patch: Partial<Example>) =>
     set("examples", exampleBlocks.map((example, i) => (i === index ? { ...example, ...patch } : example)));
   const removeExample = (index: number) => {
@@ -263,7 +266,7 @@ export function CardForm({ value, onChange, editable, duplicateWarning, spelling
           )}
 
           {exampleBlocks.map((example, index) => {
-            const isAutoTranslation = !!autoFill && example.translation !== "" && example.translation === autoFill.autoTranslations[index];
+            const isAutoTranslation = example.translation !== "" && example.translation === example.draft;
             const translationStatus = autoFill?.translationStatuses[index];
             const name = exampleBlocks.length > 1 ? `例文${index + 1}` : "例文";
             return (
@@ -330,7 +333,7 @@ export function CardForm({ value, onChange, editable, duplicateWarning, spelling
               onPress={() => set("examples", [...exampleBlocks, { text: "", translation: "" }])}
             >
               <Feather name="plus" size={20} color={colors.secondary} />
-              <Text style={styles.detailsToggleText}>例文を追加する（あと{MAX_EXAMPLES - exampleBlocks.length}つ）</Text>
+              <Text style={styles.detailsToggleText}>例文を追加する（あと{MAX_EXAMPLES - exampleBlocks.length}個）</Text>
             </TouchableOpacity>
           )}
 

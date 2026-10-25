@@ -1,10 +1,11 @@
 /**
  * 例文（英文と、その和訳）の扱い
- * 1つの単語に、例文を最大3つまで持つ。例文ごとに、英文と和訳を対にして持つ
+ * 1つの単語に、例文を最大20個まで持つ。例文ごとに、英文と和訳を対にして持つ
  */
 export type Example = { text: string; translation: string };
 
-export const MAX_EXAMPLES = 3;
+/** 1つの単語に持てる例文の数（番号の①〜⑳に合わせている） */
+export const MAX_EXAMPLES = 20;
 
 const CIRCLED = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳";
 
@@ -64,9 +65,10 @@ export type PairResult = {
  * 例文の欄と、訳の欄（どちらも、複数の文が入りうる）から、英文と訳の対を作る
  * - 訳の数が英文の数と同じ、または、訳に番号があれば、対応づける
  * - 対応づけられないときは、訳を捨てず、1つ目の例文の訳にまとめる（ambiguous）
- * - 4つ目以降の英文は、extra に分ける（overflow）。メモに移すのは、呼び出し側
+ * - max 個を超える英文は、extra に分ける（overflow）。メモに移すのは、呼び出し側
+ *   max は、ふつう MAX_EXAMPLES。古い構造（例文が3つまでの時期）を移すときだけ、3を指定する
  */
-export function pairExamples(exampleText: string, translationText: string): PairResult {
+export function pairExamples(exampleText: string, translationText: string, max: number = MAX_EXAMPLES): PairResult {
   const texts = splitNumbered(exampleText);
   const translations = splitNumbered(translationText);
   let ambiguous = false;
@@ -90,25 +92,25 @@ export function pairExamples(exampleText: string, translationText: string): Pair
   }
 
   const all: Example[] = bodies.map((text, i) => ({ text, translation: pairs[i] }));
-  const extra = all.slice(MAX_EXAMPLES);
-  return { examples: all.slice(0, MAX_EXAMPLES), extra, overflow: extra.length > 0, ambiguous };
+  const extra = all.slice(max);
+  return { examples: all.slice(0, max), extra, overflow: extra.length > 0, ambiguous };
 }
 
-/** あふれた例文（4つ目以降）を、メモに追記する文にする。番号は、元の番号のまま */
-export function extraExamplesNote(extra: readonly Example[]): string {
+/** あふれた例文を、メモに追記する文にする。番号は、元の番号のまま（offset は、あふれる前の例文の数） */
+export function extraExamplesNote(extra: readonly Example[], offset: number = MAX_EXAMPLES): string {
   if (extra.length === 0) return "";
   const lines = extra.map((e, i) => {
-    const number = CIRCLED[MAX_EXAMPLES + i] ?? `(${MAX_EXAMPLES + i + 1})`;
+    const number = CIRCLED[offset + i] ?? `(${offset + i + 1})`;
     return [`${number}${e.text}`, e.translation].filter(Boolean).join("\n");
   });
   return `例文の続き\n${lines.join("\n")}`;
 }
 
 /** メモに、あふれた例文を追記した値（メモが空なら、その文だけ） */
-export const appendExtraToNote = (note: string, extra: readonly Example[]): string =>
-  [note.trim(), extraExamplesNote(extra)].filter(Boolean).join("\n\n");
+export const appendExtraToNote = (note: string, extra: readonly Example[], offset: number = MAX_EXAMPLES): string =>
+  [note.trim(), extraExamplesNote(extra, offset)].filter(Boolean).join("\n\n");
 
-/** 空の例文を取り除き、前後の空白を除いて、最大3つにそろえる（超えた分は呼び出し側で検証する） */
+/** 空の例文を取り除き、前後の空白を除く（数の上限は、呼び出し側で検証する） */
 export function compactExamples(examples: readonly Example[] | undefined): Example[] {
   return (examples ?? [])
     .map((e) => ({ text: (e.text ?? "").trim(), translation: (e.translation ?? "").trim() }))

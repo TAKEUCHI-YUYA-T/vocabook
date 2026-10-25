@@ -1,5 +1,8 @@
-import type { Db } from "./database";
-import { appendExtraToNote, pairExamples } from "./examples";
+import { newId, type Db, type SqlParam } from "./database";
+import { appendExtraToNote, compactExamples, extraExamplesNote, MAX_EXAMPLES, pairExamples, type Example } from "./examples";
+
+/** 移行4の時点の、1つの単語の例文の数。移行4と5は、この数を前提にした手順なので、MAX_EXAMPLES が変わっても変えない */
+const LEGACY_EXAMPLE_SLOTS = 3;
 
 /**
  * データ構造の変更履歴
@@ -32,7 +35,7 @@ async function splitExamplesMigration(db: Db): Promise<void> {
     "SELECT id, example, example_translation, note FROM cards WHERE type = 'basic' AND (example <> '' OR example_translation <> '')"
   );
   for (const row of rows) {
-    const { examples, extra } = pairExamples(row.example, row.example_translation);
+    const { examples, extra } = pairExamples(row.example, row.example_translation, LEGACY_EXAMPLE_SLOTS);
     const [first, second, third] = [examples[0], examples[1], examples[2]];
     const unchanged = examples.length === 1 && first.text === row.example.trim() && first.translation === row.example_translation.trim();
     if (unchanged) continue;
@@ -41,7 +44,72 @@ async function splitExamplesMigration(db: Db): Promise<void> {
     ]);
     await db.runAsync(
       "UPDATE cards SET example = ?, example_translation = ?, example2 = ?, example2_translation = ?, example3 = ?, example3_translation = ?, note = ? WHERE id = ?",
-      [first?.text ?? "", first?.translation ?? "", second?.text ?? "", second?.translation ?? "", third?.text ?? "", third?.translation ?? "", appendExtraToNote(row.note, extra), row.id]
+      [first?.text ?? "", first?.translation ?? "", second?.text ?? "", second?.translation ?? "", third?.text ?? "", third?.translation ?? "", appendExtraToNote(row.note, extra, LEGACY_EXAMPLE_SLOTS), row.id]
+    );
+  }
+}
+
+/** メモの末尾にある block（移行4が足した「例文の続き」）を取り除く。メモがその形でなければ（手で直されていれば）null */
+function stripTrailingBlock(note: string, block: string): string | null {
+  if (note === block) return "";
+  if (note.endsWith(`\n\n${block}`)) return note.slice(0, note.length - block.length - 2).trimEnd();
+  return null;
+}
+
+/**
+ * 5: 例文を、単語とは別の表（card_examples。1例文を1行）に持つ。数は MAX_EXAMPLES（20）まで
+ * - 単語の表の、例文1〜3の列（英文と訳）を、例文の表に移す（ing or to の問題の例文も）
+ * - 移行4でメモに移した4つ目以降の例文は、メモから消して、例文に戻す。元の値（example_migration_backup）から取り直す
+ *   メモが手で直されていて、移した文がそのまま残っていなければ、メモには触らず、例文にも足さない（二重にならないように）
+ * 単語の表の、例文の列は、使わなくなる（消さずに残す）
+ */
+async function moveExamplesToTable(db: Db): Promise<void> {
+  await db.execAsync(`
+    CREATE TABLE card_examples (
+      id TEXT PRIMARY KEY NOT NULL,
+      card_id TEXT NOT NULL,
+      position INTEGER NOT NULL,
+      text TEXT NOT NULL DEFAULT '',
+      translation TEXT NOT NULL DEFAULT ''
+    );
+    CREATE INDEX idx_card_examples_card ON card_examples (card_id, position);
+  `);
+  type Row = {
+    id: string; note: string; example: string; example_translation: string; example2: string; example2_translation: string; example3: string; example3_translation: string;
+  };
+  const rows = await db.getAllAsync<Row>(
+    `SELECT id, note, example, example_translation, example2, example2_translation, example3, example3_translation FROM cards
+     WHERE example <> '' OR example_translation <> '' OR example2 <> '' OR example2_translation <> '' OR example3 <> '' OR example3_translation <> ''`
+  );
+  const backups = new Map(
+    (await db.getAllAsync<{ card_id: string; example: string; example_translation: string }>("SELECT card_id, example, example_translation FROM example_migration_backup")).map((b) => [b.card_id, b])
+  );
+
+  const inserts: SqlParam[][] = [];
+  for (const row of rows) {
+    let examples: Example[] = compactExamples([
+      { text: row.example, translation: row.example_translation },
+      { text: row.example2, translation: row.example2_translation },
+      { text: row.example3, translation: row.example3_translation },
+    ]);
+    const backup = backups.get(row.id);
+    if (backup) {
+      const legacy = pairExamples(backup.example, backup.example_translation, LEGACY_EXAMPLE_SLOTS);
+      const stripped = legacy.extra.length > 0 ? stripTrailingBlock(row.note, extraExamplesNote(legacy.extra, LEGACY_EXAMPLE_SLOTS)) : null;
+      if (stripped !== null) {
+        const all = pairExamples(backup.example, backup.example_translation, MAX_EXAMPLES);
+        examples = [...examples, ...all.examples.slice(LEGACY_EXAMPLE_SLOTS)];
+        // 20個を超える分（ふつうは、ない）は、メモに残す
+        await db.runAsync("UPDATE cards SET note = ? WHERE id = ?", [appendExtraToNote(stripped, all.extra), row.id]);
+      }
+    }
+    examples.forEach((example, position) => inserts.push([newId(), row.id, position, example.text, example.translation]));
+  }
+  for (let start = 0; start < inserts.length; start += 100) {
+    const chunk = inserts.slice(start, start + 100);
+    await db.runAsync(
+      `INSERT INTO card_examples (id, card_id, position, text, translation) VALUES ${chunk.map(() => "(?, ?, ?, ?, ?)").join(", ")}`,
+      chunk.flat()
     );
   }
 }
@@ -105,6 +173,8 @@ const MIGRATIONS: Migration[] = [
   `,
   // 4: 例文を最大3つに分ける
   splitExamplesMigration,
+  // 5: 例文を、別の表に持つ（1つの単語に、20個まで）
+  moveExamplesToTable,
 ];
 
 export const LATEST_SCHEMA_VERSION = MIGRATIONS.length;

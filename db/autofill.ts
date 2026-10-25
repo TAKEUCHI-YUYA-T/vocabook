@@ -31,9 +31,7 @@ export type CardAutoFillState = {
   /** 最後に、自動で入れた意味 */
   autoMeaning: string | null;
   meaningStatus: TranslationStatus;
-  /** 例文ごと（例文1〜3）の、最後に、自動で入れた訳 */
-  autoTranslations: (string | null)[];
-  /** 例文ごと（例文1〜3）の、訳を作っている状態 */
+  /** 例文ごと（例文の並びの順）の、訳を作っている状態。足りない分は、何もしていない */
   translationStatuses: TranslationStatus[];
 };
 

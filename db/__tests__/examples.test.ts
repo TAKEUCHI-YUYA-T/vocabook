@@ -1,5 +1,6 @@
 import { appendExtraToNote, extraExamplesNote, joinNumbered, pairExamples, splitNumbered } from "../examples";
 import { migrate } from "../migrations";
+import { syncPresets } from "../presets";
 import { createRepository, MAX_EXAMPLES, ValidationError } from "../repository";
 import { createTestDb } from "../testing/testDb";
 
@@ -49,15 +50,23 @@ describe("英文と訳の対応づけ（pairExamples）", () => {
     expect(result.examples).toEqual([{ text: "A.", translation: "訳だけ" }, { text: "B.", translation: "" }]);
   });
 
-  it("英文が3つを超えたら、4つ目以降は extra に分ける（overflow）。英文のない訳も残す", () => {
-    const result = pairExamples("①A.\n②B.\n③C.\n④D.\n⑤E.", "①1\n②2\n③3\n④4\n⑤5");
+  it("英文が上限（20個）を超えたら、超えた分は extra に分ける（overflow）。英文のない訳も残す", () => {
+    expect(MAX_EXAMPLES).toBe(20);
+    const many = Array.from({ length: 22 }, (_, i) => `${i + 1}. S${i + 1}.`).join("\n");
+    const result = pairExamples(many, "");
+    expect(result.examples).toHaveLength(20);
+    expect(result.extra.map((e) => e.text)).toEqual(["S21.", "S22."]);
+    expect(pairExamples("①A.\n②B.\n③C.\n④D.\n⑤E.", "").overflow).toBe(false); // 3つや5つは、そのまま持てる
+    expect(pairExamples("", "訳だけ").examples).toEqual([{ text: "", translation: "訳だけ" }]);
+  });
+
+  it("上限を指定すると（古い構造の移行用に、3）、超えた分は extra に分け、メモ用の文にできる", () => {
+    const result = pairExamples("①A.\n②B.\n③C.\n④D.\n⑤E.", "①1\n②2\n③3\n④4\n⑤5", 3);
     expect(result.overflow).toBe(true);
-    expect(result.examples).toHaveLength(MAX_EXAMPLES);
     expect(result.examples[2]).toEqual({ text: "C.", translation: "3" });
     expect(result.extra).toEqual([{ text: "D.", translation: "4" }, { text: "E.", translation: "5" }]);
-    expect(extraExamplesNote(result.extra)).toBe("例文の続き\n④D.\n4\n⑤E.\n5");
-    expect(appendExtraToNote("既存のメモ", result.extra)).toBe("既存のメモ\n\n例文の続き\n④D.\n4\n⑤E.\n5");
-    expect(pairExamples("", "訳だけ").examples).toEqual([{ text: "", translation: "訳だけ" }]);
+    expect(extraExamplesNote(result.extra, 3)).toBe("例文の続き\n④D.\n4\n⑤E.\n5");
+    expect(appendExtraToNote("既存のメモ", result.extra, 3)).toBe("既存のメモ\n\n例文の続き\n④D.\n4\n⑤E.\n5");
   });
 
   it("番号つきにまとめて（joinNumbered）、また分けると、元に戻る（途中の訳が空でも、位置はずれない）", () => {
@@ -96,10 +105,25 @@ describe("例文の保存", () => {
     expect(updated.examples).toEqual([]);
   });
 
-  it("4つ以上は保存できない", async () => {
+  it("20個まで保存でき、21個以上は保存できない。順番も、そのまま戻る", async () => {
     const { repo, deck } = await setup();
-    const four = ["a", "b", "c", "d"].map((text) => ({ text, translation: "" }));
-    await expect(repo.addCard(deck.id, { term: "x", meaning: "y", examples: four })).rejects.toThrow(ValidationError);
+    const make = (n: number) => Array.from({ length: n }, (_, i) => ({ text: `s${i + 1}`, translation: `t${i + 1}` }));
+    const card = await repo.addCard(deck.id, { term: "many", meaning: "たくさん", examples: make(MAX_EXAMPLES) });
+    expect(card.examples).toEqual(make(20));
+    await expect(repo.addCard(deck.id, { term: "x", meaning: "y", examples: make(MAX_EXAMPLES + 1) })).rejects.toThrow(ValidationError);
+    await expect(repo.updateCard(card.id, { term: "many", meaning: "たくさん", examples: make(21) })).rejects.toThrow("20個まで");
+    // 編集で、数を減らしても、増やしても、入れ替わる（古い例文が残らない）
+    expect((await repo.updateCard(card.id, { term: "many", meaning: "たくさん", examples: make(2) })).examples).toEqual(make(2));
+    expect((await repo.updateCard(card.id, { term: "many", meaning: "たくさん", examples: make(5) })).examples).toEqual(make(5));
+  });
+
+  it("一覧で取り出す単語にも、例文が付く（取り込みでまとめて追加した単語も）", async () => {
+    const { repo, deck } = await setup();
+    await repo.importCards(deck.id, [
+      { term: "a", meaning: "あ", examples: [{ text: "A1", translation: "" }, { text: "A2", translation: "" }] },
+      { term: "b", meaning: "い" },
+    ]);
+    expect((await repo.listCards(deck.id)).map((c) => [c.term, c.examples.map((e) => e.text)])).toEqual([["a", ["A1", "A2"]], ["b", []]]);
   });
 
   it("検索は、3つの例文のどれにも当たる", async () => {
@@ -157,17 +181,76 @@ describe("データの整形（移行4: 例文を最大3つに分ける）", () 
     expect((await repo.getCard("i1"))?.examples).toEqual([{ text: "Please avoid making noise.（騒ぐのを避けてください）", translation: "" }]);
   });
 
-  it("4つ目以降の例文は、捨てず、メモの末尾に移す。元のメモは、バックアップに残る", async () => {
-    const { db, repo } = await oldDb([["c1", "basic", "deny", "①A.\n\n②B.\n\n③C.\n\n④D.", "①訳A\n\n②訳B\n\n③訳C\n\n④訳D"]]);
+  it("4つ以上の例文も、すべて例文になる（メモには残らない）。元のメモは、バックアップに残る", async () => {
+    const { db, repo } = await oldDb([["c1", "basic", "deny", "①A.\n\n②B.\n\n③C.\n\n④D.\n\n⑤E.", "①訳A\n\n②訳B\n\n③訳C\n\n④訳D\n\n⑤訳E"]]);
     const card = await repo.getCard("c1");
-    expect(card?.examples.map((e) => e.text)).toEqual(["A.", "B.", "C."]);
-    expect(card?.note).toBe("例文の続き\n④D.\n訳D");
+    expect(card?.examples).toEqual([
+      { text: "A.", translation: "訳A" },
+      { text: "B.", translation: "訳B" },
+      { text: "C.", translation: "訳C" },
+      { text: "D.", translation: "訳D" },
+      { text: "E.", translation: "訳E" },
+    ]);
+    expect(card?.note).toBe("");
     expect(await db.getAllAsync("SELECT note FROM example_migration_backup")).toEqual([{ note: "" }]);
+  });
+
+  it("移行4だけが済んだ状態（4つ目以降が、メモにある）から更新すると、メモの「例文の続き」だけが消え、例文に戻る", async () => {
+    const db = await createTestDb();
+    await migrate(db, 3);
+    await db.runAsync("INSERT INTO decks (id, name, kind, created_at, updated_at) VALUES ('d', 'テスト', 'user', 1, 1)");
+    await db.runAsync(SQL_INSERT, ["c1", "basic", "deny", "①A.\n\n②B.\n\n③C.\n\n④D.\n\n⑤E.", "①訳A\n\n②訳B\n\n③訳C\n\n④訳D\n\n⑤訳E"]);
+    await db.runAsync(SQL_INSERT, ["c2", "basic", "rather", "①P.\n②Q.\n③R.\n④S.", ""]);
+    await migrate(db, 4);
+    // 移行4のあとで、あなたが、1つ目の例文とメモを直した（c1）。c2 は、メモを書き換えた
+    await db.runAsync("UPDATE cards SET example = 'A（直した）', note = '覚え方' || char(10) || char(10) || note WHERE id = 'c1'");
+    await db.runAsync("UPDATE cards SET note = '例文の続きは、自分で書き直した' WHERE id = 'c2'");
+    await migrate(db);
+    const repo = createRepository(db);
+
+    const c1 = await repo.getCard("c1");
+    expect(c1?.examples.map((e) => e.text)).toEqual(["A（直した）", "B.", "C.", "D.", "E."]);
+    expect(c1?.examples[4].translation).toBe("訳E");
+    expect(c1?.note).toBe("覚え方"); // 移した「例文の続き」だけが消える
+
+    // メモが書き換えられていたら、メモには触らず、例文にも足さない（二重にならない）
+    const c2 = await repo.getCard("c2");
+    expect(c2?.examples.map((e) => e.text)).toEqual(["P.", "Q.", "R."]);
+    expect(c2?.note).toBe("例文の続きは、自分で書き直した");
   });
 
   it("もう一度 migrate しても、変わらない（二重に整形しない）", async () => {
     const { db, repo } = await oldDb([["c1", "basic", "concern", "①A.\n②B.", "①訳A\n②訳B"]]);
     await migrate(db);
     expect((await repo.getCard("c1"))?.examples).toHaveLength(2);
+  });
+});
+
+describe("同梱の問題（ing or to）の例文", () => {
+  it("例文の表に入り、内容が変わって入れ直すと、古い例文は残らない。自分の単語の例文には触れない", async () => {
+    const db = await createTestDb();
+    await migrate(db);
+    const repo = createRepository(db);
+    const deck = await repo.createDeck("テスト");
+    const mine = await repo.addCard(deck.id, { term: "mine", meaning: "私の", examples: [{ text: "My own.", translation: "私の。" }] });
+
+    await syncPresets(db, { version: "v1", tips: [], ingOrTo: [{ id: "ingOrTo:avoid", term: "avoid", answer: "ing", example: "Please avoid making noise.（騒ぐのを避けてください）" }] });
+    expect((await repo.listIngOrToCards()).map((c) => [c.term, c.examples.map((e) => e.text)])).toEqual([["avoid", ["Please avoid making noise.（騒ぐのを避けてください）"]]]);
+
+    await syncPresets(db, { version: "v2", tips: [], ingOrTo: [{ id: "ingOrTo:avoid", term: "avoid", answer: "ing", example: "Avoid it." }, { id: "ingOrTo:enjoy", term: "enjoy", answer: "ing" }] });
+    expect((await repo.listIngOrToCards()).map((c) => [c.term, c.examples.map((e) => e.text)])).toEqual([["avoid", ["Avoid it."]], ["enjoy", []]]);
+    expect(await db.getAllAsync("SELECT text FROM card_examples WHERE card_id = 'ingOrTo:avoid'")).toEqual([{ text: "Avoid it." }]);
+    expect((await repo.getCard(mine.id))?.examples).toEqual([{ text: "My own.", translation: "私の。" }]);
+  });
+
+  it("移行で、すでにある問題の例文も、例文の表に移る", async () => {
+    const db = await createTestDb();
+    await migrate(db, 3);
+    await db.runAsync("INSERT INTO decks (id, name, kind, created_at, updated_at) VALUES ('p', 'ing or to', 'preset', 1, 1)");
+    await db.runAsync(
+      "INSERT INTO cards (id, deck_id, type, term, meaning, example, answer, position, created_at, updated_at) VALUES ('i1', 'p', 'ing_or_to', 'avoid', '避ける', 'Please avoid it.', 'ing', 0, 1, 1)"
+    );
+    await migrate(db);
+    expect((await createRepository(db).getCard("i1"))?.examples).toEqual([{ text: "Please avoid it.", translation: "" }]);
   });
 });
