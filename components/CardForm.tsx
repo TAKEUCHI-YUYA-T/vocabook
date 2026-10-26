@@ -333,7 +333,7 @@ export function CardForm({ value, onChange, editable, duplicateWarning, spelling
               onPress={() => set("examples", [...exampleBlocks, { text: "", translation: "" }])}
             >
               <Feather name="plus" size={20} color={colors.secondary} />
-              <Text style={styles.detailsToggleText}>例文を追加する（あと{MAX_EXAMPLES - exampleBlocks.length}個）</Text>
+              <Text style={styles.detailsToggleText}>例文を追加する</Text>
             </TouchableOpacity>
           )}
 
