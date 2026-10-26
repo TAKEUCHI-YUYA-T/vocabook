@@ -103,7 +103,7 @@ export default function SettingsScreen() {
             <Text style={styles.sectionTitle}>広告</Text>
             <View style={styles.group}>
               <Text style={styles.groupText}>
-                無料で提供するため、Google AdMob の広告を表示します。広告の表示のために、広告 ID や端末の情報が使われることがあります。詳しくは、プライバシーポリシーをご覧ください。
+                Google AdMob の広告を表示します。広告の表示のために、広告 ID や端末の情報が使われることがあります。詳しくは、プライバシーポリシーをご覧ください。
               </Text>
               {showConsent && <Row label="広告のプライバシーの設定" onPress={() => showPrivacyOptions()} />}
             </View>
