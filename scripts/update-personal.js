@@ -9,7 +9,8 @@
 const { spawnSync } = require("child_process");
 
 const message = process.argv[2] || "update";
-const result = spawnSync("npx", ["eas-cli", "update", "--channel", "personal", "--platform", "android", "--message", message, "--non-interactive"], {
+const result = spawnSync("npx", ["eas-cli", "update", "--channel", "personal", "--platform", "android", "--message", JSON.stringify(message), // shell 経由で実行するので、空白を含むメッセージは、引用符で囲む
+    "--non-interactive"], {
   stdio: "inherit",
   shell: true,
   env: { ...process.env, APP_VARIANT: "personal" },
