@@ -17,7 +17,7 @@ export const REMINDER_ID = "daily-study-reminder";
 export const REMINDER_CHANNEL_ID = "daily-study-reminder";
 export const REMINDER_HOUR = 8;
 export const REMINDER_MINUTE = 0;
-export const REMINDER_TITLE = "vocabook";
+export const REMINDER_TITLE = "Vocabook";
 export const REMINDER_BODY = "継続は力なり！今日も学習を積み重ねよう！";
 
 export type ReminderResult = "scheduled" | "denied" | "unavailable" | "failed";

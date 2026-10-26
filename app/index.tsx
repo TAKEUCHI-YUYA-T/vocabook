@@ -81,7 +81,7 @@ export default function Home() {
       </View>
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 96 }]}>
         <View style={styles.topRow}>
-          <Image source={require("../assets/images/logo.png")} style={styles.logo} accessibilityLabel="vocabook" />
+          <Image source={require("../assets/images/logo.png")} style={styles.logo} accessibilityLabel="Vocabook" />
           <TouchableOpacity accessibilityRole="button" accessibilityLabel="設定" style={styles.aboutButton} onPress={() => router.push("/settings")}>
             <Feather name="settings" size={22} color={colors.primary} />
           </TouchableOpacity>

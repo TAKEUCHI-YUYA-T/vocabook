@@ -12,7 +12,7 @@ const PERSONAL_PACKAGE = "com.takeuchi.vocabook";
 
 export default {
   expo: {
-    name: isPersonal ? "vocabook 自分用" : isAdTest ? "vocabook 広告テスト" : "vocabook",
+    name: isPersonal ? "Vocabook 自分用" : isAdTest ? "Vocabook 広告テスト" : "Vocabook",
     slug: "vocabook",
     version: "1.0.0",
     orientation: "portrait",

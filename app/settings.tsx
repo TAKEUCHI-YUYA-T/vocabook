@@ -148,7 +148,7 @@ export default function SettingsScreen() {
       <ScreenHeader title="設定" onBack={goBack} backText="ホーム" />
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 32 }]}>
         <View style={styles.block}>
-          <Text style={styles.appName}>vocabook</Text>
+          <Text style={styles.appName}>Vocabook</Text>
           {!!version && <Text style={styles.muted}>バージョン {version}</Text>}
           <Text style={styles.muted}>{updatedAt ? `更新: ${updatedAt}` : "更新: アプリに含まれる版"}</Text>
         </View>
