@@ -46,13 +46,26 @@ const hideSplash = () => {
 };
 
 const RepositoryContext = createContext<Repository | null>(null);
+const DbContext = createContext<Db | null>(null);
 
 /** DB の準備ができてから描画される。ここで初めてスプラッシュ画面を閉じる */
 function RepositoryProvider({ children }: { children: React.ReactNode }) {
   const database = useSQLiteContext();
-  const repository = useMemo(() => createRepository(toDb(database)), [database]);
+  const db = useMemo(() => toDb(database), [database]);
+  const repository = useMemo(() => createRepository(db), [db]);
   useEffect(hideSplash, []);
-  return <RepositoryContext.Provider value={repository}>{children}</RepositoryContext.Provider>;
+  return (
+    <DbContext.Provider value={db}>
+      <RepositoryContext.Provider value={repository}>{children}</RepositoryContext.Provider>
+    </DbContext.Provider>
+  );
+}
+
+/** バックアップなど、単語帳の読み書き以外で、DB そのものを使う処理の入口 */
+export function useDb(): Db {
+  const db = useContext(DbContext);
+  if (!db) throw new Error("useDb は AppDatabase の中で使ってください");
+  return db;
 }
 
 /** 画面から単語帳・単語を読み書きするための入口 */

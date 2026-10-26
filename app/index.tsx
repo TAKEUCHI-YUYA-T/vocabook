@@ -20,7 +20,7 @@ const MENU: MenuItem[] = [
 
 /**
  * ホーム画面（Apple 風）
- * - 上: ロゴと、「このアプリについて」のボタン
+ * - 上: ロゴと、「設定」のボタン
  * - 今日の学習・覚えた単語の数（押すとグラフ）、今日のヒント（アプリに同梱。ランダムに1件）
  * - 「単語を覚える」の大きなボタンと、ing or to・単語帳・単語を追加の入口
  * - 右下の足あとのボタンで、画面上にアニメーションを使った絵文字を落とす
@@ -82,8 +82,8 @@ export default function Home() {
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 96 }]}>
         <View style={styles.topRow}>
           <Image source={require("../assets/images/logo.png")} style={styles.logo} accessibilityLabel="vocabook" />
-          <TouchableOpacity accessibilityRole="button" accessibilityLabel="このアプリについて" style={styles.aboutButton} onPress={() => router.push("/about")}>
-            <Feather name="info" size={22} color={colors.primary} />
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="設定" style={styles.aboutButton} onPress={() => router.push("/settings")}>
+            <Feather name="settings" size={22} color={colors.primary} />
           </TouchableOpacity>
         </View>
 

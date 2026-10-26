@@ -25,7 +25,7 @@ const sourceNote = (item: License): string | null => {
  */
 export default function LicensesScreen() {
   const insets = useSafeAreaInsets();
-  const goBack = useGoBack("/about");
+  const goBack = useGoBack("/settings");
   const [open, setOpen] = useState<Set<string>>(() => new Set());
   const toggle = (key: string) =>
     setOpen((prev) => {
