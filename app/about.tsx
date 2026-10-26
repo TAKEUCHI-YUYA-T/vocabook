@@ -1,21 +1,23 @@
 import React, { useEffect, useState } from "react";
 import { Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Feather } from "@expo/vector-icons";
 import Constants from "expo-constants";
+import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { colors } from "@/components/theme";
 import { useGoBack } from "@/hooks/useGoBack";
 import { adsEnabled, privacyOptionsRequired, showPrivacyOptions } from "@/lib/ads";
-import { PRIVACY_POLICY_URL, SUPPORT_URL } from "@/lib/links";
-import licenses from "../assets/licenses.json";
-import wordnet from "../assets/dictionary/wordnet-license.json";
+import { PRIVACY_POLICY_URL } from "@/lib/links";
 
 /**
  * このアプリについての画面
- * - プライバシーポリシーと連絡先へのリンク
- * - 使っている辞書（WordNet）と、ライブラリのライセンス表示（配布の条件として、必ず表示する）
+ * - アプリの名前・説明・バージョン
+ * - 広告の説明と、同意の設定（ストア版だけ。同意の設定は、欧州などの利用者だけ）
+ * - プライバシーポリシーと、ライセンス（別の画面）
  */
 export default function AboutScreen() {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const goBack = useGoBack("/");
   const version = Constants.expoConfig?.version ?? "";
@@ -35,69 +37,44 @@ export default function AboutScreen() {
           {!!version && <Text style={styles.muted}>バージョン {version}</Text>}
         </View>
 
-        <View style={styles.block}>
-          <LinkRow label="プライバシーポリシー" onPress={() => Linking.openURL(PRIVACY_POLICY_URL)} />
-          <LinkRow label="不具合の連絡・ソースコード" onPress={() => Linking.openURL(SUPPORT_URL)} />
-        </View>
-
         {adsEnabled && (
-        <View style={styles.block}>
-          <Text style={styles.heading}>広告</Text>
-          <Text style={styles.text}>
-            無料で提供するため、Google AdMob の広告を表示します。広告の表示のために、広告 ID や端末の情報が使われることがあります。詳しくは、プライバシーポリシーをご覧ください。13 歳以上の方向けのアプリです。
-          </Text>
-          {showConsent && <LinkRow label="広告のプライバシーの設定" onPress={() => showPrivacyOptions()} />}
-        </View>
+          <View style={styles.group}>
+            <Text style={[styles.text, styles.groupText]}>
+              無料で提供するため、Google AdMob の広告を表示します。広告の表示のために、広告 ID や端末の情報が使われることがあります。詳しくは、プライバシーポリシーをご覧ください。
+            </Text>
+            {showConsent && <LinkRow label="広告のプライバシーの設定" onPress={() => showPrivacyOptions()} />}
+          </View>
         )}
 
-        <View style={styles.block}>
-          <Text style={styles.heading}>辞書と翻訳</Text>
-          <Text style={styles.text}>
-            品詞の自動判定と綴りの確認には、Princeton 大学の WordNet 3.0 の見出し語を使っています。意味と例文の自動翻訳は、Google ML Kit の端末内の翻訳で行い、入力した文を外部に送りません。
-          </Text>
-          <Text style={styles.subheading}>{wordnet.name} のライセンス</Text>
-          <Text style={styles.license} selectable>
-            {wordnet.text}
-          </Text>
-        </View>
-
-        <View style={styles.block}>
-          <Text style={styles.heading}>オープンソースのライブラリ</Text>
-          <Text style={styles.text}>このアプリは、次のライブラリを使っています（各ライブラリの著作権とライセンスの条件に従います）。</Text>
-          {licenses.map((item) => (
-            <View key={item.name} style={styles.libRow}>
-              <Text style={styles.libName}>{item.name}</Text>
-              <Text style={styles.muted}>
-                {item.version}　{item.license}
-              </Text>
-            </View>
-          ))}
+        <View style={styles.group}>
+          <LinkRow label="プライバシーポリシー" onPress={() => Linking.openURL(PRIVACY_POLICY_URL)} external first />
+          <LinkRow label="ライセンス" onPress={() => router.push("/licenses")} />
         </View>
       </ScrollView>
     </View>
   );
 }
 
-function LinkRow({ label, onPress }: { label: string; onPress: () => void }) {
+/** 押すと、ほかの画面やページを開く行（iOS の「設定」のような行。右に矢印） */
+function LinkRow({ label, onPress, external, first }: { label: string; onPress: () => void; external?: boolean; first?: boolean }) {
   return (
-    <TouchableOpacity accessibilityRole="link" accessibilityLabel={label} style={styles.linkRow} onPress={onPress}>
+    <TouchableOpacity accessibilityRole={external ? "link" : "button"} accessibilityLabel={label} style={[styles.linkRow, !first && styles.linkDivider]} onPress={onPress}>
       <Text style={styles.linkText}>{label}</Text>
+      <Feather name={external ? "external-link" : "chevron-right"} size={18} color={colors.inputBorder} />
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: 16, gap: 16 },
+  content: { padding: 16, paddingTop: 8, gap: 16 },
   block: { backgroundColor: colors.surface, borderRadius: 16, padding: 16, gap: 10 },
   appName: { fontSize: 24, fontWeight: "bold", color: colors.text },
-  heading: { fontSize: 17, fontWeight: "bold", color: colors.text },
-  subheading: { fontSize: 13, fontWeight: "600", color: colors.secondary, marginTop: 4 },
   text: { fontSize: 15, lineHeight: 24, color: colors.text },
   muted: { fontSize: 13, lineHeight: 20, color: colors.secondary },
-  license: { fontSize: 12, lineHeight: 18, color: colors.text },
-  linkRow: { minHeight: 48, justifyContent: "center" },
-  linkText: { fontSize: 17, color: colors.primary },
-  libRow: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.inputBorder, paddingTop: 8 },
-  libName: { fontSize: 14, fontWeight: "bold", color: colors.text },
+  group: { backgroundColor: colors.surface, borderRadius: 12, overflow: "hidden" },
+  groupText: { padding: 16 },
+  linkRow: { minHeight: 52, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, paddingHorizontal: 16 },
+  linkDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.inputBorder },
+  linkText: { fontSize: 17, color: colors.text },
 });
