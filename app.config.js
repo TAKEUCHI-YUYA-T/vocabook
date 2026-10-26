@@ -1,7 +1,16 @@
 
+/**
+ * ビルドの種類（環境変数 APP_VARIANT）
+ * - personal: 自分用。広告なし。今の端末のデータをそのまま使えるよう、これまでのパッケージ名のまま（Play には出さない）
+ * - それ以外（ふつう）: ストア用。広告あり。新しいパッケージ名（Play に最初に出す前に決める。出したあとは変えられない）
+ */
+const isPersonal = process.env.APP_VARIANT === "personal";
+const STORE_PACKAGE = "com.takeuchi.vocabook.store";
+const PERSONAL_PACKAGE = "com.takeuchi.vocabook";
+
 export default {
   expo: {
-    name: "vocabook",
+    name: isPersonal ? "vocabook 自分用" : "vocabook",
     slug: "vocabook",
     version: "1.0.0",
     orientation: "portrait",
@@ -20,7 +29,7 @@ export default {
         foregroundImage: "./assets/images/app-icon-android.png",
         backgroundColor: "#ffffff"
       },
-      package: "com.takeuchi.vocabook",
+      package: isPersonal ? PERSONAL_PACKAGE : STORE_PACKAGE,
       // 使っていない権限は、ストアの審査で説明が要るので、外す（ファイルの取り込みは、端末の選択画面を使うので、保存領域の権限は要らない）
       blockedPermissions: [
         "android.permission.SYSTEM_ALERT_WINDOW",
@@ -60,6 +69,8 @@ export default {
       typedRoutes: true
     },
     extra: {
+      // 広告を出すか（自分用のビルドは、広告なし）
+      adsEnabled: !isPersonal,
       eas: {
         projectId: "66976257-69db-4ccf-82f5-ff53bc6c8c70"
       },

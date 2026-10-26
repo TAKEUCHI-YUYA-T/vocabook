@@ -1,4 +1,4 @@
-import { BANNER_HEIGHT, pickBannerUnitId } from "../adConfig";
+import { BANNER_HEIGHT, isAdsEnabled, pickBannerUnitId } from "../adConfig";
 
 describe("広告ユニット ID の選び方", () => {
   const testId = "ca-app-pub-3940256099942544/6300978111";
@@ -15,6 +15,13 @@ describe("広告ユニット ID の選び方", () => {
   it("本番の ID が未設定・空なら、リリースビルドでも、テスト広告にする", () => {
     expect(pickBannerUnitId({ isDev: false, productionId: undefined, testId })).toBe(testId);
     expect(pickBannerUnitId({ isDev: false, productionId: "  ", testId })).toBe(testId);
+  });
+
+  it("広告を出すかは、設定（extra.adsEnabled）が false のときだけ、出さない（自分用のビルド）", () => {
+    expect(isAdsEnabled({ adsEnabled: false })).toBe(false);
+    expect(isAdsEnabled({ adsEnabled: true })).toBe(true);
+    expect(isAdsEnabled({})).toBe(true);
+    expect(isAdsEnabled(undefined)).toBe(true);
   });
 
   it("バナーの高さは、標準サイズ（320×50）の 50", () => {

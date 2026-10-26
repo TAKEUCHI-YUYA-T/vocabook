@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { colors } from "@/components/theme";
 import { useGoBack } from "@/hooks/useGoBack";
-import { privacyOptionsRequired, showPrivacyOptions } from "@/lib/ads";
+import { adsEnabled, privacyOptionsRequired, showPrivacyOptions } from "@/lib/ads";
 import { PRIVACY_POLICY_URL, SUPPORT_URL } from "@/lib/links";
 import licenses from "../assets/licenses.json";
 import wordnet from "../assets/dictionary/wordnet-license.json";
@@ -31,7 +31,7 @@ export default function AboutScreen() {
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 32 }]}>
         <View style={styles.block}>
           <Text style={styles.appName}>vocabook</Text>
-          <Text style={styles.text}>英単語を覚えるためのアプリです。単語と学習の記録は、この端末の中だけに保存され、広告にも使われません。</Text>
+          <Text style={styles.text}>英単語を覚えるためのアプリです。単語と学習の記録は、この端末の中だけに保存されます。</Text>
           {!!version && <Text style={styles.muted}>バージョン {version}</Text>}
         </View>
 
@@ -40,6 +40,7 @@ export default function AboutScreen() {
           <LinkRow label="不具合の連絡・ソースコード" onPress={() => Linking.openURL(SUPPORT_URL)} />
         </View>
 
+        {adsEnabled && (
         <View style={styles.block}>
           <Text style={styles.heading}>広告</Text>
           <Text style={styles.text}>
@@ -47,6 +48,7 @@ export default function AboutScreen() {
           </Text>
           {showConsent && <LinkRow label="広告のプライバシーの設定" onPress={() => showPrivacyOptions()} />}
         </View>
+        )}
 
         <View style={styles.block}>
           <Text style={styles.heading}>辞書と翻訳</Text>

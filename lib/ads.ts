@@ -1,5 +1,6 @@
+import Constants from "expo-constants";
 import mobileAds, { AdsConsent, AdsConsentPrivacyOptionsRequirementStatus, MaxAdContentRating, TestIds } from "react-native-google-mobile-ads";
-import { pickBannerUnitId } from "./adConfig";
+import { isAdsEnabled, pickBannerUnitId } from "./adConfig";
 
 /**
  * 広告（Google AdMob）の準備
@@ -7,6 +8,9 @@ import { pickBannerUnitId } from "./adConfig";
  * 2. 広告を出してよいと分かってから、広告の部品を初期化する
  * 対象年齢は 13 歳以上（通常の広告。内容は、13 歳以上向けまで）
  */
+
+/** このビルドで、広告を出すか（自分用のビルドは、出さない。同意の画面も出さない） */
+export const adsEnabled = isAdsEnabled(Constants.expoConfig?.extra);
 
 /** バナー広告のユニット ID（本番の ID は、ビルド時の環境変数 EXPO_PUBLIC_ADMOB_BANNER_UNIT_ID で渡す） */
 export const bannerUnitId = pickBannerUnitId({
@@ -20,6 +24,7 @@ let started: Promise<boolean> | null = null;
 /** 広告の準備を始める（何度呼んでも、準備は1回だけ）。広告を出してよければ true */
 export function startAds(): Promise<boolean> {
   started ??= (async () => {
+    if (!adsEnabled) return false;
     try {
       await AdsConsent.gatherConsent();
       const info = await AdsConsent.getConsentInfo();

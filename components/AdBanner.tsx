@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { BannerAd, BannerAdSize } from "react-native-google-mobile-ads";
 import { BANNER_HEIGHT } from "@/lib/adConfig";
-import { bannerUnitId, startAds } from "@/lib/ads";
+import { adsEnabled, bannerUnitId, startAds } from "@/lib/ads";
 import { colors } from "./theme";
 
 /**
@@ -23,7 +23,7 @@ export function AdBanner() {
     };
   }, []);
 
-  if (canShow === false || failed) return null;
+  if (!adsEnabled || canShow === false || failed) return null;
   return (
     <View style={styles.slot} accessibilityLabel="広告">
       {canShow && (

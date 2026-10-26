@@ -9,5 +9,8 @@ export function pickBannerUnitId(options: { isDev: boolean; productionId: string
   return !options.isDev && production ? production : options.testId;
 }
 
+/** 広告を出すか。アプリの設定（extra.adsEnabled）が false のビルド（自分用）だけ、出さない */
+export const isAdsEnabled = (extra: { adsEnabled?: unknown } | null | undefined): boolean => extra?.adsEnabled !== false;
+
 /** バナーの高さ（320×50 の標準サイズ）。広告の場所を先に確保して、広告が出たときに画面がずれないようにする */
 export const BANNER_HEIGHT = 50;

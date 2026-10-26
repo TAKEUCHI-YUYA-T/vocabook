@@ -19,6 +19,13 @@
       "distribution": "internal",
       "channel": "preview"
     },
+    "personal": {
+      "distribution": "internal",
+      "channel": "personal",
+      "env": {
+        "APP_VARIANT": "personal"
+      }
+    },
     "production": {
       "autoIncrement": true,
       "channel": "production",
