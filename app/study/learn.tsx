@@ -23,7 +23,7 @@ import { spellingProblemsOnDevice } from "@/db/posDictionary";
  * 学習画面
  * 条件（単語帳・品詞・フラグ・出題の向き）に合う単語を DB から読み、ランダムな順に出題する
  * - 答えを出す操作は、下の「答えを見る」ボタンだけ（見たら、その単語を「今日見た」として記録する）
- * - 答えを見たあとは、「要復習」「覚えた」のフラグを付けて次へ進む。フラグを変えずに進むこともできる
+ * - 答えを見たあとは、「要復習」「覚えた」「次へ」の3つの同じ大きさのボタンで進む（「次へ」はフラグを変えない）
  * - 向きは、英語→日本語、日本語→英語、聞き取り（音声を聞いて意味を思い出す）
  * - 同じ綴りで、品詞が違う単語（別のカード）がある場合
  *   英→日・日→英: 答えの面の一番下に、「ほかの品詞」として、その意味を並べる
@@ -133,8 +133,8 @@ export default function LearnScreen() {
           <Text style={styles.learnedText}>覚えた</Text>
         </TouchableOpacity>
       </View>
-      <TouchableOpacity accessibilityRole="button" style={styles.nextLink} onPress={next}>
-        <Text style={styles.nextLinkText}>フラグを変えずに次へ</Text>
+      <TouchableOpacity accessibilityRole="button" style={[styles.flagButton, styles.nextButton]} onPress={next}>
+        <Text style={styles.nextText}>次へ</Text>
       </TouchableOpacity>
     </View>
   );
@@ -275,13 +275,13 @@ const styles = StyleSheet.create({
   meaning: { fontSize: 20, fontWeight: "bold", lineHeight: 30, color: colors.text },
   translation: { fontSize: 15, lineHeight: 26, color: colors.text },
 
-  footerBox: { gap: 4 },
-  flagRow: { flexDirection: "row", gap: 10 },
-  flagButton: { flex: 1, minHeight: 60, borderRadius: 14, flexDirection: "row", gap: 6, alignItems: "center", justifyContent: "center" },
+  footerBox: { gap: 8 },
+  flagRow: { gap: 8 },
+  flagButton: { minHeight: 56, borderRadius: 14, flexDirection: "row", gap: 6, alignItems: "center", justifyContent: "center" },
   reviewButton: { backgroundColor: colors.danger },
   learnedButton: { backgroundColor: colors.primary },
   reviewText: { fontSize: 19, fontWeight: "bold", color: colors.surface },
   learnedText: { fontSize: 19, fontWeight: "bold", color: colors.onPrimary },
-  nextLink: { minHeight: 44, alignItems: "center", justifyContent: "center" },
-  nextLinkText: { fontSize: 15, color: colors.secondary, textDecorationLine: "underline" },
+  nextButton: { backgroundColor: colors.secondary },
+  nextText: { fontSize: 19, fontWeight: "bold", color: colors.onSecondary },
 });
