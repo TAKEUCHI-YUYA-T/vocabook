@@ -132,11 +132,6 @@ export default function Home() {
               <Feather name="chevron-right" size={22} color={colors.onPrimary} />
             </TouchableOpacity>
           ))}
-          {__DEV__ && (
-            <TouchableOpacity style={styles.devLink} onPress={() => router.push("/dev/sheets-spike")}>
-              <Text style={styles.devLinkText}>[開発] シート連携の検証</Text>
-            </TouchableOpacity>
-          )}
         </View>
       </ScrollView>
 
@@ -178,8 +173,6 @@ const styles = StyleSheet.create({
   menuPrimary: { backgroundColor: colors.primary, borderColor: colors.primary },
   menuSecondary: { backgroundColor: colors.surface, borderColor: colors.border },
   menuLabel: { flex: 1, fontSize: 18, fontWeight: "bold", color: colors.onPrimary },
-  devLink: { alignSelf: "center", padding: 12 },
-  devLinkText: { fontSize: 14, color: colors.secondary, textDecorationLine: "underline" },
   dogButton: {
     position: "absolute",
     right: 16,
