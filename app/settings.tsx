@@ -12,7 +12,7 @@ import { useDb } from "@/db/AppDatabase";
 import { useGoBack } from "@/hooks/useGoBack";
 import { adsEnabled, privacyOptionsRequired, showPrivacyOptions } from "@/lib/ads";
 import { applyRestore, pickBackupFile, shareBackupFile } from "@/lib/backup";
-import { backupToDrive, fetchDriveBackup, isDriveBackupEnabled, lastDriveBackup, setDriveBackupEnabled, DriveError } from "@/lib/driveBackup";
+import { backupToDrive, driveEmail, fetchDriveBackup, isDriveBackupEnabled, lastDriveBackup, setDriveBackupEnabled, DriveError } from "@/lib/driveBackup";
 import { CONTACT_URL, COPYRIGHT_YEAR, DEVELOPER_NAME, PRIVACY_POLICY_URL } from "@/lib/links";
 
 /** 日時を「2026/10/26 18:35」の形にする（端末の時刻） */
@@ -39,11 +39,13 @@ export default function SettingsScreen() {
 
   const [busy, setBusy] = useState<"restore" | "drive" | null>(null);
   const [driveOn, setDriveOn] = useState(false);
+  const [email, setEmail] = useState<string | null>(null);
   const [driveLast, setDriveLast] = useState<number | null>(null);
 
   useEffect(() => {
     isDriveBackupEnabled(db).then(setDriveOn);
     lastDriveBackup(db).then(setDriveLast);
+    driveEmail(db).then(setEmail);
   }, [db]);
 
   const errorText = (error: unknown) => (error instanceof DriveError ? error.message : "通信の状態を確認して、もう一度お試しください。");
@@ -61,6 +63,7 @@ export default function SettingsScreen() {
       await setDriveBackupEnabled(db, true);
       setDriveOn(true);
       setDriveLast(at);
+      setEmail(await driveEmail(db));
     } catch (error) {
       Alert.alert("バックアップを始められませんでした", errorText(error));
     }
@@ -71,6 +74,7 @@ export default function SettingsScreen() {
     setBusy("drive");
     try {
       setDriveLast(await backupToDrive(db));
+      setEmail(await driveEmail(db));
     } catch (error) {
       Alert.alert("バックアップできませんでした", errorText(error));
     }
@@ -155,6 +159,7 @@ export default function SettingsScreen() {
             「Google ドライブにバックアップ」をオンにすると、単語や学習の記録が、あなたの Google ドライブのアプリ専用の場所に、1日に1回、自動で保存されます。機種変更のときは、新しい端末で同じ Google アカウントを選んで、「Google ドライブから復元」を押してください。保存した内容は、開発者には届きません。
           </Text>
           <Row label="Google ドライブにバックアップ" value={driveOn ? "オン" : "オフ"} onPress={toggleDrive} disabled={!!busy} busy={busy === "drive"} />
+          {driveOn && !!email && <Row label="保存先のアカウント" value={email} />}
           {driveOn && <Row label="今すぐバックアップ" value={driveLast ? formatDateTime(new Date(driveLast)) : "まだ"} onPress={backupNow} disabled={!!busy} />}
           <Row label="Google ドライブから復元" onPress={restoreFromDrive} disabled={!!busy} arrow />
           <Row label="バックアップを書き出す" onPress={share} arrow />

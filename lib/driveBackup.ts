@@ -9,11 +9,15 @@ import GoogleDriveAuth from "../modules/google-drive-auth";
  */
 
 export const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.appdata";
+/** 「どのアカウントに保存しているか」を、設定に表示するためだけに使う（メールアドレスは、端末の中だけに保存する） */
+export const EMAIL_SCOPE = "https://www.googleapis.com/auth/userinfo.email";
 const API = "https://www.googleapis.com/drive/v3";
 const UPLOAD = "https://www.googleapis.com/upload/drive/v3";
 
 export const META_DRIVE_ENABLED = "drive_backup_enabled";
 export const META_DRIVE_LAST = "drive_backup_last";
+export const META_DRIVE_EMAIL = "drive_backup_email";
+export const META_DRIVE_ASKED = "drive_restore_asked";
 
 /** 自動バックアップの間隔（1日） */
 export const AUTO_BACKUP_INTERVAL_MS = 24 * 60 * 60 * 1000;
@@ -68,6 +72,17 @@ export async function uploadBackup(token: string, text: string, fetcher: Fetch =
   );
 }
 
+/** 保存先の Google アカウントのメールアドレス（取れなければ null） */
+export async function fetchEmail(token: string, fetcher: Fetch = fetch): Promise<string | null> {
+  try {
+    const response = await fetcher("https://www.googleapis.com/oauth2/v3/userinfo", { headers: { Authorization: `Bearer ${token}` } });
+    if (!response.ok) return null;
+    return ((await response.json()) as { email?: string }).email ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /** バックアップのファイルの中身を読む（なければ null） */
 export async function downloadBackup(token: string, fetcher: Fetch = fetch): Promise<string | null> {
   const id = await findBackupFileId(token, fetcher);
@@ -80,7 +95,7 @@ export async function downloadBackup(token: string, fetcher: Fetch = fetch): Pro
 export async function getToken(): Promise<string> {
   if (!GoogleDriveAuth) throw new DriveError("この端末では、Google ドライブを使えません");
   try {
-    const result = await GoogleDriveAuth.authorize([DRIVE_SCOPE]);
+    const result = await GoogleDriveAuth.authorize([DRIVE_SCOPE, EMAIL_SCOPE]);
     if (!result.accessToken) throw new DriveError("Google ドライブへのアクセスを、許可してください");
     return result.accessToken;
   } catch (error) {
@@ -101,6 +116,16 @@ export const lastDriveBackup = async (db: Db): Promise<number | null> => {
   return value ? Number(value) : null;
 };
 
+export const driveEmail = (db: Db) => getMeta(db, META_DRIVE_EMAIL);
+
+/** 単語がまだ1つもなく、この案内を出したことがないか（新しい端末の最初の起動を想定） */
+export async function shouldOfferRestore(db: Db): Promise<boolean> {
+  if (await getMeta(db, META_DRIVE_ASKED)) return false;
+  const row = await db.getFirstAsync<{ n: number }>("SELECT COUNT(*) AS n FROM cards WHERE type = 'basic'");
+  return (row?.n ?? 0) === 0;
+}
+export const markRestoreAsked = (db: Db) => setMeta(db, META_DRIVE_ASKED, "1");
+
 /** 今、自動バックアップをするべきか（オンで、前回から1日以上たっている） */
 export async function shouldAutoBackup(db: Db, at = Date.now()): Promise<boolean> {
   if (!(await isDriveBackupEnabled(db))) return false;
@@ -114,6 +139,8 @@ export async function backupToDrive(db: Db, fetcher: Fetch = fetch, token?: stri
   await uploadBackup(accessToken, JSON.stringify(await exportBackup(db)), fetcher);
   const at = Date.now();
   await setMeta(db, META_DRIVE_LAST, String(at));
+  const email = await fetchEmail(accessToken, fetcher);
+  if (email) await setMeta(db, META_DRIVE_EMAIL, email);
   return at;
 }
 
