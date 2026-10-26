@@ -2,6 +2,9 @@ const fs = require("fs");
 const path = require("path");
 const { withDangerousMod, withGradleProperties } = require("expo/config-plugins");
 
+/** リリースビルドで、R8 の圧縮・難読化を使うか */
+const MINIFY = true;
+
 const MARKER = "# vocabook: keep rules for on-device translation (ML Kit)";
 
 /**
@@ -18,15 +21,16 @@ ${MARKER}
 `;
 
 /**
- * 1. リリースビルドの R8 による圧縮・難読化を止める（個人用の APK では、サイズの差はわずか）
- *    ストアに出す前に、true に戻して、翻訳などが動くことを確かめ直す
+ * 1. リリースビルドの R8 による圧縮・難読化を有効にする（ストアに出す版）
+ *    翻訳が壊れた原因は、下の keep ルールで外してある。ビルドを作るたびに、実機で、翻訳などが動くことを確かめる
+ *    （問題が出たら、MINIFY を false にすれば、止められる）
  * 2. android/app/proguard-rules.pro に、ML Kit の keep ルールを足す（すでに足してあれば何もしない）
  */
 module.exports = function withProguardRules(config) {
   config = withGradleProperties(config, (cfg) => {
     const key = "android.enableMinifyInReleaseBuilds";
     cfg.modResults = cfg.modResults.filter((item) => !(item.type === "property" && item.key === key));
-    cfg.modResults.push({ type: "property", key, value: "false" });
+    cfg.modResults.push({ type: "property", key, value: MINIFY ? "true" : "false" });
     return cfg;
   });
 

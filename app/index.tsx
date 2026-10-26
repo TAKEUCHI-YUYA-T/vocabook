@@ -132,6 +132,9 @@ export default function Home() {
               <Feather name="chevron-right" size={22} color={colors.onPrimary} />
             </TouchableOpacity>
           ))}
+          <TouchableOpacity accessibilityRole="link" style={styles.aboutLink} onPress={() => router.push("/about")}>
+            <Text style={styles.aboutLinkText}>このアプリについて（ライセンス・プライバシー）</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
 
@@ -163,6 +166,8 @@ const styles = StyleSheet.create({
   tipTitle: { fontSize: 17, fontWeight: "bold", color: colors.text },
   tipBody: { fontSize: 15, lineHeight: 24, color: colors.text },
   stats: { flexDirection: "row", alignItems: "center", gap: 12 },
+  aboutLink: { alignSelf: "center", minHeight: 48, justifyContent: "center", paddingHorizontal: 12 },
+  aboutLinkText: { fontSize: 14, color: colors.secondary, textDecorationLine: "underline" },
   statChevron: { alignItems: "center", gap: 2 },
   stat: { flex: 1, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 14 },
   statLabel: { fontSize: 13, fontWeight: "bold", color: colors.secondary },

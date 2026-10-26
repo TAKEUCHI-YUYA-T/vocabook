@@ -21,6 +21,12 @@ export default {
         backgroundColor: "#ffffff"
       },
       package: "com.takeuchi.vocabook",
+      // 使っていない権限は、ストアの審査で説明が要るので、外す（ファイルの取り込みは、端末の選択画面を使うので、保存領域の権限は要らない）
+      blockedPermissions: [
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ],
       icon: "./assets/images/app-icon-android.png"
     },
     web: {
