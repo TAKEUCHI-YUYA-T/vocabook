@@ -8,6 +8,7 @@ import { SelectedTextRouter } from '@/components/SelectedTextRouter';
 import { colors } from '@/components/theme';
 import { AppDatabase } from '@/db/AppDatabase';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { startAds } from '@/lib/ads';
 import { scheduleDailyReminder } from '@/lib/reminder';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -22,6 +23,11 @@ export default function RootLayout() {
   // 毎朝 8:00 の学習の通知を予約する（許可がまだなら、起動時に1度、許可を求める。何度呼んでも、予約は1件だけ）
   useEffect(() => {
     scheduleDailyReminder();
+  }, []);
+
+  // 広告の準備を始める（同意が必要な地域の利用者には、Google の同意の画面が出る。日本では出ない）
+  useEffect(() => {
+    startAds();
   }, []);
 
   // スプラッシュ画面は、DB の準備ができた時点で AppDatabase が閉じる

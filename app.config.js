@@ -49,6 +49,11 @@ export default {
       "expo-sharing",
       // 毎朝の学習の通知（端末の中で予約する）。通知の色は、アプリの深緑
       ["expo-notifications", { color: "#446158" }],
+      // 広告（Google AdMob）。アプリ ID は、本番ビルドでは環境変数 ADMOB_ANDROID_APP_ID で渡す（未設定なら、Google のテスト用の ID）
+      [
+        "react-native-google-mobile-ads",
+        { androidAppId: process.env.ADMOB_ANDROID_APP_ID || "ca-app-pub-3940256099942544~3347511713" }
+      ],
       "./plugins/withProguardRules"
     ],
     experiments: {

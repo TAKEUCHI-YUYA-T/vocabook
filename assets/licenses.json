@@ -160,6 +160,11 @@
   "license": "MIT"
  },
  {
+  "name": "react-native-google-mobile-ads",
+  "version": "17.4.0",
+  "license": "Apache-2.0"
+ },
+ {
   "name": "react-native-safe-area-context",
   "version": "5.10.1",
   "license": "MIT"

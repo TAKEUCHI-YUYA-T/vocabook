@@ -7,6 +7,7 @@ import { colors } from "@/components/theme";
 import { useRepository } from "@/db/AppDatabase";
 import { localDay } from "@/db/day";
 import type { HomeStats, Tip } from "@/db/types";
+import { AdBanner } from "@/components/AdBanner";
 
 type MenuItem = { label: string; icon: React.ComponentProps<typeof Feather>["name"]; href: Href; primary: boolean };
 
@@ -75,7 +76,10 @@ export default function Home() {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 96 }]}>
+      <View style={{ paddingTop: insets.top }}>
+        <AdBanner />
+      </View>
+      <ScrollView contentContainerStyle={[styles.content, { paddingTop: 24, paddingBottom: insets.bottom + 96 }]}>
         <Image source={require("../assets/images/logo.png")} style={styles.logo} accessibilityLabel="vocabook" />
 
         {/* ヒント */}

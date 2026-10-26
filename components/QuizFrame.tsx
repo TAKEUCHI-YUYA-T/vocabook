@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenHeader } from "./ScreenHeader";
+import { AdBanner } from "./AdBanner";
 import { colors } from "./theme";
 
 type Props = {
@@ -54,6 +55,8 @@ export function QuizFrame({ title, onBack, backLabel, progress, headerExtra, act
       >
         <View style={[styles.fill, { width: `${progress?.percent ?? 0}%` }]} />
       </View>
+
+      <AdBanner />
 
       <ScrollView style={styles.main} contentContainerStyle={styles.mainContent}>
         {message ? <Text style={styles.message}>{message}</Text> : <View style={styles.card}>{children}</View>}

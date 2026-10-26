@@ -9,6 +9,7 @@ import { FlagTag } from "@/components/FlagTag";
 import { HeaderIconButton, ScreenHeader } from "@/components/ScreenHeader";
 import { colors } from "@/components/theme";
 import { useRepository } from "@/db/AppDatabase";
+import { AdBanner } from "@/components/AdBanner";
 import { cardsToCsv, exportFileName } from "@/db/importing";
 import { ValidationError } from "@/db/repository";
 import { ingOrToLabel, partOfSpeechLabel, PARTS_OF_SPEECH, type Card, type Deck } from "@/db/types";
@@ -109,6 +110,8 @@ export default function WordsScreen() {
         backLabel="ホームに戻る"
         right={<HeaderIconButton icon="more-vertical" label="その他の操作" onPress={() => setMenuOpen(true)} />}
       />
+
+      <AdBanner />
 
       <View style={styles.searchBox}>
         <Feather name="search" size={20} color={colors.secondary} />
