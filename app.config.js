@@ -5,12 +5,14 @@
  * - それ以外（ふつう）: ストア用。広告あり。新しいパッケージ名（Play に最初に出す前に決める。出したあとは変えられない）
  */
 const isPersonal = process.env.APP_VARIANT === "personal";
+/** adtest: 広告の表示を確認するためのビルド。パッケージ名は自分用と同じ（今の端末のデータをそのまま使える）。広告あり（テスト広告） */
+const isAdTest = process.env.APP_VARIANT === "adtest";
 const STORE_PACKAGE = "com.takeuchi.vocabook.store";
 const PERSONAL_PACKAGE = "com.takeuchi.vocabook";
 
 export default {
   expo: {
-    name: isPersonal ? "vocabook 自分用" : "vocabook",
+    name: isPersonal ? "vocabook 自分用" : isAdTest ? "vocabook 広告テスト" : "vocabook",
     slug: "vocabook",
     version: "1.0.0",
     orientation: "portrait",
@@ -30,7 +32,7 @@ export default {
         foregroundImage: "./assets/images/adaptive-icon.png",
         backgroundColor: "#ffffff"
       },
-      package: isPersonal ? PERSONAL_PACKAGE : STORE_PACKAGE,
+      package: isPersonal || isAdTest ? PERSONAL_PACKAGE : STORE_PACKAGE,
       // 使っていない権限は、ストアの審査で説明が要るので、外す（ファイルの取り込みは、端末の選択画面を使うので、保存領域の権限は要らない）
       blockedPermissions: [
         "android.permission.SYSTEM_ALERT_WINDOW",

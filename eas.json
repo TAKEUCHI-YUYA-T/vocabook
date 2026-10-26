@@ -19,6 +19,13 @@
       "distribution": "internal",
       "channel": "preview"
     },
+    "adtest": {
+      "distribution": "internal",
+      "channel": "adtest",
+      "env": {
+        "APP_VARIANT": "adtest"
+      }
+    },
     "personal": {
       "distribution": "internal",
       "channel": "personal",
