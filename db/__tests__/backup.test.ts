@@ -1,4 +1,4 @@
-import { BackupError, exportBackup, getMeta, parseBackup, restoreBackup, setMeta, shouldAutoBackup, BACKUP_FORMAT } from "../backup";
+import { BackupError, exportBackup, parseBackup, restoreBackup, BACKUP_FORMAT } from "../backup";
 import { migrate } from "../migrations";
 import { ensureDefaultDeck, syncPresets } from "../presets";
 import { createRepository } from "../repository";
@@ -112,26 +112,5 @@ describe("復元", () => {
     bad.decks.push({ id: "d1", name: "dup", created_at: 1, updated_at: 1 });
     await expect(restoreBackup(db, bad)).rejects.toThrow();
     expect((await repo.listCards(deck.id)).map((c) => c.term)).toEqual(["keep"]);
-  });
-});
-
-describe("自動バックアップをする条件・保存先の記録", () => {
-  const dayOf = (iso: string) => iso.slice(0, 10);
-
-  it("保存先があり、今日まだなら、する。保存先がなければ、しない。今日もうしたなら、しない", () => {
-    expect(shouldAutoBackup({ folder: null, lastAt: null, today: "2026-10-26", dayOf })).toBe(false);
-    expect(shouldAutoBackup({ folder: "content://x", lastAt: null, today: "2026-10-26", dayOf })).toBe(true);
-    expect(shouldAutoBackup({ folder: "content://x", lastAt: "2026-10-25T23:00:00Z", today: "2026-10-26", dayOf })).toBe(true);
-    expect(shouldAutoBackup({ folder: "content://x", lastAt: "2026-10-26T01:00:00Z", today: "2026-10-26", dayOf })).toBe(false);
-  });
-
-  it("設定の値（meta 表）を、書いて・読んで・消せる", async () => {
-    const { db } = await setup();
-    expect(await getMeta(db, "backup_folder_uri")).toBeNull();
-    await setMeta(db, "backup_folder_uri", "content://a");
-    await setMeta(db, "backup_folder_uri", "content://b"); // 上書き
-    expect(await getMeta(db, "backup_folder_uri")).toBe("content://b");
-    await setMeta(db, "backup_folder_uri", null);
-    expect(await getMeta(db, "backup_folder_uri")).toBeNull();
   });
 });

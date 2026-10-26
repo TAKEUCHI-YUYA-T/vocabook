@@ -10,7 +10,7 @@ import { toFlag, PARTS_OF_SPEECH } from "./types";
 
 export const BACKUP_FORMAT = "vocabook-backup";
 export const BACKUP_VERSION = 1;
-/** 保存先のフォルダに作るファイルの名前。毎回、同じ名前のファイルを上書きする */
+/** 書き出すファイルの名前 */
 export const BACKUP_FILE_NAME = "vocabook-backup.json";
 
 /** ファイルの中の、個々の値の上限（壊れたファイルや、大きすぎるファイルで、アプリが重くならないように） */
@@ -170,30 +170,4 @@ export async function restoreBackup(db: Db, backup: BackupFile): Promise<number>
     await insertRows(db, "INSERT OR IGNORE INTO study_log (day, card_id)", backup.studyLog.map((l): SqlParam[] => [l.day, l.card_id]), 200);
   });
   return backup.cards.length;
-}
-
-/** 設定の保存先（meta 表のキー） */
-export const META_BACKUP_FOLDER = "backup_folder_uri";
-export const META_BACKUP_FOLDER_NAME = "backup_folder_name";
-export const META_BACKUP_LAST_AT = "backup_last_at";
-export const META_BACKUP_LAST_ERROR = "backup_last_error";
-
-export async function getMeta(db: Db, key: string): Promise<string | null> {
-  const row = await db.getFirstAsync<{ value: string }>("SELECT value FROM meta WHERE key = ?", [key]);
-  return row?.value ?? null;
-}
-
-export async function setMeta(db: Db, key: string, value: string | null): Promise<void> {
-  if (value === null) await db.runAsync("DELETE FROM meta WHERE key = ?", [key]);
-  else await db.runAsync("INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value", [key, value]);
-}
-
-/**
- * 自動バックアップをするか: 保存先があり、今日（端末の日付）まだバックアップしていないとき
- * lastAt は、前回のバックアップの日時（ISO）。day は、その日時を端末の日付にしたもの
- */
-export function shouldAutoBackup(options: { folder: string | null; lastAt: string | null; today: string; dayOf: (iso: string) => string }): boolean {
-  if (!options.folder) return false;
-  if (!options.lastAt) return true;
-  return options.dayOf(options.lastAt) !== options.today;
 }

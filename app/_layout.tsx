@@ -7,7 +7,6 @@ import { StatusBar } from 'expo-status-bar';
 import { SelectedTextRouter } from '@/components/SelectedTextRouter';
 import { colors } from '@/components/theme';
 import { AppDatabase } from '@/db/AppDatabase';
-import { BackupRunner } from '@/components/BackupRunner';
 import { startAds } from '@/lib/ads';
 import { scheduleDailyReminder } from '@/lib/reminder';
 
@@ -38,7 +37,6 @@ export default function RootLayout() {
     <ThemeProvider value={DefaultTheme}>
       <AppDatabase>
         <SelectedTextRouter />
-        <BackupRunner />
         <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
           <Stack.Screen name="index" />
           <Stack.Screen name="+not-found" />
