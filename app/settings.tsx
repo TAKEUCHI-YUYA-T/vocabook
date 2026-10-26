@@ -12,7 +12,7 @@ import { useDb } from "@/db/AppDatabase";
 import { useGoBack } from "@/hooks/useGoBack";
 import { adsEnabled, privacyOptionsRequired, showPrivacyOptions } from "@/lib/ads";
 import { applyRestore, pickBackupFile, shareBackupFile } from "@/lib/backup";
-import { CONTACT_URL, PRIVACY_POLICY_URL } from "@/lib/links";
+import { CONTACT_URL, COPYRIGHT_YEAR, DEVELOPER_NAME, PRIVACY_POLICY_URL } from "@/lib/links";
 
 /** 日時を「2026/10/26 18:35」の形にする（端末の時刻） */
 const formatDateTime = (date: Date): string => {
@@ -116,6 +116,10 @@ export default function SettingsScreen() {
           <Row label="プライバシーポリシー" onPress={() => Linking.openURL(PRIVACY_POLICY_URL)} external />
           <Row label="ライセンス" onPress={() => router.push("/licenses")} arrow />
         </View>
+
+        <Text style={styles.copyright}>
+          © {COPYRIGHT_YEAR} {DEVELOPER_NAME}
+        </Text>
       </ScrollView>
     </View>
   );
@@ -173,6 +177,7 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 13, fontWeight: "600", color: colors.secondary, paddingHorizontal: 16, marginTop: 16 },
   group: { backgroundColor: colors.surface, borderRadius: 12, overflow: "hidden" },
   groupText: { fontSize: 15, lineHeight: 24, color: colors.text, padding: 16 },
+  copyright: { fontSize: 13, color: colors.secondary, textAlign: "center", marginTop: 16 },
   footnote: { fontSize: 13, lineHeight: 19, color: colors.secondary, paddingHorizontal: 16 },
   row: { minHeight: 52, flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16 },
   rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.inputBorder },
