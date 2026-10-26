@@ -4,6 +4,7 @@ import { DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 
+import { DriveBackupRunner } from '@/components/DriveBackupRunner';
 import { SelectedTextRouter } from '@/components/SelectedTextRouter';
 import { colors } from '@/components/theme';
 import { AppDatabase } from '@/db/AppDatabase';
@@ -37,6 +38,7 @@ export default function RootLayout() {
     <ThemeProvider value={DefaultTheme}>
       <AppDatabase>
         <SelectedTextRouter />
+        <DriveBackupRunner />
         <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
           <Stack.Screen name="index" />
           <Stack.Screen name="+not-found" />

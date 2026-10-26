@@ -12,6 +12,7 @@ import { useDb } from "@/db/AppDatabase";
 import { useGoBack } from "@/hooks/useGoBack";
 import { adsEnabled, privacyOptionsRequired, showPrivacyOptions } from "@/lib/ads";
 import { applyRestore, pickBackupFile, shareBackupFile } from "@/lib/backup";
+import { backupToDrive, fetchDriveBackup, isDriveBackupEnabled, lastDriveBackup, setDriveBackupEnabled, DriveError } from "@/lib/driveBackup";
 import { CONTACT_URL, COPYRIGHT_YEAR, DEVELOPER_NAME, PRIVACY_POLICY_URL } from "@/lib/links";
 
 /** 日時を「2026/10/26 18:35」の形にする（端末の時刻） */
@@ -36,7 +37,63 @@ export default function SettingsScreen() {
   const version = Constants.expoConfig?.version ?? "";
   const updatedAt = Updates.createdAt ? formatDateTime(Updates.createdAt) : null;
 
-  const [busy, setBusy] = useState<"restore" | null>(null);
+  const [busy, setBusy] = useState<"restore" | "drive" | null>(null);
+  const [driveOn, setDriveOn] = useState(false);
+  const [driveLast, setDriveLast] = useState<number | null>(null);
+
+  useEffect(() => {
+    isDriveBackupEnabled(db).then(setDriveOn);
+    lastDriveBackup(db).then(setDriveLast);
+  }, [db]);
+
+  const errorText = (error: unknown) => (error instanceof DriveError ? error.message : "通信の状態を確認して、もう一度お試しください。");
+
+  /** 自動バックアップのオン・オフ。オンにするときは、Google の許可の画面を出して、すぐに1回保存する */
+  const toggleDrive = async () => {
+    if (driveOn) {
+      await setDriveBackupEnabled(db, false);
+      setDriveOn(false);
+      return;
+    }
+    setBusy("drive");
+    try {
+      const at = await backupToDrive(db);
+      await setDriveBackupEnabled(db, true);
+      setDriveOn(true);
+      setDriveLast(at);
+    } catch (error) {
+      Alert.alert("バックアップを始められませんでした", errorText(error));
+    }
+    setBusy(null);
+  };
+
+  const backupNow = async () => {
+    setBusy("drive");
+    try {
+      setDriveLast(await backupToDrive(db));
+    } catch (error) {
+      Alert.alert("バックアップできませんでした", errorText(error));
+    }
+    setBusy(null);
+  };
+
+  const restoreFromDrive = async () => {
+    setBusy("drive");
+    let text: string | null = null;
+    try {
+      text = await fetchDriveBackup();
+    } catch (error) {
+      setBusy(null);
+      Alert.alert("復元できませんでした", errorText(error));
+      return;
+    }
+    setBusy(null);
+    if (!text) {
+      Alert.alert("バックアップがありません", "この Google アカウントの Google ドライブに、バックアップが見つかりませんでした。");
+      return;
+    }
+    confirmRestore(text);
+  };
   const [showConsent, setShowConsent] = useState(false);
 
   useEffect(() => {
@@ -64,13 +121,17 @@ export default function SettingsScreen() {
       Alert.alert("復元できませんでした", error instanceof BackupError ? error.message : "ファイルを読み取れませんでした");
       return;
     }
+    confirmRestore(picked.text);
+  };
+
+  const confirmRestore = (text: string) => {
     Alert.alert("バックアップから復元しますか？", "前回のバックアップ後に変更した内容は失われます。", [
       { text: "キャンセル", style: "cancel" },
       {
         text: "OK",
         onPress: async () => {
           setBusy("restore");
-          const result = await applyRestore(db, picked.text);
+          const result = await applyRestore(db, text);
           setBusy(null);
           Alert.alert(result.ok ? "復元しました" : "復元できませんでした", result.ok ? `${result.cards}語を復元しました。` : result.message);
         },
@@ -91,8 +152,11 @@ export default function SettingsScreen() {
         <Text style={styles.sectionTitle}>バックアップ</Text>
         <View style={styles.group}>
           <Text style={styles.groupText}>
-            端末の Google のバックアップがオンなら、単語や学習の記録は、自動で保存されます（端末の「設定」→「Google」→「バックアップ」）。機種変更のときは、新しい端末の初期設定で、バックアップから復元してください。
+            「Google ドライブにバックアップ」をオンにすると、単語や学習の記録が、あなたの Google ドライブのアプリ専用の場所に、1日に1回、自動で保存されます。機種変更のときは、新しい端末で同じ Google アカウントを選んで、「Google ドライブから復元」を押してください。保存した内容は、開発者には届きません。
           </Text>
+          <Row label="Google ドライブにバックアップ" value={driveOn ? "オン" : "オフ"} onPress={toggleDrive} disabled={!!busy} busy={busy === "drive"} />
+          {driveOn && <Row label="今すぐバックアップ" value={driveLast ? formatDateTime(new Date(driveLast)) : "まだ"} onPress={backupNow} disabled={!!busy} />}
+          <Row label="Google ドライブから復元" onPress={restoreFromDrive} disabled={!!busy} arrow />
           <Row label="バックアップを書き出す" onPress={share} arrow />
           <Row label="バックアップから復元" onPress={restore} disabled={!!busy} busy={busy === "restore"} arrow />
         </View>
