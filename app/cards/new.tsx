@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, Switch } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AdBanner } from "@/components/AdBanner";
 import { HeaderTextButton, ScreenHeader } from "@/components/ScreenHeader";
 import { colors } from "@/components/theme";
 import { useRepository } from "@/db/AppDatabase";
@@ -82,6 +83,8 @@ export default function NewCardScreen() {
         bordered
         right={<HeaderTextButton label="保存" onPress={save} disabled={isSaving || !deck} />}
       />
+
+      <AdBanner />
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <CardForm key={formKey} value={value} onChange={setValue} editable autoFocus duplicateWarning={duplicateWarning} spellingWarning={spellingWarning} autoFill={autoFill} />

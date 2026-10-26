@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AdBanner } from "@/components/AdBanner";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { colors } from "@/components/theme";
 import { useRepository } from "@/db/AppDatabase";
@@ -139,6 +140,8 @@ export default function StudySelectScreen() {
   return (
     <View style={styles.container}>
       <ScreenHeader title="学習の範囲" onBack={goBack} backLabel="ホームに戻る" bordered />
+
+      <AdBanner />
 
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.sectionTitle}>出題の向き</Text>
