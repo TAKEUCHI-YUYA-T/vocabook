@@ -33,7 +33,6 @@ export default function AboutScreen() {
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 32 }]}>
         <View style={styles.block}>
           <Text style={styles.appName}>vocabook</Text>
-          <Text style={styles.text}>英単語を覚えるためのアプリです。単語と学習の記録は、この端末の中だけに保存されます。</Text>
           {!!version && <Text style={styles.muted}>バージョン {version}</Text>}
         </View>
 
