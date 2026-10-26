@@ -93,8 +93,8 @@ const styles = StyleSheet.create({
   baseLine: { backgroundColor: colors.inputBorder },
   bars: { position: "absolute", left: 0, right: 0, top: 0, bottom: 0, flexDirection: "row", alignItems: "flex-end" },
   column: { flex: 1, height: "100%", justifyContent: "flex-end", paddingHorizontal: 1, borderRadius: 4 },
-  columnSelected: { backgroundColor: colors.panel },
-  bar: { backgroundColor: colors.secondary, borderTopLeftRadius: 4, borderTopRightRadius: 4 },
+  columnSelected: { backgroundColor: colors.primarySoft },
+  bar: { backgroundColor: colors.primary, borderTopLeftRadius: 4, borderTopRightRadius: 4 },
   ticks: { flexDirection: "row", marginTop: 4 },
   tick: { flex: 1, fontSize: 10, color: colors.secondary, textAlign: "center", overflow: "visible" },
 });

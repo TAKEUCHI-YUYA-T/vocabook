@@ -66,7 +66,7 @@ export default function CaptureScreen() {
 
   return (
     <View style={styles.container}>
-      <ScreenHeader title="単語を登録" onBack={finish} backIcon="close" backLabel="やめる" bordered />
+      <ScreenHeader title="単語を登録" onBack={finish} backIcon="close" backText="やめる" backLabel="やめる" />
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {notes.map((note) => (
@@ -100,13 +100,13 @@ export default function CaptureScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: 16, gap: 14 },
-  note: { fontSize: 14, lineHeight: 22, color: colors.warningText, backgroundColor: colors.panel, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 },
+  content: { padding: 16, paddingTop: 8, gap: 14 },
+  note: { fontSize: 14, lineHeight: 22, color: colors.warning, backgroundColor: colors.warningSoft, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12 },
   error: { color: colors.danger, fontSize: 15 },
-  footer: { flexDirection: "row", gap: 10, paddingHorizontal: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.background },
-  cancelButton: { flex: 1, minHeight: 54, borderWidth: 2, borderColor: colors.secondary, borderRadius: 12, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center" },
-  cancelText: { fontSize: 17, fontWeight: "bold", color: colors.secondary },
-  saveButton: { flex: 2, minHeight: 54, borderRadius: 12, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
-  saveText: { fontSize: 18, fontWeight: "bold", color: colors.onPrimary },
+  footer: { flexDirection: "row", gap: 10, paddingHorizontal: 16, paddingTop: 12, backgroundColor: colors.background },
+  cancelButton: { flex: 1, minHeight: 56, borderRadius: 28, backgroundColor: colors.fill, alignItems: "center", justifyContent: "center" },
+  cancelText: { fontSize: 17, fontWeight: "600", color: colors.text },
+  saveButton: { flex: 2, minHeight: 56, borderRadius: 28, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
+  saveText: { fontSize: 17, fontWeight: "600", color: colors.onPrimary },
   disabled: { opacity: 0.5 },
 });

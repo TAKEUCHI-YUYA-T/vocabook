@@ -48,8 +48,8 @@ const styles = StyleSheet.create({
   list: { gap: 12 },
   item: { gap: 2 },
   row: { flexDirection: "row", alignItems: "flex-start", gap: 6 },
-  number: { width: 20, fontSize: 14, lineHeight: 27, fontWeight: "bold", color: colors.secondary },
-  text: { flex: 1, fontSize: 16, lineHeight: 27, color: colors.text },
-  translation: { flex: 1, fontSize: 15, lineHeight: 24, color: colors.secondary },
-  translationIndent: { marginLeft: 26 },
+  number: { width: 22, height: 22, marginTop: 3, borderRadius: 11, overflow: "hidden", textAlign: "center", fontSize: 13, lineHeight: 22, fontWeight: "600", color: colors.secondary, backgroundColor: colors.panel },
+  text: { flex: 1, fontSize: 17, lineHeight: 27, color: colors.text },
+  translation: { flex: 1, fontSize: 15, lineHeight: 22, color: colors.textMuted },
+  translationIndent: { marginLeft: 32 },
 });

@@ -28,10 +28,10 @@ export function SpeakButton({ text, label, size = 22, rate, warn }: Props) {
       onPress={() => speakEnglish(text, rate)}
       hitSlop={8}
     >
-      <Feather name="volume-2" size={size} color={warn ? colors.warningText : colors.secondary} />
+      <Feather name="volume-2" size={size} color={warn ? colors.warning : colors.primary} />
       {warn && (
         <View style={styles.badge}>
-          <Feather name="alert-circle" size={12} color={colors.warningText} />
+          <Feather name="alert-circle" size={12} color={colors.warning} />
         </View>
       )}
     </TouchableOpacity>
@@ -39,6 +39,6 @@ export function SpeakButton({ text, label, size = 22, rate, warn }: Props) {
 }
 
 const styles = StyleSheet.create({
-  button: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
-  badge: { position: "absolute", top: 0, right: 0, width: 16, height: 16, borderRadius: 8, backgroundColor: colors.panel, alignItems: "center", justifyContent: "center" },
+  button: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
+  badge: { position: "absolute", top: 0, right: 0, width: 16, height: 16, borderRadius: 8, backgroundColor: colors.warningSoft, alignItems: "center", justifyContent: "center" },
 });

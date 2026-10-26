@@ -68,15 +68,15 @@ export function ExamplesByPartOfSpeech({ cards }: { cards: Card[] }) {
 }
 
 const styles = StyleSheet.create({
-  chip: { alignSelf: "flex-start", borderWidth: 1, borderColor: colors.secondary, borderRadius: 6, paddingVertical: 1, paddingHorizontal: 6, marginTop: 3 },
-  chipWide: { minWidth: 52, alignItems: "center" },
-  chipText: { fontSize: 12, fontWeight: "bold", color: colors.secondary },
+  chip: { alignSelf: "flex-start", borderRadius: 999, paddingVertical: 2, paddingHorizontal: 10, marginTop: 2, backgroundColor: colors.panel },
+  chipWide: { minWidth: 56, alignItems: "center" },
+  chipText: { fontSize: 13, fontWeight: "600", color: colors.textMuted },
   panel: { backgroundColor: colors.panel, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, gap: 8 },
-  panelTitle: { fontSize: 13, fontWeight: "bold", color: colors.secondary },
+  panelTitle: { fontSize: 13, fontWeight: "600", color: colors.secondary },
   row: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
   panelMeaning: { flex: 1, fontSize: 15, lineHeight: 24, color: colors.text },
   meanings: { gap: 10 },
-  meaningText: { flex: 1, fontSize: 18, fontWeight: "bold", lineHeight: 28, color: colors.text },
+  meaningText: { flex: 1, fontSize: 17, fontWeight: "600", lineHeight: 26, color: colors.text },
   groups: { gap: 14 },
   group: { gap: 6 },
   groupHeading: { flexDirection: "row" },

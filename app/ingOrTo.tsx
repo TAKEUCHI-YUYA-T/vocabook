@@ -47,6 +47,7 @@ export default function IngOrToScreen() {
       title="ing or to"
       onBack={goBack}
       backLabel="ホームに戻る"
+      backText="ホーム"
       progress={quiz && current ? progress(quiz) : null}
       action={current ? (isAnswerVisible ? { kind: "next", onPress: handleNext } : { kind: "reveal", onPress: () => setIsAnswerVisible(true) }) : null}
       message={message}
@@ -58,7 +59,7 @@ export default function IngOrToScreen() {
           {/* 動詞と、答え（ing / to）の欄。答えは、文字の色で隠すのではなく、「答えを見る」を押すまで文字そのものを描画しない（下線の欄だけを残す） */}
           <View style={styles.questionRow}>
             <Text style={styles.term}>{current.term}</Text>
-            <View style={styles.answerBlank}>{isAnswerVisible && <Text style={styles.answerText}>{answerLabel}</Text>}</View>
+            <View style={[styles.answerBlank, isAnswerVisible && styles.answerBlankFilled]}>{isAnswerVisible && <Text style={styles.answerText}>{answerLabel}</Text>}</View>
           </View>
 
           {!!current.meaning && <Text style={styles.meaning}>{current.meaning}</Text>}
@@ -82,23 +83,24 @@ export default function IngOrToScreen() {
 }
 
 const styles = StyleSheet.create({
-  prompt: { fontSize: 14, fontWeight: "bold", color: colors.secondary },
-  questionRow: { flexDirection: "row", alignItems: "flex-end", flexWrap: "wrap", gap: 14 },
-  term: { fontSize: 34, fontWeight: "bold", lineHeight: 41, color: colors.text },
+  prompt: { fontSize: 15, fontWeight: "600", color: colors.secondary },
+  questionRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 12 },
+  term: { fontSize: 40, fontWeight: "bold", lineHeight: 48, letterSpacing: -0.5, color: colors.text },
   answerBlank: {
     minWidth: 120,
-    height: 48,
-    borderBottomWidth: 3,
-    borderBottomColor: colors.secondary,
-    paddingBottom: 2,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: colors.panel,
+    paddingHorizontal: 18,
     alignItems: "center",
-    justifyContent: "flex-end",
+    justifyContent: "center",
   },
-  answerText: { fontSize: 28, fontWeight: "bold", color: colors.secondary },
-  meaning: { fontSize: 17, lineHeight: 27, color: colors.text },
-  example: { fontSize: 16, lineHeight: 26, color: colors.text },
+  answerBlankFilled: { backgroundColor: colors.primarySoft },
+  answerText: { fontSize: 28, fontWeight: "bold", color: colors.primary },
+  meaning: { fontSize: 17, lineHeight: 26, color: colors.text },
+  example: { fontSize: 16, lineHeight: 24, color: colors.textMuted },
   answerPanel: { marginTop: "auto", backgroundColor: colors.panel, borderRadius: 14, padding: 16, gap: 8 },
-  answerSentence: { fontSize: 15, lineHeight: 24, color: colors.text },
-  answerStrong: { fontWeight: "bold" },
-  answerNote: { fontSize: 15, lineHeight: 24, color: colors.text },
+  answerSentence: { fontSize: 17, lineHeight: 24, color: colors.text },
+  answerStrong: { fontWeight: "bold", color: colors.primary },
+  answerNote: { fontSize: 15, lineHeight: 22, color: colors.textMuted },
 });

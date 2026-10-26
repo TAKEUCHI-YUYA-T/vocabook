@@ -1,13 +1,12 @@
 import { useEffect } from 'react';
 import { useFonts } from 'expo-font';
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 
 import { SelectedTextRouter } from '@/components/SelectedTextRouter';
 import { colors } from '@/components/theme';
 import { AppDatabase } from '@/db/AppDatabase';
-import { useColorScheme } from '@/hooks/useColorScheme';
 import { startAds } from '@/lib/ads';
 import { scheduleDailyReminder } from '@/lib/reminder';
 
@@ -15,7 +14,6 @@ import { scheduleDailyReminder } from '@/lib/reminder';
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
@@ -36,7 +34,7 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={DefaultTheme}>
       <AppDatabase>
         <SelectedTextRouter />
         <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
@@ -44,7 +42,7 @@ export default function RootLayout() {
           <Stack.Screen name="+not-found" />
         </Stack>
       </AppDatabase>
-      <StatusBar style="auto" />
+      <StatusBar style="dark" />
     </ThemeProvider>
   );
 }

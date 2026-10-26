@@ -27,7 +27,7 @@ export default function AboutScreen() {
 
   return (
     <View style={styles.container}>
-      <ScreenHeader title="このアプリについて" onBack={goBack} bordered />
+      <ScreenHeader title="このアプリについて" onBack={goBack} backText="ホーム" />
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 32 }]}>
         <View style={styles.block}>
           <Text style={styles.appName}>vocabook</Text>
@@ -89,15 +89,15 @@ function LinkRow({ label, onPress }: { label: string; onPress: () => void }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: 16, gap: 16 },
-  block: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 14, padding: 16, gap: 10 },
+  block: { backgroundColor: colors.surface, borderRadius: 16, padding: 16, gap: 10 },
   appName: { fontSize: 24, fontWeight: "bold", color: colors.text },
   heading: { fontSize: 17, fontWeight: "bold", color: colors.text },
-  subheading: { fontSize: 14, fontWeight: "bold", color: colors.secondary, marginTop: 4 },
+  subheading: { fontSize: 13, fontWeight: "600", color: colors.secondary, marginTop: 4 },
   text: { fontSize: 15, lineHeight: 24, color: colors.text },
   muted: { fontSize: 13, lineHeight: 20, color: colors.secondary },
   license: { fontSize: 12, lineHeight: 18, color: colors.text },
   linkRow: { minHeight: 48, justifyContent: "center" },
-  linkText: { fontSize: 16, fontWeight: "bold", color: colors.secondary, textDecorationLine: "underline" },
-  libRow: { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 8 },
+  linkText: { fontSize: 17, color: colors.primary },
+  libRow: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.inputBorder, paddingTop: 8 },
   libName: { fontSize: 14, fontWeight: "bold", color: colors.text },
 });

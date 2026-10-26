@@ -16,7 +16,7 @@ export default {
     orientation: "portrait",
     icon: "./assets/images/icon.png",
     scheme: "myapp",
-    userInterfaceStyle: "automatic",
+    userInterfaceStyle: "light",
     newArchEnabled: true,
     owner: "y.takeuchi",
     ios: {
@@ -26,7 +26,8 @@ export default {
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: "./assets/images/app-icon-android.png",
+        // 端末が丸などに切り抜くので、文字が切れないよう、余白をつけた画像（中央に 58%）
+        foregroundImage: "./assets/images/adaptive-icon.png",
         backgroundColor: "#ffffff"
       },
       package: isPersonal ? PERSONAL_PACKAGE : STORE_PACKAGE,
@@ -49,7 +50,7 @@ export default {
     splash: {
       image: "./assets/images/splash-icon.png",
       resizeMode: "contain",
-      backgroundColor: "#fffeef"
+      backgroundColor: "#ffffff"
     },
     plugins: [
       "expo-router",

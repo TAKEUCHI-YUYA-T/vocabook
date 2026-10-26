@@ -105,10 +105,11 @@ export default function WordsScreen() {
     <View style={styles.container}>
       <ScreenHeader
         title="単語帳"
-        subtitle={deck ? `${total}語` : undefined}
+        large
         onBack={goBack}
         backLabel="ホームに戻る"
-        right={<HeaderIconButton icon="more-vertical" label="その他の操作" onPress={() => setMenuOpen(true)} />}
+        backText="ホーム"
+        right={<HeaderIconButton icon="more-horizontal" label="その他の操作" onPress={() => setMenuOpen(true)} />}
       />
 
       <AdBanner />
@@ -148,11 +149,6 @@ export default function WordsScreen() {
         </View>
       )}
 
-      <Text style={styles.count}>
-        {posLabel}
-        {filtered.length}語
-      </Text>
-
       <FlatList
         data={filtered.slice(0, visibleCount)}
         keyExtractor={(card) => card.id}
@@ -163,6 +159,7 @@ export default function WordsScreen() {
         onEndReachedThreshold={0.5}
         renderItem={({ item }) => (
           <TouchableOpacity style={styles.row} onPress={() => router.push({ pathname: "/cards/[id]", params: { id: item.id } })}>
+            <View style={styles.rowBody}>
             <View style={styles.rowTop}>
               <Text style={styles.rowTitle}>{item.term}</Text>
               {!!item.partOfSpeech && (
@@ -171,8 +168,8 @@ export default function WordsScreen() {
                 </View>
               )}
               {!!ingOrToLabel(item.answer) && (
-                <View style={styles.tag} accessibilityLabel={`ing or to の問題: ${ingOrToLabel(item.answer)}`}>
-                  <Text style={styles.tagText}>{ingOrToLabel(item.answer)}</Text>
+                <View style={[styles.tag, styles.tagInfo]} accessibilityLabel={`ing or to の問題: ${ingOrToLabel(item.answer)}`}>
+                  <Text style={[styles.tagText, styles.tagInfoText]}>{ingOrToLabel(item.answer)}</Text>
                 </View>
               )}
               <FlagTag flag={item.flag} />
@@ -180,6 +177,8 @@ export default function WordsScreen() {
             <Text style={styles.rowSub} numberOfLines={1}>
               {item.meaning || "（意味なし）"}
             </Text>
+            </View>
+            <Feather name="chevron-right" size={20} color={colors.inputBorder} />
           </TouchableOpacity>
         )}
         ListEmptyComponent={<Text style={styles.empty}>{deckError ?? message ?? (query || pos !== "all" ? "見つかりませんでした" : deck ? "単語がありません" : "読み込み中...")}</Text>}
@@ -187,14 +186,18 @@ export default function WordsScreen() {
 
       {!!message && cards.length > 0 && <Text style={styles.error}>{message}</Text>}
 
-      <TouchableOpacity
-        accessibilityRole="button"
-        style={[styles.fab, { bottom: insets.bottom + 28 }]}
-        onPress={() => router.push("/cards/new")}
-      >
-        <Feather name="plus" size={22} color={colors.onPrimary} />
-        <Text style={styles.fabText}>単語を追加</Text>
-      </TouchableOpacity>
+      <View style={[styles.toolbar, { paddingBottom: insets.bottom + 6 }]}>
+        <View style={styles.toolbarSide} />
+        <Text style={styles.count}>
+          {posLabel}
+          {filtered.length}語
+        </Text>
+        <View style={[styles.toolbarSide, styles.toolbarRight]}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="単語を追加" style={styles.compose} onPress={() => router.push("/cards/new")}>
+            <Feather name="edit" size={24} color={colors.primary} />
+          </TouchableOpacity>
+        </View>
+      </View>
 
       <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)} statusBarTranslucent>
         <Pressable style={styles.menuBackdrop} onPress={() => setMenuOpen(false)} accessibilityLabel="メニューを閉じる">
@@ -209,7 +212,7 @@ export default function WordsScreen() {
                   item.onPress();
                 }}
               >
-                <Feather name={item.icon} size={20} color={colors.secondary} />
+                <Feather name={item.icon} size={20} color={colors.primary} />
                 <Text style={styles.menuText}>{item.label}</Text>
               </TouchableOpacity>
             ))}
@@ -225,52 +228,38 @@ const styles = StyleSheet.create({
   searchBox: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    height: 48,
+    gap: 6,
+    height: 40,
     marginHorizontal: 16,
     marginTop: 4,
-    marginBottom: 10,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: colors.inputBorder,
+    paddingHorizontal: 10,
     borderRadius: 10,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.fillStrong,
   },
-  searchInput: { flex: 1, fontSize: 16, color: colors.text, paddingVertical: 0 },
-  chips: { gap: 8, paddingHorizontal: 16, paddingBottom: 12 },
-  chip: { minHeight: 40, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1, borderColor: colors.inputBorder, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center" },
-  chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { fontSize: 14, color: colors.text },
-  chipTextSelected: { fontWeight: "bold", color: colors.onPrimary },
-  count: { paddingHorizontal: 16, paddingBottom: 6, fontSize: 13, fontWeight: "bold", color: colors.secondary },
-  list: { flex: 1, borderTopWidth: 1, borderTopColor: colors.border },
-  listContent: { paddingBottom: 96 },
-  row: { minHeight: 44, paddingVertical: 12, paddingHorizontal: 16, gap: 2, borderBottomWidth: 1, borderBottomColor: colors.border },
-  rowTop: { flexDirection: "row", alignItems: "center", gap: 8 },
-  rowTitle: { flexShrink: 1, fontSize: 17, fontWeight: "bold", color: colors.text },
-  rowSub: { fontSize: 15, color: colors.text },
-  tag: { borderWidth: 1, borderColor: colors.secondary, borderRadius: 6, paddingVertical: 1, paddingHorizontal: 6 },
-  tagText: { fontSize: 12, fontWeight: "bold", color: colors.secondary },
+  searchInput: { flex: 1, fontSize: 17, color: colors.text, paddingVertical: 0 },
+  chips: { gap: 8, paddingHorizontal: 16, paddingTop: 10, paddingBottom: 12 },
+  chip: { minHeight: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center" },
+  chipSelected: { backgroundColor: colors.primary },
+  chipText: { fontSize: 15, color: colors.text },
+  chipTextSelected: { fontWeight: "600", color: colors.onPrimary },
+  count: { fontSize: 13, color: colors.secondary },
+  list: { flex: 1, marginHorizontal: 16, borderRadius: 12, backgroundColor: colors.surface },
+  listContent: { paddingBottom: 0 },
+  row: { minHeight: 56, paddingVertical: 10, paddingLeft: 16, paddingRight: 12, flexDirection: "row", alignItems: "center", gap: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.inputBorder },
+  rowBody: { flex: 1, gap: 2 },
+  rowTop: { flexDirection: "row", alignItems: "center", gap: 6 },
+  rowTitle: { flexShrink: 1, fontSize: 17, fontWeight: "600", color: colors.text },
+  rowSub: { fontSize: 15, color: colors.secondary },
+  tag: { borderRadius: 999, paddingVertical: 1, paddingHorizontal: 8, backgroundColor: colors.panel },
+  tagText: { fontSize: 12, fontWeight: "600", color: colors.textMuted },
+  tagInfo: { backgroundColor: colors.infoSoft },
+  tagInfoText: { color: colors.info },
   empty: { fontSize: 16, color: colors.secondary, textAlign: "center", marginTop: 24, paddingHorizontal: 16 },
   error: { color: colors.danger, fontSize: 15, textAlign: "center", paddingVertical: 8, paddingHorizontal: 16 },
-  fab: {
-    position: "absolute",
-    right: 16,
-    height: 56,
-    paddingLeft: 18,
-    paddingRight: 22,
-    borderRadius: 28,
-    backgroundColor: colors.primary,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    elevation: 4,
-    shadowColor: colors.secondary,
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-  },
-  fabText: { fontSize: 17, fontWeight: "bold", color: colors.onPrimary },
+  toolbar: { minHeight: 56, flexDirection: "row", alignItems: "center", paddingHorizontal: 8, paddingTop: 6, backgroundColor: "#F9F9F9", borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.inputBorder },
+  toolbarSide: { flex: 1 },
+  toolbarRight: { alignItems: "flex-end" },
+  compose: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
   menuBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.15)" },
   menu: {
     position: "absolute",
@@ -278,11 +267,13 @@ const styles = StyleSheet.create({
     width: 250,
     paddingVertical: 6,
     backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
+    borderRadius: 14,
     elevation: 8,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
   },
   menuItem: { flexDirection: "row", alignItems: "center", gap: 12, minHeight: 48, paddingHorizontal: 16 },
-  menuText: { fontSize: 16, color: colors.text },
+  menuText: { fontSize: 17, color: colors.text },
 });

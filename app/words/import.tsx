@@ -43,7 +43,7 @@ function Stepper({ current }: { current: Step }) {
             {index > 0 && <View style={[styles.stepLine, index <= currentIndex && styles.stepLineDone]} />}
             <View style={styles.step}>
               <View style={[styles.stepCircle, isDone && styles.stepCircleDone, isCurrent && styles.stepCircleCurrent, !isDone && !isCurrent && styles.stepCircleFuture]}>
-                {isDone ? <Feather name="check" size={14} color={colors.onSecondary} /> : <Text style={[styles.stepNumber, isCurrent && styles.stepNumberCurrent]}>{index + 1}</Text>}
+                {isDone ? <Feather name="check" size={14} color={colors.onPrimary} /> : <Text style={[styles.stepNumber, isCurrent && styles.stepNumberCurrent]}>{index + 1}</Text>}
               </View>
               <Text style={[styles.stepLabel, isCurrent && styles.stepLabelCurrent]}>{step.label}</Text>
             </View>
@@ -213,6 +213,7 @@ export default function ImportScreen() {
         title="取り込み"
         onBack={step === "preview" ? () => { setStep("input"); setError(null); } : goBack}
         backLabel={step === "preview" ? "入力に戻る" : "単語帳に戻る"}
+        backText={step === "preview" ? "入力" : "単語帳"}
       />
       <Stepper current={step} />
 
@@ -222,7 +223,7 @@ export default function ImportScreen() {
 
           <View style={styles.section}>
             <View style={styles.sectionTitleRow}>
-              <Feather name="clipboard" size={22} color={colors.secondary} />
+              <Feather name="clipboard" size={22} color={colors.primary} />
               <Text style={styles.sectionTitle}>表を貼り付ける</Text>
             </View>
             <Text style={styles.sectionHelp}>スプレッドシートや Excel で、表の範囲をコピーしてから押してください。</Text>
@@ -254,12 +255,12 @@ export default function ImportScreen() {
 
           <View style={styles.section}>
             <View style={styles.sectionTitleRow}>
-              <Feather name="file-text" size={22} color={colors.secondary} />
+              <Feather name="file-text" size={22} color={colors.primary} />
               <Text style={styles.sectionTitle}>CSV ファイルを選ぶ</Text>
             </View>
             <Text style={styles.sectionHelp}>スプレッドシートを「CSV でダウンロード」したファイルや、このアプリで書き出したファイル</Text>
             <TouchableOpacity accessibilityRole="button" style={styles.outlineButton} onPress={pickFile} disabled={isBusy}>
-              {isBusy ? <ActivityIndicator color={colors.secondary} /> : <Text style={styles.outlineButtonText}>ファイルを選ぶ</Text>}
+              {isBusy ? <ActivityIndicator color={colors.primary} /> : <Text style={styles.outlineButtonText}>ファイルを選ぶ</Text>}
             </TouchableOpacity>
           </View>
 
@@ -297,7 +298,7 @@ export default function ImportScreen() {
                 <Switch
                   value={hasHeader}
                   onValueChange={setHasHeader}
-                  trackColor={{ true: colors.primary, false: colors.border }}
+                  trackColor={{ true: colors.primary, false: colors.fillStrong }}
                   thumbColor={colors.surface}
                   accessibilityLabel="1行目は見出し"
                 />
@@ -385,72 +386,72 @@ export default function ImportScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: 16, paddingTop: 14, gap: 14 },
+  content: { padding: 16, paddingTop: 8, gap: 14 },
   error: { color: colors.danger, fontSize: 15 },
   disabled: { opacity: 0.4 },
 
-  stepper: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16, paddingTop: 4, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: colors.border },
+  stepper: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16, paddingTop: 4, paddingBottom: 14 },
   step: { flexDirection: "row", alignItems: "center", gap: 6 },
-  stepLine: { flex: 1, height: 2, backgroundColor: colors.border },
-  stepLineDone: { backgroundColor: colors.secondary },
+  stepLine: { flex: 1, height: 2, backgroundColor: colors.fillStrong },
+  stepLineDone: { backgroundColor: colors.primary },
   stepCircle: { width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center" },
-  stepCircleDone: { backgroundColor: colors.secondary },
+  stepCircleDone: { backgroundColor: colors.primary },
   stepCircleCurrent: { backgroundColor: colors.primary },
-  stepCircleFuture: { borderWidth: 2, borderColor: colors.secondary },
+  stepCircleFuture: { backgroundColor: colors.fillStrong },
   stepNumber: { fontSize: 13, color: colors.secondary },
   stepNumberCurrent: { color: colors.onPrimary },
   stepLabel: { fontSize: 14, color: colors.secondary },
-  stepLabelCurrent: { fontWeight: "bold", color: colors.text },
+  stepLabelCurrent: { fontWeight: "600", color: colors.text },
 
-  section: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 14, padding: 16, gap: 10 },
+  section: { backgroundColor: colors.surface, borderRadius: 16, padding: 16, gap: 10 },
   sectionTitleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  sectionTitle: { fontSize: 17, fontWeight: "bold", color: colors.text },
+  sectionTitle: { fontSize: 17, fontWeight: "600", color: colors.text },
   sectionHelp: { fontSize: 14, lineHeight: 22, color: colors.secondary },
-  pasteBox: { minHeight: 90, maxHeight: 200, borderWidth: 1, borderColor: colors.inputBorder, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12, fontSize: 14, backgroundColor: colors.surface, color: colors.text },
-  primaryButton: { minHeight: 50, borderRadius: 12, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
-  primaryButtonText: { fontSize: 17, fontWeight: "bold", color: colors.onPrimary },
-  secondaryButton: { minHeight: 50, borderRadius: 12, backgroundColor: colors.secondary, alignItems: "center", justifyContent: "center" },
-  secondaryButtonText: { fontSize: 16, fontWeight: "bold", color: colors.onSecondary },
-  outlineButton: { minHeight: 50, borderWidth: 2, borderColor: colors.secondary, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-  outlineButtonText: { fontSize: 16, fontWeight: "bold", color: colors.secondary },
-  infoPanel: { fontSize: 14, lineHeight: 24, color: colors.text, backgroundColor: colors.panel, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14 },
+  pasteBox: { minHeight: 90, maxHeight: 200, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12, fontSize: 15, backgroundColor: colors.panel, color: colors.text },
+  primaryButton: { minHeight: 52, borderRadius: 26, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
+  primaryButtonText: { fontSize: 17, fontWeight: "600", color: colors.onPrimary },
+  secondaryButton: { minHeight: 52, borderRadius: 26, backgroundColor: colors.primarySoft, alignItems: "center", justifyContent: "center" },
+  secondaryButtonText: { fontSize: 17, fontWeight: "600", color: colors.onPrimarySoft },
+  outlineButton: { minHeight: 52, borderRadius: 26, backgroundColor: colors.primarySoft, alignItems: "center", justifyContent: "center" },
+  outlineButtonText: { fontSize: 17, fontWeight: "600", color: colors.onPrimarySoft },
+  infoPanel: { fontSize: 14, lineHeight: 22, color: colors.textMuted, backgroundColor: colors.surface, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14 },
 
   fileName: { fontSize: 14, color: colors.secondary },
   stats: { flexDirection: "row", gap: 8 },
-  stat: { flex: 1, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12 },
-  statMain: { backgroundColor: colors.primary, borderColor: colors.primary },
-  statLabel: { fontSize: 13, fontWeight: "bold", color: colors.secondary },
+  stat: { flex: 1, backgroundColor: colors.surface, borderRadius: 14, paddingVertical: 10, paddingHorizontal: 12 },
+  statMain: { backgroundColor: colors.primary },
+  statLabel: { fontSize: 13, fontWeight: "600", color: colors.secondary },
   statLabelMain: { color: colors.onPrimary },
   statValue: { fontSize: 28, fontWeight: "bold", lineHeight: 34, color: colors.text },
   statNote: { fontSize: 14, color: colors.secondary },
-  statNoteError: { fontSize: 14, color: colors.danger },
+  statNoteError: { fontSize: 14, color: colors.warning },
 
-  blockTitle: { fontSize: 15, fontWeight: "bold", color: colors.secondary },
+  blockTitle: { fontSize: 13, fontWeight: "600", color: colors.secondary, paddingHorizontal: 4 },
   mappingHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   headerSwitch: { flexDirection: "row", alignItems: "center", gap: 8 },
-  headerSwitchLabel: { fontSize: 14, color: colors.text },
-  mappingBox: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12 },
-  mappingRow: { flexDirection: "row", alignItems: "center", gap: 10, minHeight: 46, paddingHorizontal: 12 },
-  mappingRowBorder: { borderTopWidth: 1, borderTopColor: colors.border },
-  mappingLabel: { flex: 1, fontSize: 15, color: colors.text },
-  mappingLabelRequired: { fontWeight: "bold" },
+  headerSwitchLabel: { fontSize: 15, color: colors.text },
+  mappingBox: { backgroundColor: colors.surface, borderRadius: 12 },
+  mappingRow: { flexDirection: "row", alignItems: "center", gap: 10, minHeight: 48, paddingHorizontal: 16 },
+  mappingRowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.inputBorder },
+  mappingLabel: { flex: 1, fontSize: 17, color: colors.text },
+  mappingLabelRequired: { fontWeight: "600" },
   mappingRequired: { fontSize: 12, fontWeight: "500", color: colors.secondary },
 
-  table: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, overflow: "hidden" },
+  table: { backgroundColor: colors.surface, borderRadius: 12, overflow: "hidden" },
   tableRow: { flexDirection: "row", alignItems: "center" },
   tableHead: { backgroundColor: colors.panel },
-  tableRowBorder: { borderTopWidth: 1, borderTopColor: colors.border },
-  cell: { fontSize: 13, color: colors.text, paddingVertical: 6, paddingHorizontal: 10 },
-  cellHead: { fontWeight: "bold" },
-  cellBold: { fontWeight: "bold" },
+  tableRowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.inputBorder },
+  cell: { fontSize: 13, color: colors.text, paddingVertical: 8, paddingHorizontal: 12 },
+  cellHead: { fontWeight: "600" },
+  cellBold: { fontWeight: "600" },
   cellTerm: { flex: 3 },
   cellMeaning: { flex: 4 },
   cellPos: { flex: 2 },
-  errorRow: { fontSize: 14, color: colors.danger },
+  errorRow: { fontSize: 14, color: colors.warning },
 
-  footer: { borderTopWidth: 1, borderTopColor: colors.border, paddingHorizontal: 16, paddingTop: 12, backgroundColor: colors.background },
-  footerButton: { minHeight: 56 },
-  footerButtonText: { fontSize: 18 },
+  footer: { paddingHorizontal: 16, paddingTop: 12, backgroundColor: colors.background },
+  footerButton: { minHeight: 56, borderRadius: 28 },
+  footerButtonText: { fontSize: 17 },
 
   doneBody: { flex: 1, alignItems: "center", justifyContent: "center", gap: 16, padding: 24 },
   doneIcon: { width: 72, height: 72, borderRadius: 36, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },

@@ -127,7 +127,7 @@ export function CardForm({ value, onChange, editable, duplicateWarning, spelling
 
       {!!spellingWarning && (
         <View style={styles.warning} accessibilityRole="alert">
-          <Feather name="alert-circle" size={18} color={colors.warningText} style={styles.warningIcon} />
+          <Feather name="alert-circle" size={18} color={colors.warning} style={styles.warningIcon} />
           <View style={styles.spellingBody}>
             <Text style={styles.warningText}>「{spellingWarning.word}」は辞書にありません。綴りを確認してください。</Text>
             {spellingWarning.suggestions.length > 0 && (
@@ -153,7 +153,7 @@ export function CardForm({ value, onChange, editable, duplicateWarning, spelling
 
       {!!duplicateWarning && (
         <View style={styles.warning} accessibilityRole="alert">
-          <Feather name="alert-circle" size={18} color={colors.warningText} style={styles.warningIcon} />
+          <Feather name="alert-circle" size={18} color={colors.warning} style={styles.warningIcon} />
           <Text style={styles.warningText}>{duplicateWarning}</Text>
         </View>
       )}
@@ -283,7 +283,7 @@ export function CardForm({ value, onChange, editable, duplicateWarning, spelling
                       style={styles.removeButton}
                       onPress={() => removeExample(index)}
                     >
-                      <Feather name="trash-2" size={18} color={colors.secondary} />
+                      <Feather name="trash-2" size={18} color={colors.danger} />
                     </TouchableOpacity>
                   )}
                 </View>
@@ -332,7 +332,7 @@ export function CardForm({ value, onChange, editable, duplicateWarning, spelling
               style={styles.detailsToggle}
               onPress={() => set("examples", [...exampleBlocks, { text: "", translation: "" }])}
             >
-              <Feather name="plus" size={20} color={colors.secondary} />
+              <Feather name="plus-circle" size={22} color={colors.primary} />
               <Text style={styles.detailsToggleText}>例文を追加する</Text>
             </TouchableOpacity>
           )}
@@ -352,7 +352,7 @@ export function CardForm({ value, onChange, editable, duplicateWarning, spelling
         </>
       ) : (
         <TouchableOpacity accessibilityRole="button" accessibilityState={{ expanded: false }} style={styles.detailsToggle} onPress={() => setShowDetails(true)}>
-          <Feather name="plus" size={20} color={colors.secondary} />
+          <Feather name="plus-circle" size={22} color={colors.primary} />
           <Text style={styles.detailsToggleText}>品詞・例文・メモを入力する</Text>
         </TouchableOpacity>
       )}
@@ -363,45 +363,45 @@ export function CardForm({ value, onChange, editable, duplicateWarning, spelling
 const styles = StyleSheet.create({
   form: { gap: 18 },
   field: { gap: 6 },
-  label: { fontSize: 14, fontWeight: "bold", color: colors.secondary },
+  label: { fontSize: 13, fontWeight: "600", color: colors.secondary, paddingHorizontal: 16 },
   labelRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  badge: { backgroundColor: colors.panel, borderRadius: 10, paddingVertical: 2, paddingHorizontal: 8 },
-  badgeText: { fontSize: 12, fontWeight: "bold", color: colors.secondary },
-  hint: { fontSize: 13, fontWeight: "500", color: colors.secondary },
-  statusRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  failure: { fontSize: 13, color: colors.warningText },
+  badge: { backgroundColor: colors.primarySoft, borderRadius: 999, paddingVertical: 1, paddingHorizontal: 8 },
+  badgeText: { fontSize: 12, fontWeight: "600", color: colors.onPrimarySoft },
+  hint: { fontSize: 13, color: colors.secondary, paddingHorizontal: 16 },
+  statusRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16 },
+  failure: { fontSize: 13, color: colors.warning, paddingHorizontal: 16 },
   termInput: {
-    height: 58,
-    borderWidth: 1,
-    borderColor: colors.inputBorder,
-    borderRadius: 10,
+    height: 56,
+    borderWidth: 2,
+    borderColor: "transparent",
+    borderRadius: 12,
     paddingHorizontal: 14,
     fontSize: 22,
-    fontWeight: "bold",
+    fontWeight: "600",
     backgroundColor: colors.surface,
     color: colors.text,
   },
-  termInputFocused: { borderWidth: 2, borderColor: colors.secondary },
-  input: { borderWidth: 1, borderColor: colors.inputBorder, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: colors.surface, color: colors.text },
+  termInputFocused: { borderColor: colors.primary },
+  input: { borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: colors.surface, color: colors.text, fontSize: 17 },
   multiline: { textAlignVertical: "top" },
-  meaningInput: { minHeight: 96, fontSize: 17 },
-  detailInput: { minHeight: 64, fontSize: 15 },
-  exampleBlock: { gap: 6, borderLeftWidth: 3, borderLeftColor: colors.border, paddingLeft: 10 },
-  removeButton: { width: 32, height: 32, alignItems: "center", justifyContent: "center" },
-  warning: { flexDirection: "row", alignItems: "flex-start", gap: 8, backgroundColor: colors.panel, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12, marginTop: -8 },
+  meaningInput: { minHeight: 80, fontSize: 17 },
+  detailInput: { minHeight: 52, fontSize: 17 },
+  exampleBlock: { gap: 6 },
+  removeButton: { width: 44, height: 32, alignItems: "center", justifyContent: "center", marginLeft: "auto" },
+  warning: { flexDirection: "row", alignItems: "flex-start", gap: 8, backgroundColor: colors.warningSoft, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12, marginTop: -8 },
   warningIcon: { marginTop: 2 },
-  warningText: { fontSize: 14, lineHeight: 22, color: colors.warningText },
+  warningText: { fontSize: 15, lineHeight: 22, color: colors.warning },
   spellingBody: { flex: 1, gap: 6 },
   suggestionRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8 },
-  suggestionChip: { minHeight: 36, paddingHorizontal: 12, borderRadius: 18, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.warningText, justifyContent: "center" },
-  suggestionText: { fontSize: 15, fontWeight: "bold", color: colors.warningText },
-  chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: { minHeight: 40, paddingHorizontal: 12, borderRadius: 20, borderWidth: 1, borderColor: colors.inputBorder, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center" },
-  chipSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { fontSize: 14, color: colors.text },
-  chipTextSelected: { fontWeight: "bold", color: colors.onPrimary },
-  chipReview: { backgroundColor: colors.danger, borderColor: colors.danger },
-  chipTextReview: { fontWeight: "bold", color: colors.surface },
-  detailsToggle: { flexDirection: "row", alignItems: "center", gap: 8, minHeight: 48, paddingHorizontal: 4 },
-  detailsToggleText: { fontSize: 16, fontWeight: "bold", color: colors.secondary },
+  suggestionChip: { minHeight: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: colors.surface, justifyContent: "center" },
+  suggestionText: { fontSize: 15, fontWeight: "600", color: colors.primary },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: 8, backgroundColor: colors.surface, borderRadius: 12, padding: 12 },
+  chip: { minHeight: 44, minWidth: 72, paddingHorizontal: 14, borderRadius: 12, backgroundColor: colors.panel, alignItems: "center", justifyContent: "center" },
+  chipSelected: { backgroundColor: colors.primary },
+  chipText: { fontSize: 15, color: colors.text },
+  chipTextSelected: { fontWeight: "600", color: colors.onPrimary },
+  chipReview: { backgroundColor: colors.warning },
+  chipTextReview: { fontWeight: "600", color: colors.surface },
+  detailsToggle: { flexDirection: "row", alignItems: "center", gap: 10, minHeight: 48, paddingHorizontal: 16, borderRadius: 12, backgroundColor: colors.surface },
+  detailsToggleText: { fontSize: 17, color: colors.primary },
 });

@@ -80,7 +80,6 @@ export default function NewCardScreen() {
         onBack={goBack}
         backIcon="close"
         backLabel="閉じる"
-        bordered
         right={<HeaderTextButton label="保存" onPress={save} disabled={isSaving || !deck} />}
       />
 
@@ -96,7 +95,7 @@ export default function NewCardScreen() {
           <Switch
             value={continueAdding}
             onValueChange={setContinueAdding}
-            trackColor={{ true: colors.primary, false: colors.border }}
+            trackColor={{ true: colors.primary, false: colors.fillStrong }}
             thumbColor={colors.surface}
             accessibilityLabel="保存したら、続けて追加する"
           />
@@ -105,7 +104,7 @@ export default function NewCardScreen() {
 
       {!!notice && (
         <View style={[styles.snackbar, { bottom: insets.bottom + 28 }]} accessibilityRole="alert">
-          <Feather name="check" size={20} color={colors.primary} />
+          <Feather name="check-circle" size={20} color={colors.primarySoft} />
           <Text style={styles.snackbarText}>{notice}</Text>
         </View>
       )}
@@ -122,13 +121,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     minHeight: 52,
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
     borderRadius: 12,
   },
-  switchLabel: { flex: 1, fontSize: 15, color: colors.text },
+  switchLabel: { flex: 1, fontSize: 17, color: colors.text },
   snackbar: {
     position: "absolute",
     left: 16,
@@ -138,9 +135,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
     paddingHorizontal: 16,
-    borderRadius: 12,
-    backgroundColor: colors.secondary,
+    borderRadius: 14,
+    backgroundColor: colors.textMuted,
     elevation: 6,
   },
-  snackbarText: { flex: 1, fontSize: 15, color: colors.onSecondary },
+  snackbarText: { flex: 1, fontSize: 15, color: "white" },
 });

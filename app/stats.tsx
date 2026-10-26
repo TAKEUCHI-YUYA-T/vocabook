@@ -77,7 +77,7 @@ export default function StatsScreen() {
 
   return (
     <View style={styles.container}>
-      <ScreenHeader title="学習の記録" onBack={goBack} backLabel="ホームに戻る" bordered />
+      <ScreenHeader title="学習の記録" onBack={goBack} backLabel="ホームに戻る" backText="ホーム" />
 
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 32 }]}>
         <View style={styles.segmented}>
@@ -123,15 +123,22 @@ export default function StatsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: 16, gap: 14 },
-  segmented: { flexDirection: "row", gap: 8 },
-  segment: { flex: 1, height: 44, borderRadius: 12, borderWidth: 1, borderColor: colors.inputBorder, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center" },
-  segmentSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
+  content: { padding: 16, paddingTop: 8, gap: 16 },
+  segmented: { flexDirection: "row", gap: 2, padding: 2, borderRadius: 10, backgroundColor: colors.fillStrong },
+  segment: { flex: 1, height: 40, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  segmentSelected: {
+    backgroundColor: colors.surface,
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
   segmentText: { fontSize: 15, color: colors.text },
-  segmentTextSelected: { fontWeight: "bold", color: colors.onPrimary },
-  card: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 14, padding: 16, gap: 10 },
-  cardTitle: { fontSize: 15, fontWeight: "bold", color: colors.text },
-  readout: { fontSize: 14, color: colors.secondary },
-  readoutValue: { fontSize: 26, fontWeight: "bold", color: colors.text },
-  readoutUnit: { fontSize: 14, color: colors.secondary },
+  segmentTextSelected: { fontWeight: "600" },
+  card: { backgroundColor: colors.surface, borderRadius: 16, padding: 16, gap: 6 },
+  cardTitle: { fontSize: 15, fontWeight: "600", color: colors.secondary },
+  readout: { fontSize: 13, color: colors.secondary },
+  readoutValue: { fontSize: 34, fontWeight: "bold", color: colors.text },
+  readoutUnit: { fontSize: 17, fontWeight: "600", color: colors.secondary },
 });

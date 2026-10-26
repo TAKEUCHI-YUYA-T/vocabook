@@ -57,7 +57,7 @@ export default function EditCardScreen() {
   if (!card) {
     return (
       <View style={styles.container}>
-        <ScreenHeader title="単語を編集" onBack={goBack} backLabel="戻る" bordered />
+        <ScreenHeader title="単語を編集" onBack={goBack} backLabel="戻る" backText="単語帳" />
         <Text style={styles.message}>{error ?? (isLoaded ? "この単語は見つかりませんでした（削除された可能性があります）" : "読み込み中...")}</Text>
       </View>
     );
@@ -117,7 +117,7 @@ function EditCardForm({ card, editable, goBack }: { card: Card; editable: boolea
         title={editable ? "単語を編集" : "単語の詳細"}
         onBack={goBack}
         backLabel={editable ? "保存せずに戻る" : "戻る"}
-        bordered
+        backText="単語帳"
         right={editable ? <HeaderTextButton label="保存" onPress={save} disabled={isSaving} /> : undefined}
       />
 
@@ -139,7 +139,6 @@ function EditCardForm({ card, editable, goBack }: { card: Card; editable: boolea
 
         {editable && (
           <TouchableOpacity accessibilityRole="button" style={styles.deleteButton} onPress={confirmDelete} disabled={isSaving}>
-            <Feather name="trash-2" size={20} color={colors.danger} />
             <Text style={styles.deleteText}>この単語を削除</Text>
           </TouchableOpacity>
         )}
@@ -154,17 +153,6 @@ const styles = StyleSheet.create({
   message: { fontSize: 16, color: colors.secondary, textAlign: "center", marginTop: 40, paddingHorizontal: 16 },
   readonlyNote: { fontSize: 15, color: colors.secondary },
   error: { color: colors.danger, fontSize: 15 },
-  deleteButton: {
-    minHeight: 50,
-    marginTop: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    borderWidth: 2,
-    borderColor: colors.danger,
-    borderRadius: 12,
-    backgroundColor: colors.surface,
-  },
-  deleteText: { fontSize: 16, fontWeight: "bold", color: colors.text },
+  deleteButton: { minHeight: 52, marginTop: 10, alignItems: "center", justifyContent: "center", borderRadius: 12, backgroundColor: colors.surface },
+  deleteText: { fontSize: 17, color: colors.danger },
 });

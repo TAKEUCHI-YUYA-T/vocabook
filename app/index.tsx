@@ -3,26 +3,26 @@ import { View, Text, StyleSheet, TouchableOpacity, Animated, Image, ScrollView, 
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter, type Href } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AdBanner } from "@/components/AdBanner";
 import { colors } from "@/components/theme";
 import { useRepository } from "@/db/AppDatabase";
 import { localDay } from "@/db/day";
 import type { HomeStats, Tip } from "@/db/types";
-import { AdBanner } from "@/components/AdBanner";
 
-type MenuItem = { label: string; icon: React.ComponentProps<typeof Feather>["name"]; href: Href; primary: boolean };
+type MenuItem = { label: string; icon: React.ComponentProps<typeof Feather>["name"]; href: Href; color: string; count?: "total" };
 
-/** ホームの4つの入口。学習（黄緑）と管理（白）で色を分け、大きさはすべて同じにする */
+/** 「単語を覚える」の下の、3つの入口。iOS の「設定」のように、色つきの小さなアイコンと、右の矢印 */
 const MENU: MenuItem[] = [
-  { label: "単語を覚える", icon: "layers", href: "/study", primary: true },
-  { label: "ing or to", icon: "help-circle", href: "/ingOrTo", primary: true },
-  { label: "単語帳", icon: "book-open", href: "/words", primary: false },
-  { label: "単語を追加", icon: "plus-square", href: "/cards/new", primary: false },
+  { label: "ing or to", icon: "help-circle", href: "/ingOrTo", color: colors.warning },
+  { label: "単語帳", icon: "book-open", href: "/words", color: colors.info, count: "total" },
+  { label: "単語を追加", icon: "plus", href: "/cards/new", color: colors.purple },
 ];
 
 /**
- * ホーム画面
- * - ヒント（アプリに同梱）を1件、ランダムに表示する
- * - 学習・ing or to・単語帳・単語の追加への入口を、同じ大きさの横長のボタンで縦に並べる
+ * ホーム画面（Apple 風）
+ * - 上: ロゴと、「このアプリについて」のボタン
+ * - 今日の学習・覚えた単語の数（押すとグラフ）、今日のヒント（アプリに同梱。ランダムに1件）
+ * - 「単語を覚える」の大きなボタンと、ing or to・単語帳・単語を追加の入口
  * - 右下の足あとのボタンで、画面上にアニメーションを使った絵文字を落とす
  */
 export default function Home() {
@@ -79,20 +79,13 @@ export default function Home() {
       <View style={{ paddingTop: insets.top }}>
         <AdBanner />
       </View>
-      <ScrollView contentContainerStyle={[styles.content, { paddingTop: 24, paddingBottom: insets.bottom + 96 }]}>
-        <Image source={require("../assets/images/logo.png")} style={styles.logo} accessibilityLabel="vocabook" />
-
-        {/* ヒント */}
-        {tip && (
-          <View style={styles.tip} accessibilityLabel="今日のヒント">
-            <View style={styles.tipHeading}>
-              <Ionicons name="bulb-outline" size={16} color={colors.secondary} />
-              <Text style={styles.tipHeadingText}>今日のヒント</Text>
-            </View>
-            {!!tip.title && <Text style={styles.tipTitle}>{tip.title}</Text>}
-            {!!tip.body && <Text style={styles.tipBody}>{tip.body}</Text>}
-          </View>
-        )}
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 96 }]}>
+        <View style={styles.topRow}>
+          <Image source={require("../assets/images/logo.png")} style={styles.logo} accessibilityLabel="vocabook" />
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="このアプリについて" style={styles.aboutButton} onPress={() => router.push("/about")}>
+            <Feather name="info" size={22} color={colors.primary} />
+          </TouchableOpacity>
+        </View>
 
         {/* 今日の学習の記録 */}
         {stats && (
@@ -103,42 +96,60 @@ export default function Home() {
             onPress={() => router.push("/stats")}
           >
             <View style={styles.stat}>
-              <Text style={styles.statLabel}>今日の学習</Text>
+              <View style={styles.statHeading}>
+                <Feather name="clock" size={16} color={colors.primary} />
+                <Text style={styles.statLabel}>今日の学習</Text>
+              </View>
               <Text style={styles.statValue}>
                 {stats.studiedToday}
                 <Text style={styles.statUnit}> 語</Text>
               </Text>
             </View>
             <View style={styles.stat}>
-              <Text style={styles.statLabel}>覚えた</Text>
+              <View style={styles.statHeading}>
+                <Feather name="check-circle" size={16} color={colors.primary} />
+                <Text style={styles.statLabel}>覚えた</Text>
+              </View>
               <Text style={styles.statValue}>
                 {stats.learned}
-                <Text style={styles.statUnit}> 語</Text>
+                <Text style={styles.statUnit}> / {stats.total}語</Text>
               </Text>
-            </View>
-            <View style={styles.statChevron}>
-              <Feather name="bar-chart-2" size={20} color={colors.secondary} />
-              <Feather name="chevron-right" size={18} color={colors.secondary} />
             </View>
           </TouchableOpacity>
         )}
 
+        {/* ヒント */}
+        {tip && (
+          <View style={styles.tip} accessibilityLabel="今日のヒント">
+            <View style={styles.tipHeading}>
+              <View style={styles.tipIcon}>
+                <Ionicons name="bulb-outline" size={16} color={colors.warning} />
+              </View>
+              <Text style={styles.tipHeadingText}>今日のヒント</Text>
+            </View>
+            {!!tip.title && <Text style={styles.tipTitle}>{tip.title}</Text>}
+            {!!tip.body && <Text style={styles.tipBody}>{tip.body}</Text>}
+          </View>
+        )}
+
+        <TouchableOpacity accessibilityRole="button" style={styles.primaryButton} onPress={() => router.push("/study")}>
+          <Feather name="layers" size={20} color={colors.onPrimary} />
+          <Text style={styles.primaryLabel}>単語を覚える</Text>
+        </TouchableOpacity>
+
         <View style={styles.menu}>
-          {MENU.map((item) => (
-            <TouchableOpacity
-              key={item.label}
-              accessibilityRole="button"
-              style={[styles.menuButton, item.primary ? styles.menuPrimary : styles.menuSecondary]}
-              onPress={() => router.push(item.href)}
-            >
-              <Feather name={item.icon} size={28} color={colors.onPrimary} />
-              <Text style={styles.menuLabel}>{item.label}</Text>
-              <Feather name="chevron-right" size={22} color={colors.onPrimary} />
+          {MENU.map((item, index) => (
+            <TouchableOpacity key={item.label} accessibilityRole="button" style={styles.menuRow} onPress={() => router.push(item.href)}>
+              <View style={[styles.menuIcon, { backgroundColor: item.color }]}>
+                <Feather name={item.icon} size={18} color="white" />
+              </View>
+              <View style={[styles.menuBody, index < MENU.length - 1 && styles.menuDivider]}>
+                <Text style={styles.menuLabel}>{item.label}</Text>
+                {item.count === "total" && !!stats && <Text style={styles.menuCount}>{stats.total}</Text>}
+                <Feather name="chevron-right" size={20} color={colors.inputBorder} />
+              </View>
             </TouchableOpacity>
           ))}
-          <TouchableOpacity accessibilityRole="link" style={styles.aboutLink} onPress={() => router.push("/about")}>
-            <Text style={styles.aboutLinkText}>このアプリについて（ライセンス・プライバシー）</Text>
-          </TouchableOpacity>
         </View>
       </ScrollView>
 
@@ -148,7 +159,7 @@ export default function Home() {
         style={[styles.dogButton, { bottom: insets.bottom + 24 }]}
         onPress={dropDog}
       >
-        <MaterialCommunityIcons name="paw" size={26} color={colors.secondary} />
+        <MaterialCommunityIcons name="paw" size={24} color={colors.secondary} />
       </TouchableOpacity>
 
       {dogs.map((dog) => (
@@ -162,37 +173,45 @@ export default function Home() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  content: { paddingHorizontal: 16, gap: 16 },
-  logo: { width: 180, height: 80, alignSelf: "center", resizeMode: "contain", marginBottom: 4 },
-  tip: { backgroundColor: colors.panel, borderRadius: 14, padding: 16, gap: 8 },
-  tipHeading: { flexDirection: "row", alignItems: "center", gap: 6 },
-  tipHeadingText: { fontSize: 13, fontWeight: "bold", color: colors.secondary },
-  tipTitle: { fontSize: 17, fontWeight: "bold", color: colors.text },
-  tipBody: { fontSize: 15, lineHeight: 24, color: colors.text },
-  stats: { flexDirection: "row", alignItems: "center", gap: 12 },
-  aboutLink: { alignSelf: "center", minHeight: 48, justifyContent: "center", paddingHorizontal: 12 },
-  aboutLinkText: { fontSize: 14, color: colors.secondary, textDecorationLine: "underline" },
-  statChevron: { alignItems: "center", gap: 2 },
-  stat: { flex: 1, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 14 },
-  statLabel: { fontSize: 13, fontWeight: "bold", color: colors.secondary },
-  statValue: { fontSize: 28, fontWeight: "bold", lineHeight: 36, color: colors.text },
-  statUnit: { fontSize: 14, fontWeight: "normal", color: colors.secondary },
-  menu: { gap: 12 },
-  menuButton: { flexDirection: "row", alignItems: "center", gap: 14, height: 68, paddingLeft: 20, paddingRight: 14, borderRadius: 12, borderWidth: 1 },
-  menuPrimary: { backgroundColor: colors.primary, borderColor: colors.primary },
-  menuSecondary: { backgroundColor: colors.surface, borderColor: colors.border },
-  menuLabel: { flex: 1, fontSize: 18, fontWeight: "bold", color: colors.onPrimary },
+  content: { paddingHorizontal: 16, paddingTop: 4, gap: 16 },
+  topRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  logo: { width: 135, height: 60, resizeMode: "contain" },
+  aboutButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.fillStrong, alignItems: "center", justifyContent: "center" },
+  stats: { flexDirection: "row", gap: 12 },
+  stat: { flex: 1, backgroundColor: colors.surface, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 16, gap: 6 },
+  statHeading: { flexDirection: "row", alignItems: "center", gap: 6 },
+  statLabel: { fontSize: 13, fontWeight: "600", color: colors.primary },
+  statValue: { fontSize: 34, fontWeight: "bold", lineHeight: 40, color: colors.text },
+  statUnit: { fontSize: 15, fontWeight: "600", color: colors.secondary },
+  tip: { backgroundColor: colors.surface, borderRadius: 16, padding: 16, gap: 8 },
+  tipHeading: { flexDirection: "row", alignItems: "center", gap: 8 },
+  tipIcon: { width: 28, height: 28, borderRadius: 8, backgroundColor: colors.warningSoft, alignItems: "center", justifyContent: "center" },
+  tipHeadingText: { fontSize: 13, fontWeight: "600", color: colors.secondary },
+  tipTitle: { fontSize: 17, fontWeight: "600", color: colors.text },
+  tipBody: { fontSize: 15, lineHeight: 22, color: colors.textMuted },
+  primaryButton: { minHeight: 56, borderRadius: 28, backgroundColor: colors.primary, flexDirection: "row", gap: 8, alignItems: "center", justifyContent: "center" },
+  primaryLabel: { fontSize: 17, fontWeight: "600", color: colors.onPrimary },
+  menu: { backgroundColor: colors.surface, borderRadius: 12, overflow: "hidden" },
+  menuRow: { minHeight: 52, flexDirection: "row", alignItems: "center", gap: 12, paddingLeft: 16 },
+  menuIcon: { width: 30, height: 30, borderRadius: 7, alignItems: "center", justifyContent: "center" },
+  menuBody: { flex: 1, minHeight: 52, flexDirection: "row", alignItems: "center", gap: 8, paddingRight: 12 },
+  menuDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.inputBorder },
+  menuLabel: { flex: 1, fontSize: 17, color: colors.text },
+  menuCount: { fontSize: 17, color: colors.secondary },
   dogButton: {
     position: "absolute",
     right: 16,
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
   },
   dog: { position: "absolute", fontSize: 30, pointerEvents: "none" },
 });

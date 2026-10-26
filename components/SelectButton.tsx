@@ -33,7 +33,7 @@ export function SelectButton({ title, value, placeholder = "選んでくださ�
         <Text style={[styles.value, value === null && styles.placeholder]} numberOfLines={1}>
           {value ?? placeholder}
         </Text>
-        <Feather name="chevron-down" size={18} color={colors.secondary} />
+        <Feather name="chevron-down" size={18} color={colors.primary} />
       </TouchableOpacity>
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)} statusBarTranslucent navigationBarTranslucent>
@@ -57,7 +57,7 @@ export function SelectButton({ title, value, placeholder = "選んでくださ�
                     <Text style={[styles.optionText, selected && styles.optionTextSelected]} numberOfLines={1}>
                       {option.label}
                     </Text>
-                    {selected && <Feather name="check" size={20} color={colors.secondary} />}
+                    {selected && <Feather name="check" size={20} color={colors.primary} />}
                   </TouchableOpacity>
                 );
               })}
@@ -79,18 +79,16 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: 6,
     paddingHorizontal: 10,
-    borderWidth: 1,
-    borderColor: colors.inputBorder,
-    borderRadius: 8,
-    backgroundColor: colors.surface,
+    borderRadius: 10,
+    backgroundColor: colors.fillStrong,
   },
   value: { flexShrink: 1, fontSize: 15, color: colors.text },
-  placeholder: { color: colors.danger },
+  placeholder: { color: colors.warning },
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.35)", justifyContent: "flex-end" },
   sheet: { backgroundColor: colors.background, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 16, paddingHorizontal: 16, maxHeight: "70%" },
-  sheetTitle: { fontSize: 16, fontWeight: "bold", color: colors.secondary, marginBottom: 8 },
+  sheetTitle: { fontSize: 13, fontWeight: "600", color: colors.secondary, marginBottom: 8, paddingHorizontal: 4 },
   list: { flexGrow: 0 },
   option: { minHeight: 48, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, borderBottomWidth: 1, borderBottomColor: colors.border },
   optionText: { flex: 1, fontSize: 17, color: colors.text },
-  optionTextSelected: { fontWeight: "bold", color: colors.secondary },
+  optionTextSelected: { fontWeight: "600", color: colors.primary },
 });

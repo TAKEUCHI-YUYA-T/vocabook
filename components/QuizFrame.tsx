@@ -9,6 +9,8 @@ type Props = {
   title: string;
   onBack: () => void;
   backLabel: string;
+  /** 戻るボタンの横の、戻り先の名前（「ホーム」「範囲」など） */
+  backText?: string;
   /** 進み具合。なければ（読み込み中など）、進み具合を出さない */
   progress?: { current: number; total: number; percent: number } | null;
   /** ヘッダー右端の、進み具合のあとに置くもの（編集ボタンなど） */
@@ -24,10 +26,10 @@ type Props = {
 };
 
 /**
- * 出題画面の共通の枠（学習と ing or to）
- * ヘッダー・進み具合の線・白いカード・下のボタン1つ。答えは、下のボタンだけで出す
+ * 出題画面の共通の枠（学習と ing or to。Apple 風）
+ * ヘッダー・細い進み具合の線・広告・白い角丸のカード・下の大きなボタン。答えは、下のボタンだけで出す
  */
-export function QuizFrame({ title, onBack, backLabel, progress, headerExtra, action, footer, message, children }: Props) {
+export function QuizFrame({ title, onBack, backLabel, backText, progress, headerExtra, action, footer, message, children }: Props) {
   const insets = useSafeAreaInsets();
   return (
     <View style={styles.container}>
@@ -35,6 +37,7 @@ export function QuizFrame({ title, onBack, backLabel, progress, headerExtra, act
         title={title}
         onBack={onBack}
         backLabel={backLabel}
+        backText={backText}
         right={
           <>
             {!!progress && progress.total > 0 && (
@@ -62,16 +65,12 @@ export function QuizFrame({ title, onBack, backLabel, progress, headerExtra, act
         {message ? <Text style={styles.message}>{message}</Text> : <View style={styles.card}>{children}</View>}
       </ScrollView>
 
-      {!!footer && <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) + 16 }]}>{footer}</View>}
+      {!!footer && <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) + 12 }]}>{footer}</View>}
 
       {!footer && !!action && (
-        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) + 16 }]}>
-          <TouchableOpacity
-            accessibilityRole="button"
-            style={[styles.actionButton, action.kind === "next" && styles.nextButton]}
-            onPress={action.onPress}
-          >
-            <Text style={[styles.actionText, action.kind === "next" && styles.nextText]}>{action.kind === "reveal" ? "答えを見る" : "次へ"}</Text>
+        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) + 12 }]}>
+          <TouchableOpacity accessibilityRole="button" style={styles.actionButton} onPress={action.onPress}>
+            <Text style={styles.actionText}>{action.kind === "reveal" ? "答えを見る" : "次へ"}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -81,16 +80,25 @@ export function QuizFrame({ title, onBack, backLabel, progress, headerExtra, act
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  progressLabel: { fontSize: 15, fontWeight: "bold", color: colors.secondary, paddingHorizontal: 8 },
-  track: { height: 6, backgroundColor: colors.panel },
-  fill: { height: 6, backgroundColor: colors.primary },
+  progressLabel: { fontSize: 15, color: colors.secondary, paddingHorizontal: 8, fontVariant: ["tabular-nums"] },
+  track: { height: 4, marginHorizontal: 16, borderRadius: 2, backgroundColor: colors.fillStrong, overflow: "hidden" },
+  fill: { height: 4, borderRadius: 2, backgroundColor: colors.primary },
   main: { flex: 1 },
-  mainContent: { flexGrow: 1, padding: 16, paddingTop: 20 },
-  card: { flexGrow: 1, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 18, padding: 20, gap: 14 },
+  mainContent: { flexGrow: 1, padding: 16, paddingTop: 8 },
+  card: {
+    flexGrow: 1,
+    backgroundColor: colors.surface,
+    borderRadius: 20,
+    padding: 20,
+    gap: 14,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 1,
+  },
   message: { fontSize: 16, color: colors.secondary, textAlign: "center", marginTop: 40 },
-  footer: { paddingHorizontal: 16, paddingTop: 8 },
+  footer: { paddingHorizontal: 16, paddingTop: 12 },
   actionButton: { minHeight: 56, borderRadius: 28, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
-  nextButton: { backgroundColor: colors.secondary },
-  actionText: { color: colors.onPrimary, fontSize: 17, fontWeight: "bold" },
-  nextText: { color: colors.onSecondary },
+  actionText: { color: colors.onPrimary, fontSize: 17, fontWeight: "600" },
 });

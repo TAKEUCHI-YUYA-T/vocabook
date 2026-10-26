@@ -112,7 +112,7 @@ export default function StudySelectScreen() {
   };
 
   const renderGrid = (cells: Cell[], columns: number, onPress: (key: string) => void) => (
-    <View style={styles.grid}>
+    <View style={styles.gridCard}>
       {chunk(cells, columns).map((row) => (
         <View key={row[0].key} style={styles.gridRow}>
           {row.map((cell) => (
@@ -139,7 +139,7 @@ export default function StudySelectScreen() {
 
   return (
     <View style={styles.container}>
-      <ScreenHeader title="学習の範囲" onBack={goBack} backLabel="ホームに戻る" bordered />
+      <ScreenHeader title="学習の範囲" onBack={goBack} backLabel="ホームに戻る" backText="ホーム" />
 
       <AdBanner />
 
@@ -208,42 +208,39 @@ export default function StudySelectScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: 16, paddingTop: 20, gap: 10 },
-  sectionTitle: { fontSize: 15, fontWeight: "bold", color: colors.secondary },
-  sectionGap: { marginTop: 8 },
-  segmented: { flexDirection: "row", gap: 8 },
-  segment: { flex: 1, height: 48, borderRadius: 12, borderWidth: 1, borderColor: colors.inputBorder, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center" },
-  segmentSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
-  segmentText: { fontSize: 14, color: colors.text },
-  segmentTextSelected: { fontWeight: "bold", color: colors.onPrimary },
-  grid: { gap: 8 },
-  gridRow: { flexDirection: "row", gap: 8 },
-  cell: {
-    flex: 1,
-    height: 64,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.inputBorder,
+  content: { padding: 16, paddingTop: 8, gap: 8 },
+  sectionTitle: { fontSize: 13, fontWeight: "600", color: colors.secondary, paddingHorizontal: 16 },
+  sectionGap: { marginTop: 16 },
+  segmented: { flexDirection: "row", gap: 2, padding: 2, borderRadius: 10, backgroundColor: colors.fillStrong },
+  segment: { flex: 1, height: 40, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  segmentSelected: {
     backgroundColor: colors.surface,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
+  segmentText: { fontSize: 15, color: colors.text },
+  segmentTextSelected: { fontWeight: "600" },
+  gridCard: { backgroundColor: colors.surface, borderRadius: 12, padding: 12, gap: 8 },
+  gridRow: { flexDirection: "row", gap: 8 },
+  cell: { flex: 1, height: 56, borderRadius: 12, backgroundColor: colors.panel, alignItems: "center", justifyContent: "center", gap: 1 },
   cellSpacer: { flex: 1 },
-  cellSelected: { backgroundColor: colors.primary, borderColor: colors.primary },
+  cellSelected: { backgroundColor: colors.primary },
   cellDisabled: { opacity: 0.35 },
-  cellLabel: { fontSize: 16, fontWeight: "bold", color: colors.text },
+  cellLabel: { fontSize: 15, fontWeight: "600", color: colors.text },
   cellLabelSelected: { color: colors.onPrimary },
   cellCount: { fontSize: 13, color: colors.secondary },
-  cellCountSelected: { fontWeight: "bold" },
-  hint: { fontSize: 14, color: colors.secondary },
-  emptyBox: { backgroundColor: colors.panel, borderRadius: 12, padding: 16, gap: 12, marginTop: 8 },
+  cellCountSelected: { color: colors.onPrimary },
+  hint: { fontSize: 13, color: colors.secondary, paddingHorizontal: 16 },
+  emptyBox: { backgroundColor: colors.surface, borderRadius: 12, padding: 16, gap: 12, marginTop: 8 },
   emptyText: { fontSize: 15, lineHeight: 24, color: colors.text },
-  emptyButton: { minHeight: 50, borderRadius: 12, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
-  emptyButtonText: { fontSize: 17, fontWeight: "bold", color: colors.onPrimary },
-  footer: { borderTopWidth: 1, borderTopColor: colors.border, paddingHorizontal: 16, paddingTop: 12, gap: 8, backgroundColor: colors.background },
-  summary: { textAlign: "center", fontSize: 15, fontWeight: "500", color: colors.secondary },
-  startButton: { minHeight: 56, borderRadius: 12, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
-  startButtonDisabled: { backgroundColor: "gray" },
-  startText: { fontSize: 18, fontWeight: "bold", color: colors.onPrimary },
+  emptyButton: { minHeight: 50, borderRadius: 25, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
+  emptyButtonText: { fontSize: 17, fontWeight: "600", color: colors.onPrimary },
+  footer: { paddingHorizontal: 16, paddingTop: 12, gap: 8, backgroundColor: colors.background },
+  summary: { textAlign: "center", fontSize: 13, color: colors.secondary },
+  startButton: { minHeight: 56, borderRadius: 28, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
+  startButtonDisabled: { backgroundColor: "#AEAEB2" },
+  startText: { fontSize: 17, fontWeight: "600", color: colors.onPrimary },
 });

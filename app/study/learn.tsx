@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { FlagTag } from "@/components/FlagTag";
-import { HeaderIconButton } from "@/components/ScreenHeader";
+import { HeaderTextButton } from "@/components/ScreenHeader";
 import { QuizFrame } from "@/components/QuizFrame";
 import { ExampleList } from "@/components/ExampleList";
 import { ExamplesByPartOfSpeech, MeaningByPartOfSpeech, OtherPartsPanel } from "@/components/SameTermSections";
@@ -29,10 +29,6 @@ import { spellingProblemsOnDevice } from "@/db/posDictionary";
  *   英→日・日→英: 答えの面の一番下に、「ほかの品詞」として、その意味を並べる
  *   聞き取り: 同じ綴りは1回だけ出題し、答えの面に、全品詞の意味と例文を、品詞ごとに並べる。フラグと記録は、同じ綴りの全カードに付ける
  */
-/** 要復習の色（薄い地に載せる文字の色と、塗りつぶしの色。白い文字・薄い赤の地の上で、読める濃さ） */
-const REVIEW_TEXT = "#b3261e";
-const REVIEW_STRONG = "#d93a30";
-
 export default function LearnScreen() {
   const router = useRouter();
   const repository = useRepository();
@@ -134,8 +130,8 @@ export default function LearnScreen() {
         style={[styles.flagButton, current.flag === "review" ? styles.reviewActive : styles.reviewButton]}
         onPress={() => mark("review")}
       >
-        <Feather name="rotate-ccw" size={18} color={current.flag === "review" ? colors.surface : REVIEW_TEXT} />
-        <Text style={[styles.flagText, { color: current.flag === "review" ? colors.surface : REVIEW_TEXT }]}>要復習</Text>
+        <Feather name="rotate-ccw" size={18} color={current.flag === "review" ? colors.surface : colors.warning} />
+        <Text style={[styles.flagText, { color: current.flag === "review" ? colors.surface : colors.warning }]}>要復習</Text>
       </TouchableOpacity>
       <TouchableOpacity accessibilityRole="button" style={[styles.flagButton, styles.nextFlagButton]} onPress={next}>
         <Text style={[styles.flagText, { color: colors.text }]}>次へ</Text>
@@ -146,8 +142,8 @@ export default function LearnScreen() {
         style={[styles.flagButton, current.flag === "learned" ? styles.learnedActive : styles.learnedButton]}
         onPress={() => mark("learned")}
       >
-        <Feather name="check" size={18} color={colors.onPrimary} />
-        <Text style={[styles.flagText, { color: colors.onPrimary }]}>覚えた</Text>
+        <Feather name="check" size={18} color={current.flag === "learned" ? colors.onPrimary : colors.onPrimarySoft} />
+        <Text style={[styles.flagText, { color: current.flag === "learned" ? colors.onPrimary : colors.onPrimarySoft }]}>覚えた</Text>
       </TouchableOpacity>
     </View>
   );
@@ -157,10 +153,11 @@ export default function LearnScreen() {
       title="学習"
       onBack={goBack}
       backLabel="学習の範囲に戻る"
+      backText="範囲"
       progress={quiz && current ? progress(quiz) : null}
       headerExtra={
         current ? (
-          <HeaderIconButton icon="edit-2" label="この単語を編集" onPress={() => router.push({ pathname: "/cards/[id]", params: { id: current.id } })} />
+          <HeaderTextButton label="編集" onPress={() => router.push({ pathname: "/cards/[id]", params: { id: current.id } })} />
         ) : undefined
       }
       action={current && !isAnswerVisible ? { kind: "reveal", onPress: reveal } : null}
@@ -200,12 +197,17 @@ export default function LearnScreen() {
             </>
           )}
           {direction === "listen" && (
-            <View style={styles.listen}>
-              <TouchableOpacity accessibilityRole="button" accessibilityLabel="もう一度聞く" style={styles.listenButton} onPress={() => speakEnglish(current.term)}>
-                <Feather name="volume-2" size={44} color={colors.onPrimary} />
+            <View style={isAnswerVisible ? styles.listenCompact : styles.listen}>
+              <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel="もう一度聞く"
+                style={isAnswerVisible ? styles.listenButtonSmall : styles.listenButton}
+                onPress={() => speakEnglish(current.term)}
+              >
+                <Feather name="volume-2" size={isAnswerVisible ? 26 : 44} color={colors.onPrimary} />
               </TouchableOpacity>
               <Text style={styles.listenText}>聞こえた単語の意味は？</Text>
-              <Text style={styles.hintText}>押すと、もう一度聞けます</Text>
+              {!isAnswerVisible && <Text style={styles.hintText}>押すと、もう一度聞けます</Text>}
             </View>
           )}
 
@@ -272,28 +274,30 @@ export default function LearnScreen() {
 }
 
 const styles = StyleSheet.create({
-  tags: { flexDirection: "row", alignItems: "center", gap: 8, minHeight: 22 },
-  tag: { borderWidth: 1, borderColor: colors.secondary, borderRadius: 6, paddingVertical: 2, paddingHorizontal: 8 },
-  tagText: { fontSize: 13, fontWeight: "bold", color: colors.secondary },
-  termRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  term: { flexShrink: 1, fontSize: 32, fontWeight: "bold", lineHeight: 40, color: colors.text },
+  tags: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 24 },
+  tag: { borderRadius: 999, paddingVertical: 2, paddingHorizontal: 10, backgroundColor: colors.panel },
+  tagText: { fontSize: 13, fontWeight: "600", color: colors.textMuted },
+  termRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  term: { flexShrink: 1, fontSize: 40, fontWeight: "bold", lineHeight: 48, letterSpacing: -0.5, color: colors.text },
   questionMeaning: { fontSize: 26, fontWeight: "bold", lineHeight: 38, color: colors.text },
   hintText: { fontSize: 14, lineHeight: 22, color: colors.secondary },
   listen: { alignItems: "center", gap: 12, paddingVertical: 24 },
+  listenCompact: { flexDirection: "row", alignItems: "center", gap: 14, paddingBottom: 4 },
   listenButton: { width: 96, height: 96, borderRadius: 48, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
-  listenText: { fontSize: 18, fontWeight: "bold", color: colors.text },
-  answer: { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 16, marginTop: 4, gap: 12 },
-  label: { fontSize: 13, fontWeight: "bold", color: colors.secondary },
+  listenButtonSmall: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
+  listenText: { fontSize: 15, fontWeight: "600", color: colors.secondary },
+  answer: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.inputBorder, paddingTop: 16, marginTop: 4, gap: 12 },
+  label: { fontSize: 13, fontWeight: "600", color: colors.secondary },
   labelGap: { marginTop: 4 },
-  meaning: { fontSize: 20, fontWeight: "bold", lineHeight: 30, color: colors.text },
-  translation: { fontSize: 15, lineHeight: 26, color: colors.text },
+  meaning: { fontSize: 22, fontWeight: "600", lineHeight: 30, color: colors.text },
+  translation: { fontSize: 15, lineHeight: 24, color: colors.textMuted },
 
   flagRow: { flexDirection: "row", gap: 8 },
   flagButton: { flex: 1, minHeight: 56, borderRadius: 28, flexDirection: "row", gap: 6, alignItems: "center", justifyContent: "center" },
-  flagText: { fontSize: 17, fontWeight: "bold" },
-  reviewButton: { backgroundColor: "#ffe6e6" },
-  reviewActive: { backgroundColor: REVIEW_STRONG },
-  nextFlagButton: { backgroundColor: "#e9e9ee" },
-  learnedButton: { backgroundColor: "#eef8cc" },
+  flagText: { fontSize: 17, fontWeight: "600" },
+  reviewButton: { backgroundColor: colors.warningSoft },
+  reviewActive: { backgroundColor: colors.warning },
+  nextFlagButton: { backgroundColor: colors.fill },
+  learnedButton: { backgroundColor: colors.primarySoft },
   learnedActive: { backgroundColor: colors.primary },
 });
