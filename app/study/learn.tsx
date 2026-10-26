@@ -29,6 +29,10 @@ import { spellingProblemsOnDevice } from "@/db/posDictionary";
  *   英→日・日→英: 答えの面の一番下に、「ほかの品詞」として、その意味を並べる
  *   聞き取り: 同じ綴りは1回だけ出題し、答えの面に、全品詞の意味と例文を、品詞ごとに並べる。フラグと記録は、同じ綴りの全カードに付ける
  */
+/** 要復習の色（薄い地に載せる文字の色と、塗りつぶしの色。白い文字・薄い赤の地の上で、読める濃さ） */
+const REVIEW_TEXT = "#b3261e";
+const REVIEW_STRONG = "#d93a30";
+
 export default function LearnScreen() {
   const router = useRouter();
   const repository = useRepository();
@@ -122,19 +126,28 @@ export default function LearnScreen() {
   const message = error ?? (!quiz ? "読み込み中..." : current ? null : "この条件に合う単語がありません");
 
   const answerFooter = current && (
-    <View style={styles.footerBox}>
-      <View style={styles.flagRow}>
-        <TouchableOpacity accessibilityRole="button" accessibilityState={{ selected: current.flag === "review" }} style={[styles.flagButton, styles.reviewButton]} onPress={() => mark("review")}>
-          {current.flag === "review" && <Feather name="check" size={20} color={colors.surface} />}
-          <Text style={styles.reviewText}>要復習</Text>
-        </TouchableOpacity>
-        <TouchableOpacity accessibilityRole="button" accessibilityState={{ selected: current.flag === "learned" }} style={[styles.flagButton, styles.learnedButton]} onPress={() => mark("learned")}>
-          {current.flag === "learned" && <Feather name="check" size={20} color={colors.onPrimary} />}
-          <Text style={styles.learnedText}>覚えた</Text>
-        </TouchableOpacity>
-      </View>
-      <TouchableOpacity accessibilityRole="button" style={[styles.flagButton, styles.nextButton]} onPress={next}>
-        <Text style={styles.nextText}>次へ</Text>
+    // 左から 要復習・次へ・覚えた（正反対の2つを離して、押し間違いを防ぐ）。3つとも同じ形と重さ。今のフラグのボタンだけ、塗りつぶす
+    <View style={styles.flagRow}>
+      <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityState={{ selected: current.flag === "review" }}
+        style={[styles.flagButton, current.flag === "review" ? styles.reviewActive : styles.reviewButton]}
+        onPress={() => mark("review")}
+      >
+        <Feather name="rotate-ccw" size={18} color={current.flag === "review" ? colors.surface : REVIEW_TEXT} />
+        <Text style={[styles.flagText, { color: current.flag === "review" ? colors.surface : REVIEW_TEXT }]}>要復習</Text>
+      </TouchableOpacity>
+      <TouchableOpacity accessibilityRole="button" style={[styles.flagButton, styles.nextFlagButton]} onPress={next}>
+        <Text style={[styles.flagText, { color: colors.text }]}>次へ</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityState={{ selected: current.flag === "learned" }}
+        style={[styles.flagButton, current.flag === "learned" ? styles.learnedActive : styles.learnedButton]}
+        onPress={() => mark("learned")}
+      >
+        <Feather name="check" size={18} color={colors.onPrimary} />
+        <Text style={[styles.flagText, { color: colors.onPrimary }]}>覚えた</Text>
       </TouchableOpacity>
     </View>
   );
@@ -275,13 +288,12 @@ const styles = StyleSheet.create({
   meaning: { fontSize: 20, fontWeight: "bold", lineHeight: 30, color: colors.text },
   translation: { fontSize: 15, lineHeight: 26, color: colors.text },
 
-  footerBox: { gap: 8 },
-  flagRow: { gap: 8 },
-  flagButton: { minHeight: 56, borderRadius: 14, flexDirection: "row", gap: 6, alignItems: "center", justifyContent: "center" },
-  reviewButton: { backgroundColor: colors.danger },
-  learnedButton: { backgroundColor: colors.primary },
-  reviewText: { fontSize: 19, fontWeight: "bold", color: colors.surface },
-  learnedText: { fontSize: 19, fontWeight: "bold", color: colors.onPrimary },
-  nextButton: { backgroundColor: colors.secondary },
-  nextText: { fontSize: 19, fontWeight: "bold", color: colors.onSecondary },
+  flagRow: { flexDirection: "row", gap: 8 },
+  flagButton: { flex: 1, minHeight: 56, borderRadius: 28, flexDirection: "row", gap: 6, alignItems: "center", justifyContent: "center" },
+  flagText: { fontSize: 17, fontWeight: "bold" },
+  reviewButton: { backgroundColor: "#ffe6e6" },
+  reviewActive: { backgroundColor: REVIEW_STRONG },
+  nextFlagButton: { backgroundColor: "#e9e9ee" },
+  learnedButton: { backgroundColor: "#eef8cc" },
+  learnedActive: { backgroundColor: colors.primary },
 });

@@ -89,8 +89,8 @@ const styles = StyleSheet.create({
   card: { flexGrow: 1, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 18, padding: 20, gap: 14 },
   message: { fontSize: 16, color: colors.secondary, textAlign: "center", marginTop: 40 },
   footer: { paddingHorizontal: 16, paddingTop: 8 },
-  actionButton: { minHeight: 60, borderRadius: 14, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
+  actionButton: { minHeight: 56, borderRadius: 28, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
   nextButton: { backgroundColor: colors.secondary },
-  actionText: { color: colors.onPrimary, fontSize: 19, fontWeight: "bold" },
+  actionText: { color: colors.onPrimary, fontSize: 17, fontWeight: "bold" },
   nextText: { color: colors.onSecondary },
 });
