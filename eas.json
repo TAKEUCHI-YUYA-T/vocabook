@@ -31,6 +31,10 @@
       "channel": "production",
       "android": {
         "buildType": "app-bundle"
+      },
+      "env": {
+        "ADMOB_ANDROID_APP_ID": "ca-app-pub-5450869285052283~6244227069",
+        "EXPO_PUBLIC_ADMOB_BANNER_UNIT_ID": "ca-app-pub-5450869285052283/4312198299"
       }
     }
   },
