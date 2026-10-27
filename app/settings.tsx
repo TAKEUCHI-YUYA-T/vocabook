@@ -165,7 +165,7 @@ export default function SettingsScreen() {
           <Row label="バックアップを書き出す" onPress={share} arrow />
           <Row label="バックアップから復元" onPress={restore} disabled={!!busy} busy={busy === "restore"} arrow />
         </View>
-        <Text style={styles.footnote}>書き出したファイルは、Google ドライブなど、好きな場所に保存できます。iPhone へ移すときや、手元にも残したいときに使います。学習の記録も含みます。</Text>
+        <Text style={styles.footnote}>書き出したファイルは、Google ドライブなど、好きな場所に保存できます。手元にも残したいときや、別の Google アカウントへ移すときに使います。学習の記録も含みます。</Text>
 
         {adsEnabled && (
           <>
