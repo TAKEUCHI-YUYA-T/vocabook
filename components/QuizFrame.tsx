@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
   card: {
     flexGrow: 1,
     backgroundColor: colors.surface,
-    borderRadius: 20,
+    borderRadius: 28,
     padding: 20,
     gap: 14,
     shadowColor: "#000",

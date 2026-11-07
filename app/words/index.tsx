@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, ScrollView, Modal, Pressable } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import { useFocusEffect, useRouter } from "expo-router";
 import * as Sharing from "expo-sharing";
 import { File, Paths } from "expo-file-system";
@@ -119,13 +119,13 @@ export default function WordsScreen() {
         onBack={goBack}
         backLabel="ホームに戻る"
         backText="ホーム"
-        right={<HeaderIconButton icon="more-horizontal" label="その他の操作" onPress={() => setMenuOpen(true)} />}
+        right={<HeaderIconButton icon="ellipsis" label="その他の操作" onPress={() => setMenuOpen(true)} />}
       />
 
       <AdBanner />
 
       <View style={styles.searchBox}>
-        <Feather name="search" size={20} color={colors.secondary} />
+        <Icon name="search" size={20} color={colors.secondary} />
         <TextInput
           style={styles.searchInput}
           value={query}
@@ -149,6 +149,7 @@ export default function WordsScreen() {
                   style={[styles.chip, selected && styles.chipSelected]}
                   onPress={() => changePos(chip.key)}
                 >
+                  {selected && <Icon name="check" size={14} color={colors.onPrimarySoft} />}
                   <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
                     {chip.label} {chip.count}
                   </Text>
@@ -188,7 +189,7 @@ export default function WordsScreen() {
               {item.meaning || "（意味なし）"}
             </Text>
             </View>
-            <Feather name="chevron-right" size={20} color={colors.inputBorder} />
+            <Icon name="chevron-right" size={20} color={colors.inputBorder} />
           </TouchableOpacity>
         )}
         ListEmptyComponent={
@@ -214,7 +215,7 @@ export default function WordsScreen() {
         </Text>
         <View style={[styles.toolbarSide, styles.toolbarRight]}>
           <TouchableOpacity accessibilityRole="button" accessibilityLabel="単語を追加" style={styles.compose} onPress={() => router.push("/cards/new")}>
-            <Feather name="edit" size={24} color={colors.primary} />
+            <Icon name="pencil" size={24} color={colors.primary} />
           </TouchableOpacity>
         </View>
       </View>
@@ -232,7 +233,7 @@ export default function WordsScreen() {
                   item.onPress();
                 }}
               >
-                <Feather name={item.icon} size={20} color={colors.primary} />
+                <Icon name={item.icon} size={20} color={colors.primary} />
                 <Text style={styles.menuText}>{item.label}</Text>
               </TouchableOpacity>
             ))}
@@ -258,12 +259,12 @@ const styles = StyleSheet.create({
   },
   searchInput: { flex: 1, fontSize: 17, color: colors.text, paddingVertical: 0 },
   chips: { gap: 8, paddingHorizontal: 16, paddingTop: 10, paddingBottom: 12 },
-  chip: { minHeight: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center" },
-  chipSelected: { backgroundColor: colors.primary },
+  chip: { minHeight: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: colors.surface, flexDirection: "row", gap: 4, alignItems: "center", justifyContent: "center" },
+  chipSelected: { backgroundColor: colors.primarySoft },
   chipText: { fontSize: 15, color: colors.text },
-  chipTextSelected: { fontWeight: "600", color: colors.onPrimary },
+  chipTextSelected: { fontWeight: "600", color: colors.onPrimarySoft },
   count: { fontSize: 13, color: colors.secondary },
-  list: { flex: 1, marginHorizontal: 16, borderRadius: 12, backgroundColor: colors.surface },
+  list: { flex: 1, marginHorizontal: 16, borderRadius: 24, backgroundColor: colors.surface },
   listContent: { paddingBottom: 0 },
   row: { minHeight: 56, paddingVertical: 10, paddingLeft: 16, paddingRight: 12, flexDirection: "row", alignItems: "center", gap: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.inputBorder },
   rowBody: { flex: 1, gap: 2 },
@@ -274,7 +275,7 @@ const styles = StyleSheet.create({
   tagText: { fontSize: 12, fontWeight: "600", color: colors.textMuted },
   tagInfo: { backgroundColor: colors.infoSoft },
   tagInfoText: { color: colors.info },
-  skeletonList: { backgroundColor: colors.surface, borderRadius: 12, overflow: "hidden" },
+  skeletonList: { backgroundColor: colors.surface, borderRadius: 24, overflow: "hidden" },
   empty: { fontSize: 16, color: colors.secondary, textAlign: "center", marginTop: 24, paddingHorizontal: 16 },
   error: { color: colors.danger, fontSize: 15, textAlign: "center", paddingVertical: 8, paddingHorizontal: 16 },
   toolbar: { minHeight: 56, flexDirection: "row", alignItems: "center", paddingHorizontal: 8, paddingTop: 6, backgroundColor: "#F9F9F9", borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.inputBorder },

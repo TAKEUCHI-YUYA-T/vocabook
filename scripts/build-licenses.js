@@ -8,6 +8,7 @@
  * 「アプリに入っているもの」だけを拾う（テスト用・Web 用など、アプリに入らない部品は載せない）
  * 1. JavaScript: Android 用に束ねて（expo export）、ソースマップに出てくる npm のパッケージ
  * 2. ネイティブ: Android のアプリに自動で組み込まれる部品（Expo の部品と、React Native の部品）
+ * 3. アプリに同梱したフォント・データのパッケージ（アイコンのフォントの lucide-static など）
  * 依存を足したり、更新したりしたら、実行し直す
  */
 const { spawnSync } = require("child_process");
@@ -99,6 +100,9 @@ function licenseText(dir) {
 
 const dirs = bundledPackageDirs();
 const bundledCount = dirs.size;
+// アプリに同梱しているファイル（フォント・データ）の、もとのパッケージ（JavaScript としては束ねられないので、ここで足す）
+const ASSET_PACKAGES = ["lucide-static"];
+for (const name of ASSET_PACKAGES) dirs.add(path.resolve(path.join(ROOT, "node_modules", name)));
 for (const name of nativePackageNames()) {
   if (OWN_PACKAGES.has(name)) continue;
   const dir = path.join(ROOT, "node_modules", name);

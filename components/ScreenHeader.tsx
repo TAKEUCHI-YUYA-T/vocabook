@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { GlassIconButton } from "./GlassButton";
+import type { IconName } from "./Icon";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "./theme";
 
@@ -33,18 +34,7 @@ export function ScreenHeader({ title, subtitle, onBack, backLabel = "戻る", ba
     <View style={[{ paddingTop: insets.top, backgroundColor: colors.background }, bordered && styles.bordered]}>
       <View style={styles.bar}>
         <View style={styles.side}>
-          {onBack ? (
-            <TouchableOpacity accessibilityRole="button" accessibilityLabel={backLabel} style={styles.backButton} onPress={onBack}>
-              {backIcon === "close" ? (
-                <Text style={styles.backText}>{backText ?? "キャンセル"}</Text>
-              ) : (
-                <>
-                  <Feather name="chevron-left" size={28} color={colors.primary} style={styles.chevron} />
-                  {!!backText && <Text style={styles.backText}>{backText}</Text>}
-                </>
-              )}
-            </TouchableOpacity>
-          ) : null}
+          {onBack ? <GlassIconButton icon={backIcon === "close" ? "x" : "chevron-left"} label={backLabel} onPress={onBack} iconSize={backIcon === "close" ? 20 : 22} /> : null}
         </View>
         {!large && (
           <View style={styles.titleBox}>
@@ -68,17 +58,18 @@ export function ScreenHeader({ title, subtitle, onBack, backLabel = "戻る", ba
   );
 }
 
-/** ヘッダーの右端に置く、アイコンだけのボタン（iOS のように、色の付いたアイコン） */
-export function HeaderIconButton({ icon, label, onPress }: { icon: React.ComponentProps<typeof Feather>["name"]; label: string; onPress: () => void }) {
-  return (
-    <TouchableOpacity accessibilityRole="button" accessibilityLabel={label} style={styles.iconButton} onPress={onPress}>
-      <Feather name={icon} size={22} color={colors.primary} />
-    </TouchableOpacity>
-  );
+/** ヘッダーの右端に置く、アイコンだけのボタン（ガラスの丸いボタン） */
+export function HeaderIconButton({ icon, label, onPress }: { icon: IconName; label: string; onPress: () => void }) {
+  return <GlassIconButton icon={icon} label={label} onPress={onPress} />;
 }
 
-/** ヘッダーの右端に置く、「保存」などの文字のボタン（iOS のように、太字の緑の文字） */
+/**
+ * ヘッダーの右端に置く、「保存」「編集」などのボタン
+ * 保存は、緑の丸いボタン（✓）。編集は、ガラスの丸いボタン（鉛筆）。ほかは、文字のボタン
+ */
 export function HeaderTextButton({ label, onPress, disabled }: { label: string; onPress: () => void; disabled?: boolean }) {
+  if (label === "保存") return <GlassIconButton icon="check" label={label} onPress={onPress} disabled={disabled} tone="primary" iconSize={22} />;
+  if (label === "編集") return <GlassIconButton icon="pencil" label={label} onPress={onPress} disabled={disabled} iconSize={20} />;
   return (
     <TouchableOpacity accessibilityRole="button" style={[styles.textButton, disabled && styles.disabled]} disabled={disabled} onPress={onPress}>
       <Text style={styles.textButtonLabel}>{label}</Text>
@@ -87,19 +78,15 @@ export function HeaderTextButton({ label, onPress, disabled }: { label: string; 
 }
 
 const styles = StyleSheet.create({
-  bar: { height: 52, flexDirection: "row", alignItems: "center", paddingHorizontal: 4 },
+  bar: { height: 56, flexDirection: "row", alignItems: "center", paddingHorizontal: 12 },
   bordered: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.inputBorder },
-  side: { minWidth: 72, flexDirection: "row", alignItems: "center" },
+  side: { minWidth: 56, flexDirection: "row", alignItems: "center", gap: 8 },
   sideRight: { justifyContent: "flex-end", flex: 0 },
-  backButton: { minHeight: 44, minWidth: 44, flexDirection: "row", alignItems: "center", paddingRight: 8 },
-  chevron: { marginLeft: 2 },
-  backText: { fontSize: 17, color: colors.primary, paddingLeft: 4 },
   titleBox: { flex: 1, alignItems: "center" },
   title: { fontSize: 17, fontWeight: "600", color: colors.text },
   subtitle: { fontSize: 13, color: colors.secondary },
   largeBox: { paddingHorizontal: 16, paddingBottom: 6 },
   largeTitle: { fontSize: 34, lineHeight: 41, fontWeight: "bold", color: colors.text },
-  iconButton: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
   textButton: { minHeight: 44, paddingHorizontal: 12, alignItems: "center", justifyContent: "center" },
   textButtonLabel: { color: colors.primary, fontSize: 17, fontWeight: "600" },
   disabled: { opacity: 0.4 },

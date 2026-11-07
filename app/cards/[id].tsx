@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import { useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { HeaderTextButton, ScreenHeader } from "@/components/ScreenHeader";
@@ -187,6 +187,6 @@ const styles = StyleSheet.create({
   skeletonGroup: { gap: 14 },
   readonlyNote: { fontSize: 15, color: colors.secondary },
   error: { color: colors.danger, fontSize: 15 },
-  deleteButton: { minHeight: 52, marginTop: 10, alignItems: "center", justifyContent: "center", borderRadius: 12, backgroundColor: colors.surface },
+  deleteButton: { minHeight: 52, marginTop: 10, alignItems: "center", justifyContent: "center", borderRadius: 24, backgroundColor: colors.surface },
   deleteText: { fontSize: 17, color: colors.danger },
 });

@@ -4,6 +4,7 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AdBanner } from "@/components/AdBanner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { Icon } from "@/components/Icon";
 import { SkeletonBox, SkeletonSlot } from "@/components/Skeleton";
 import { colors } from "@/components/theme";
 import { useRepository } from "@/db/AppDatabase";
@@ -125,7 +126,10 @@ export default function StudySelectScreen() {
               style={[styles.cell, cell.selected && styles.cellSelected, cell.disabled && styles.cellDisabled]}
               onPress={() => onPress(cell.key)}
             >
-              <Text style={[styles.cellLabel, cell.selected && styles.cellLabelSelected]}>{cell.label}</Text>
+              <View style={styles.cellLabelRow}>
+                {cell.selected && <Icon name="check" size={14} color={colors.onPrimarySoft} />}
+                <Text style={[styles.cellLabel, cell.selected && styles.cellLabelSelected]}>{cell.label}</Text>
+              </View>
               <Text style={[styles.cellCount, cell.selected && styles.cellCountSelected]}>{cell.count}語</Text>
             </TouchableOpacity>
           ))}
@@ -218,8 +222,8 @@ const styles = StyleSheet.create({
   content: { padding: 16, paddingTop: 8, gap: 8 },
   sectionTitle: { fontSize: 13, fontWeight: "600", color: colors.secondary, paddingHorizontal: 16 },
   sectionGap: { marginTop: 16 },
-  segmented: { flexDirection: "row", gap: 2, padding: 2, borderRadius: 10, backgroundColor: colors.fillStrong },
-  segment: { flex: 1, height: 40, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  segmented: { flexDirection: "row", gap: 2, padding: 3, borderRadius: 999, backgroundColor: colors.fillStrong },
+  segment: { flex: 1, height: 40, borderRadius: 999, alignItems: "center", justifyContent: "center" },
   segmentSelected: {
     backgroundColor: colors.surface,
     shadowColor: "#000",
@@ -230,18 +234,19 @@ const styles = StyleSheet.create({
   },
   segmentText: { fontSize: 15, color: colors.text },
   segmentTextSelected: { fontWeight: "600" },
-  gridCard: { backgroundColor: colors.surface, borderRadius: 12, padding: 12, gap: 8 },
+  gridCard: { backgroundColor: colors.surface, borderRadius: 24, padding: 12, gap: 8 },
   gridRow: { flexDirection: "row", gap: 8 },
-  cell: { flex: 1, height: 56, borderRadius: 12, backgroundColor: colors.panel, alignItems: "center", justifyContent: "center", gap: 1 },
+  cell: { flex: 1, height: 56, borderRadius: 20, backgroundColor: colors.panel, alignItems: "center", justifyContent: "center", gap: 1 },
   cellSpacer: { flex: 1 },
-  cellSelected: { backgroundColor: colors.primary },
+  cellSelected: { backgroundColor: colors.primarySoft },
   cellDisabled: { opacity: 0.35 },
   cellLabel: { fontSize: 15, fontWeight: "600", color: colors.text },
-  cellLabelSelected: { color: colors.onPrimary },
+  cellLabelRow: { flexDirection: "row", alignItems: "center", gap: 4 },
+  cellLabelSelected: { color: colors.onPrimarySoft },
   cellCount: { fontSize: 13, color: colors.secondary },
-  cellCountSelected: { color: colors.onPrimary },
+  cellCountSelected: { color: colors.onPrimarySoft },
   hint: { fontSize: 13, color: colors.secondary, paddingHorizontal: 16 },
-  emptyBox: { backgroundColor: colors.surface, borderRadius: 12, padding: 16, gap: 12, marginTop: 8 },
+  emptyBox: { backgroundColor: colors.surface, borderRadius: 24, padding: 16, gap: 12, marginTop: 8 },
   emptyText: { fontSize: 15, lineHeight: 24, color: colors.text },
   emptyButton: { minHeight: 50, borderRadius: 25, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
   emptyButtonText: { fontSize: 17, fontWeight: "600", color: colors.onPrimary },

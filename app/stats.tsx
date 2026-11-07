@@ -145,8 +145,8 @@ export default function StatsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: 16, paddingTop: 8, gap: 16 },
-  segmented: { flexDirection: "row", gap: 2, padding: 2, borderRadius: 10, backgroundColor: colors.fillStrong },
-  segment: { flex: 1, height: 40, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  segmented: { flexDirection: "row", gap: 2, padding: 3, borderRadius: 999, backgroundColor: colors.fillStrong },
+  segment: { flex: 1, height: 40, borderRadius: 999, alignItems: "center", justifyContent: "center" },
   segmentSelected: {
     backgroundColor: colors.surface,
     shadowColor: "#000",
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
   },
   segmentText: { fontSize: 15, color: colors.text },
   segmentTextSelected: { fontWeight: "600" },
-  card: { backgroundColor: colors.surface, borderRadius: 16, padding: 16, gap: 6 },
+  card: { backgroundColor: colors.surface, borderRadius: 24, padding: 16, gap: 6 },
   cardTitle: { fontSize: 15, fontWeight: "600", color: colors.secondary },
   readout: { fontSize: 13, color: colors.secondary },
   readoutValue: { fontSize: 34, fontWeight: "bold", color: colors.text },

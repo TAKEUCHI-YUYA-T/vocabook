@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import * as Updates from "expo-updates";
@@ -230,7 +230,7 @@ function Row({ label, value, valueWarn, onPress, arrow, external, first, disable
               {value}
             </Text>
           )}
-          {pressable && (arrow || external) && <Feather name={external ? "external-link" : "chevron-right"} size={18} color={colors.inputBorder} />}
+          {pressable && (arrow || external) && <Icon name={external ? "external-link" : "chevron-right"} size={18} color={colors.inputBorder} />}
         </>
       )}
     </TouchableOpacity>
@@ -240,11 +240,11 @@ function Row({ label, value, valueWarn, onPress, arrow, external, first, disable
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: 16, paddingTop: 8, gap: 8 },
-  block: { backgroundColor: colors.surface, borderRadius: 16, padding: 16, gap: 6, marginBottom: 8 },
+  block: { backgroundColor: colors.surface, borderRadius: 24, padding: 16, gap: 6, marginBottom: 8 },
   appName: { fontSize: 24, fontWeight: "bold", color: colors.text },
   muted: { fontSize: 13, lineHeight: 20, color: colors.secondary },
   sectionTitle: { fontSize: 13, fontWeight: "600", color: colors.secondary, paddingHorizontal: 16, marginTop: 16 },
-  group: { backgroundColor: colors.surface, borderRadius: 12, overflow: "hidden" },
+  group: { backgroundColor: colors.surface, borderRadius: 24, overflow: "hidden" },
   groupText: { fontSize: 15, lineHeight: 24, color: colors.text, padding: 16 },
   copyright: { fontSize: 13, color: colors.secondary, textAlign: "center", marginTop: 16 },
   footnote: { fontSize: 13, lineHeight: 19, color: colors.secondary, paddingHorizontal: 16 },

@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
   chip: { alignSelf: "flex-start", borderRadius: 999, paddingVertical: 2, paddingHorizontal: 10, marginTop: 2, backgroundColor: colors.panel },
   chipWide: { minWidth: 56, alignItems: "center" },
   chipText: { fontSize: 13, fontWeight: "600", color: colors.textMuted },
-  panel: { backgroundColor: colors.panel, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, gap: 8 },
+  panel: { backgroundColor: colors.panel, borderRadius: 16, paddingVertical: 12, paddingHorizontal: 14, gap: 8 },
   panelTitle: { fontSize: 13, fontWeight: "600", color: colors.secondary },
   row: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
   panelMeaning: { flex: 1, fontSize: 15, lineHeight: 24, color: colors.text },

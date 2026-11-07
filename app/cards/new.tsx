@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
     minHeight: 52,
     paddingHorizontal: 16,
     backgroundColor: colors.surface,
-    borderRadius: 12,
+    borderRadius: 24,
   },
   switchLabel: { flex: 1, fontSize: 17, color: colors.text },
 });

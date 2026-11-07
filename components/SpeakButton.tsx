@@ -1,6 +1,6 @@
 import React from "react";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { Icon } from "./Icon";
 import { isSpeechAvailable, speakEnglish } from "@/lib/speech";
 import { colors } from "./theme";
 
@@ -28,10 +28,10 @@ export function SpeakButton({ text, label, size = 22, rate, warn }: Props) {
       onPress={() => speakEnglish(text, rate)}
       hitSlop={8}
     >
-      <Feather name="volume-2" size={size} color={warn ? colors.warning : colors.primary} />
+      <Icon name="volume-2" size={size} color={warn ? colors.warning : colors.primary} />
       {warn && (
         <View style={styles.badge}>
-          <Feather name="alert-circle" size={12} color={colors.warning} />
+          <Icon name="circle-alert" size={12} color={colors.warning} />
         </View>
       )}
     </TouchableOpacity>

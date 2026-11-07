@@ -1,13 +1,12 @@
 import React, { useRef, useState } from "react";
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { Icon } from "./Icon";
 import type { CardAutoFillState } from "@/db/autofill";
 import { MAX_EXAMPLES, type Example } from "@/db/examples";
 import { LIMITS } from "@/db/repository";
 import { FLAG_LABELS, ING_OR_TO_LABELS, PARTS_OF_SPEECH, type CardFlag, type IngOrToAnswer, type PartOfSpeech } from "@/db/types";
 import type { BaseFormSuggestion } from "@/db/lemma";
 import type { SpellingWarning } from "@/hooks/useSpellingWarning";
-import { Icon } from "./Icon";
 import { SpeakButton } from "./SpeakButton";
 import { colors } from "./theme";
 
@@ -41,6 +40,17 @@ export const emptyCardForm = (partOfSpeech: PartOfSpeech | null = null): CardFor
 export function replaceWord(term: string, word: string, replacement: string): string {
   const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   return term.replace(new RegExp(`(^|[^A-Za-z])${escaped}(?![A-Za-z])`, "i"), (_, before: string) => `${before}${replacement}`);
+}
+
+/** 選ぶ札の文字。選んでいる札は、薄い緑の地に、緑の文字とチェック（色だけに頼らない）。要復習は、オレンジ */
+function ChipLabel({ selected, review, label }: { selected: boolean; review?: boolean; label: string }) {
+  const color = review ? colors.warning : colors.onPrimarySoft;
+  return (
+    <View style={styles.chipLabel}>
+      {selected && <Icon name="check" size={14} color={color} />}
+      <Text style={[styles.chipText, selected && styles.chipTextSelected, selected && { color }]}>{label}</Text>
+    </View>
+  );
 }
 
 /** フラグの選択肢（なし・覚えた・要復習） */
@@ -153,7 +163,7 @@ export function CardForm({ value, onChange, editable, duplicateWarning, spelling
 
       {!!spellingWarning && (
         <View style={styles.warning} accessibilityRole="alert">
-          <Feather name="alert-circle" size={18} color={colors.warning} style={styles.warningIcon} />
+          <Icon name="circle-alert" size={18} color={colors.warning} style={styles.warningIcon} />
           <View style={styles.spellingBody}>
             <Text style={styles.warningText}>「{spellingWarning.word}」は辞書にありません。綴りを確認してください。</Text>
             {spellingWarning.suggestions.length > 0 && (
@@ -179,7 +189,7 @@ export function CardForm({ value, onChange, editable, duplicateWarning, spelling
 
       {!!duplicateWarning && (
         <View style={styles.warning} accessibilityRole="alert">
-          <Feather name="alert-circle" size={18} color={colors.warning} style={styles.warningIcon} />
+          <Icon name="circle-alert" size={18} color={colors.warning} style={styles.warningIcon} />
           <Text style={styles.warningText}>{duplicateWarning}</Text>
         </View>
       )}
@@ -228,7 +238,7 @@ export function CardForm({ value, onChange, editable, duplicateWarning, spelling
                   style={[styles.chip, selected && (choice.key === "review" ? styles.chipReview : styles.chipSelected)]}
                   onPress={() => set("flag", choice.key)}
                 >
-                  <Text style={[styles.chipText, selected && (choice.key === "review" ? styles.chipTextReview : styles.chipTextSelected)]}>{choice.label}</Text>
+                  <ChipLabel selected={selected} review={choice.key === "review"} label={choice.label} />
                 </TouchableOpacity>
               );
             })}
@@ -260,7 +270,7 @@ export function CardForm({ value, onChange, editable, duplicateWarning, spelling
                     style={[styles.chip, selected && styles.chipSelected]}
                     onPress={() => set("partOfSpeech", selected ? null : part.key)}
                   >
-                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{part.label}</Text>
+                    <ChipLabel selected={selected} label={part.label} />
                   </TouchableOpacity>
                 );
               })}
@@ -282,7 +292,7 @@ export function CardForm({ value, onChange, editable, duplicateWarning, spelling
                       style={[styles.chip, selected && styles.chipSelected]}
                       onPress={() => set("answer", choice.key)}
                     >
-                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{choice.label}</Text>
+                      <ChipLabel selected={selected} label={choice.label} />
                     </TouchableOpacity>
                   );
                 })}
@@ -309,7 +319,7 @@ export function CardForm({ value, onChange, editable, duplicateWarning, spelling
                       style={styles.removeButton}
                       onPress={() => removeExample(index)}
                     >
-                      <Feather name="trash-2" size={18} color={colors.danger} />
+                      <Icon name="trash-2" size={18} color={colors.danger} />
                     </TouchableOpacity>
                   )}
                 </View>
@@ -358,7 +368,7 @@ export function CardForm({ value, onChange, editable, duplicateWarning, spelling
               style={styles.detailsToggle}
               onPress={() => set("examples", [...exampleBlocks, { text: "", translation: "" }])}
             >
-              <Feather name="plus-circle" size={22} color={colors.primary} />
+              <Icon name="circle-plus" size={22} color={colors.primary} />
               <Text style={styles.detailsToggleText}>例文を追加する</Text>
             </TouchableOpacity>
           )}
@@ -378,7 +388,7 @@ export function CardForm({ value, onChange, editable, duplicateWarning, spelling
         </>
       ) : (
         <TouchableOpacity accessibilityRole="button" accessibilityState={{ expanded: false }} style={styles.detailsToggle} onPress={() => setShowDetails(true)}>
-          <Feather name="plus-circle" size={22} color={colors.primary} />
+          <Icon name="circle-plus" size={22} color={colors.primary} />
           <Text style={styles.detailsToggleText}>品詞・例文・メモを入力する</Text>
         </TouchableOpacity>
       )}
@@ -400,7 +410,7 @@ const styles = StyleSheet.create({
     height: 56,
     borderWidth: 2,
     borderColor: "transparent",
-    borderRadius: 12,
+    borderRadius: 24,
     paddingHorizontal: 14,
     fontSize: 22,
     fontWeight: "600",
@@ -408,13 +418,13 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   termInputFocused: { borderColor: colors.primary },
-  input: { borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: colors.surface, color: colors.text, fontSize: 17 },
+  input: { borderRadius: 24, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: colors.surface, color: colors.text, fontSize: 17 },
   multiline: { textAlignVertical: "top" },
   meaningInput: { minHeight: 80, fontSize: 17 },
   detailInput: { minHeight: 52, fontSize: 17 },
   exampleBlock: { gap: 6 },
   removeButton: { width: 44, height: 32, alignItems: "center", justifyContent: "center", marginLeft: "auto" },
-  warning: { flexDirection: "row", alignItems: "flex-start", gap: 8, backgroundColor: colors.warningSoft, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12, marginTop: -8 },
+  warning: { flexDirection: "row", alignItems: "flex-start", gap: 8, backgroundColor: colors.warningSoft, borderRadius: 16, paddingVertical: 10, paddingHorizontal: 12, marginTop: -8 },
   warningIcon: { marginTop: 2 },
   warningText: { fontSize: 15, lineHeight: 22, color: colors.warning },
   spellingBody: { flex: 1, gap: 6 },
@@ -424,13 +434,13 @@ const styles = StyleSheet.create({
   suggestionRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8 },
   suggestionChip: { minHeight: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: colors.surface, justifyContent: "center" },
   suggestionText: { fontSize: 15, fontWeight: "600", color: colors.primary },
-  chips: { flexDirection: "row", flexWrap: "wrap", gap: 8, backgroundColor: colors.surface, borderRadius: 12, padding: 12 },
-  chip: { minHeight: 44, minWidth: 72, paddingHorizontal: 14, borderRadius: 12, backgroundColor: colors.panel, alignItems: "center", justifyContent: "center" },
-  chipSelected: { backgroundColor: colors.primary },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: 8, backgroundColor: colors.surface, borderRadius: 24, padding: 12 },
+  chip: { minHeight: 44, minWidth: 72, paddingHorizontal: 14, borderRadius: 22, backgroundColor: colors.panel, alignItems: "center", justifyContent: "center" },
+  chipSelected: { backgroundColor: colors.primarySoft },
   chipText: { fontSize: 15, color: colors.text },
-  chipTextSelected: { fontWeight: "600", color: colors.onPrimary },
-  chipReview: { backgroundColor: colors.warning },
-  chipTextReview: { fontWeight: "600", color: colors.surface },
-  detailsToggle: { flexDirection: "row", alignItems: "center", gap: 10, minHeight: 48, paddingHorizontal: 16, borderRadius: 12, backgroundColor: colors.surface },
+  chipLabel: { flexDirection: "row", alignItems: "center", gap: 4 },
+  chipTextSelected: { fontWeight: "600" },
+  chipReview: { backgroundColor: colors.warningSoft },
+  detailsToggle: { flexDirection: "row", alignItems: "center", gap: 10, minHeight: 48, paddingHorizontal: 16, borderRadius: 24, backgroundColor: colors.surface },
   detailsToggleText: { fontSize: 17, color: colors.primary },
 });

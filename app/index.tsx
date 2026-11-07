@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Animated, AppState, Image, ScrollView, useWindowDimensions } from "react-native";
-import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Icon, type IconName } from "@/components/Icon";
 import { useFocusEffect, useRouter, type Href } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AdBanner } from "@/components/AdBanner";
+import { GlassIconButton } from "@/components/GlassButton";
 import { SkeletonBox, SkeletonSlot } from "@/components/Skeleton";
 import { colors } from "@/components/theme";
 import { useRepository } from "@/db/AppDatabase";
@@ -14,11 +15,11 @@ import type { HomeStats, Tip } from "@/db/types";
 const STATS_HEIGHT = 98;
 const TIP_HEIGHT = 140;
 
-type MenuItem = { label: string; icon: React.ComponentProps<typeof Feather>["name"]; href: Href; color: string; count?: "total" };
+type MenuItem = { label: string; icon: IconName; href: Href; color: string; count?: "total" };
 
 /** 「単語を覚える」の下の、3つの入口。iOS の「設定」のように、色つきの小さなアイコンと、右の矢印 */
 const MENU: MenuItem[] = [
-  { label: "ing or to", icon: "help-circle", href: "/ingOrTo", color: colors.warning },
+  { label: "ing or to", icon: "circle-help", href: "/ingOrTo", color: colors.warning },
   { label: "単語帳", icon: "book-open", href: "/words", color: colors.info, count: "total" },
   { label: "単語を追加", icon: "plus", href: "/cards/new", color: colors.purple },
 ];
@@ -108,9 +109,7 @@ export default function Home() {
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 96 }]}>
         <View style={styles.topRow}>
           <Image source={require("../assets/images/logo.png")} style={styles.logo} accessibilityLabel="Vocabook" />
-          <TouchableOpacity accessibilityRole="button" accessibilityLabel="設定" style={styles.aboutButton} onPress={() => router.push("/settings")}>
-            <Feather name="settings" size={22} color={colors.primary} />
-          </TouchableOpacity>
+          <GlassIconButton icon="settings" label="設定" onPress={() => router.push("/settings")} />
         </View>
 
         {/* 今日の学習の記録（読み込み中は、同じ大きさの場所を確保して、下がずれないようにする） */}
@@ -129,7 +128,7 @@ export default function Home() {
           >
             <View style={styles.stat}>
               <View style={styles.statHeading}>
-                <Feather name="clock" size={16} color={colors.primary} />
+                <Icon name="clock" size={16} color={colors.primary} />
                 <Text style={styles.statLabel}>今日の学習</Text>
               </View>
               <Text style={styles.statValue}>
@@ -139,7 +138,7 @@ export default function Home() {
             </View>
             <View style={styles.stat}>
               <View style={styles.statHeading}>
-                <Feather name="check-circle" size={16} color={colors.primary} />
+                <Icon name="circle-check" size={16} color={colors.primary} />
                 <Text style={styles.statLabel}>覚えた</Text>
               </View>
               <Text style={styles.statValue}>
@@ -160,7 +159,7 @@ export default function Home() {
           <View style={styles.tip} accessibilityLabel="今日のヒント">
             <View style={styles.tipHeading}>
               <View style={styles.tipIcon}>
-                <Ionicons name="bulb-outline" size={16} color={colors.warning} />
+                <Icon name="lightbulb" size={16} color={colors.warning} />
               </View>
               <Text style={styles.tipHeadingText}>今日のヒント</Text>
             </View>
@@ -170,7 +169,7 @@ export default function Home() {
         )}
 
         <TouchableOpacity accessibilityRole="button" style={styles.primaryButton} onPress={() => router.push("/study")}>
-          <Feather name="layers" size={20} color={colors.onPrimary} />
+          <Icon name="layers" size={20} color={colors.onPrimary} />
           <Text style={styles.primaryLabel}>単語を覚える</Text>
         </TouchableOpacity>
 
@@ -178,26 +177,21 @@ export default function Home() {
           {MENU.map((item, index) => (
             <TouchableOpacity key={item.label} accessibilityRole="button" style={styles.menuRow} onPress={() => router.push(item.href)}>
               <View style={[styles.menuIcon, { backgroundColor: item.color }]}>
-                <Feather name={item.icon} size={18} color="white" />
+                <Icon name={item.icon} size={18} color="white" />
               </View>
               <View style={[styles.menuBody, index < MENU.length - 1 && styles.menuDivider]}>
                 <Text style={styles.menuLabel}>{item.label}</Text>
                 {item.count === "total" && !!stats && <Text style={styles.menuCount}>{stats.total}</Text>}
-                <Feather name="chevron-right" size={20} color={colors.inputBorder} />
+                <Icon name="chevron-right" size={20} color={colors.inputBorder} />
               </View>
             </TouchableOpacity>
           ))}
         </View>
       </ScrollView>
 
-      <TouchableOpacity
-        accessibilityRole="button"
-        accessibilityLabel="いぬを降らせる"
-        style={[styles.dogButton, { bottom: insets.bottom + 24 }]}
-        onPress={dropDog}
-      >
-        <MaterialCommunityIcons name="paw" size={24} color={colors.secondary} />
-      </TouchableOpacity>
+      <View style={[styles.dogButton, { bottom: insets.bottom + 24 }]}>
+        <GlassIconButton icon="paw-print" label="いぬを降らせる" onPress={dropDog} size={48} iconSize={24} />
+      </View>
 
       {dogs.map((dog) => (
         <Animated.Text key={dog.id} style={[styles.dog, { left: dog.x, transform: [{ translateY: dog.anim }] }]}>
@@ -213,15 +207,14 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 16, paddingTop: 4, gap: 16 },
   topRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   logo: { width: 135, height: 60, resizeMode: "contain" },
-  aboutButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.fillStrong, alignItems: "center", justifyContent: "center" },
   stats: { flexDirection: "row", gap: 12 },
   skeletonStats: { flexDirection: "row", justifyContent: "space-between" },
-  stat: { flex: 1, backgroundColor: colors.surface, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 16, gap: 6 },
+  stat: { flex: 1, backgroundColor: colors.surface, borderRadius: 24, paddingVertical: 14, paddingHorizontal: 16, gap: 6 },
   statHeading: { flexDirection: "row", alignItems: "center", gap: 6 },
   statLabel: { fontSize: 13, fontWeight: "600", color: colors.primary },
   statValue: { fontSize: 34, fontWeight: "bold", lineHeight: 40, color: colors.text },
   statUnit: { fontSize: 15, fontWeight: "600", color: colors.secondary },
-  tip: { backgroundColor: colors.surface, borderRadius: 16, padding: 16, gap: 8 },
+  tip: { backgroundColor: colors.surface, borderRadius: 24, padding: 16, gap: 8 },
   tipHeading: { flexDirection: "row", alignItems: "center", gap: 8 },
   tipIcon: { width: 28, height: 28, borderRadius: 8, backgroundColor: colors.warningSoft, alignItems: "center", justifyContent: "center" },
   tipHeadingText: { fontSize: 13, fontWeight: "600", color: colors.secondary },
@@ -229,27 +222,13 @@ const styles = StyleSheet.create({
   tipBody: { fontSize: 15, lineHeight: 22, color: colors.textMuted },
   primaryButton: { minHeight: 56, borderRadius: 28, backgroundColor: colors.primary, flexDirection: "row", gap: 8, alignItems: "center", justifyContent: "center" },
   primaryLabel: { fontSize: 17, fontWeight: "600", color: colors.onPrimary },
-  menu: { backgroundColor: colors.surface, borderRadius: 12, overflow: "hidden" },
+  menu: { backgroundColor: colors.surface, borderRadius: 24, overflow: "hidden" },
   menuRow: { minHeight: 52, flexDirection: "row", alignItems: "center", gap: 12, paddingLeft: 16 },
   menuIcon: { width: 30, height: 30, borderRadius: 7, alignItems: "center", justifyContent: "center" },
   menuBody: { flex: 1, minHeight: 52, flexDirection: "row", alignItems: "center", gap: 8, paddingRight: 12 },
   menuDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.inputBorder },
   menuLabel: { flex: 1, fontSize: 17, color: colors.text },
   menuCount: { fontSize: 17, color: colors.secondary },
-  dogButton: {
-    position: "absolute",
-    right: 16,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.surface,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-  },
+  dogButton: { position: "absolute", right: 16 },
   dog: { position: "absolute", fontSize: 30, pointerEvents: "none" },
 });

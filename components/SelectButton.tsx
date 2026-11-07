@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Text, StyleSheet, TouchableOpacity, Modal, Pressable, ScrollView } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { Icon } from "./Icon";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "./theme";
 
@@ -33,7 +33,7 @@ export function SelectButton({ title, value, placeholder = "選んでくださ�
         <Text style={[styles.value, value === null && styles.placeholder]} numberOfLines={1}>
           {value ?? placeholder}
         </Text>
-        <Feather name="chevron-down" size={18} color={colors.primary} />
+        <Icon name="chevron-down" size={18} color={colors.primary} />
       </TouchableOpacity>
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)} statusBarTranslucent navigationBarTranslucent>
@@ -57,7 +57,7 @@ export function SelectButton({ title, value, placeholder = "選んでくださ�
                     <Text style={[styles.optionText, selected && styles.optionTextSelected]} numberOfLines={1}>
                       {option.label}
                     </Text>
-                    {selected && <Feather name="check" size={20} color={colors.primary} />}
+                    {selected && <Icon name="check" size={20} color={colors.primary} />}
                   </TouchableOpacity>
                 );
               })}

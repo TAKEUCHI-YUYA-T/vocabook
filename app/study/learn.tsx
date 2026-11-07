@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { FlagTag } from "@/components/FlagTag";
 import { HeaderTextButton } from "@/components/ScreenHeader";
+import { GlassSurface } from "@/components/GlassSurface";
 import { QuizFrame } from "@/components/QuizFrame";
 import { ExampleList } from "@/components/ExampleList";
 import { ExamplesByPartOfSpeech, MeaningByPartOfSpeech, OtherPartsPanel } from "@/components/SameTermSections";
@@ -123,14 +124,14 @@ export default function LearnScreen() {
 
   const answerFooter = current && (
     // 左から 要復習・次へ・覚えた（正反対の2つを離して、押し間違いを防ぐ）。3つとも同じ形と重さ。今のフラグのボタンだけ、塗りつぶす
-    <View style={styles.flagRow}>
+    <GlassSurface radius={32} style={styles.flagRow}>
       <TouchableOpacity
         accessibilityRole="button"
         accessibilityState={{ selected: current.flag === "review" }}
         style={[styles.flagButton, current.flag === "review" ? styles.reviewActive : styles.reviewButton]}
         onPress={() => mark("review")}
       >
-        <Feather name="rotate-ccw" size={18} color={current.flag === "review" ? colors.surface : colors.warning} />
+        <Icon name="rotate-ccw" size={18} color={current.flag === "review" ? colors.surface : colors.warning} />
         <Text style={[styles.flagText, { color: current.flag === "review" ? colors.surface : colors.warning }]}>要復習</Text>
       </TouchableOpacity>
       <TouchableOpacity accessibilityRole="button" style={[styles.flagButton, styles.nextFlagButton]} onPress={next}>
@@ -142,10 +143,10 @@ export default function LearnScreen() {
         style={[styles.flagButton, current.flag === "learned" ? styles.learnedActive : styles.learnedButton]}
         onPress={() => mark("learned")}
       >
-        <Feather name="check" size={18} color={current.flag === "learned" ? colors.onPrimary : colors.onPrimarySoft} />
+        <Icon name="check" size={18} color={current.flag === "learned" ? colors.onPrimary : colors.onPrimarySoft} />
         <Text style={[styles.flagText, { color: current.flag === "learned" ? colors.onPrimary : colors.onPrimarySoft }]}>覚えた</Text>
       </TouchableOpacity>
-    </View>
+    </GlassSurface>
   );
 
   return (
@@ -205,7 +206,7 @@ export default function LearnScreen() {
                 style={isAnswerVisible ? styles.listenButtonSmall : styles.listenButton}
                 onPress={() => speakEnglish(current.term)}
               >
-                <Feather name="volume-2" size={isAnswerVisible ? 26 : 44} color={colors.onPrimary} />
+                <Icon name="volume-2" size={isAnswerVisible ? 26 : 44} color={colors.onPrimary} />
               </TouchableOpacity>
               <Text style={styles.listenText}>聞こえた単語の意味は？</Text>
               {!isAnswerVisible && <Text style={styles.hintText}>押すと、もう一度聞けます</Text>}
@@ -293,12 +294,12 @@ const styles = StyleSheet.create({
   meaning: { fontSize: 22, fontWeight: "600", lineHeight: 30, color: colors.text },
   translation: { fontSize: 15, lineHeight: 24, color: colors.textMuted },
 
-  flagRow: { flexDirection: "row", gap: 8 },
-  flagButton: { flex: 1, minHeight: 56, borderRadius: 28, flexDirection: "row", gap: 6, alignItems: "center", justifyContent: "center" },
+  flagRow: { flexDirection: "row", gap: 4, padding: 6 },
+  flagButton: { flex: 1, minHeight: 52, borderRadius: 26, flexDirection: "row", gap: 6, alignItems: "center", justifyContent: "center" },
   flagText: { fontSize: 17, fontWeight: "600" },
-  reviewButton: { backgroundColor: colors.warningSoft },
+  reviewButton: { backgroundColor: "transparent" },
   reviewActive: { backgroundColor: colors.warning },
-  nextFlagButton: { backgroundColor: colors.fill },
-  learnedButton: { backgroundColor: colors.primarySoft },
+  nextFlagButton: { backgroundColor: "transparent" },
+  learnedButton: { backgroundColor: "transparent" },
   learnedActive: { backgroundColor: colors.primary },
 });

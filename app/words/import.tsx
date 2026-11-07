@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Switch } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import { useRouter } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import * as DocumentPicker from "expo-document-picker";
@@ -43,7 +43,7 @@ function Stepper({ current }: { current: Step }) {
             {index > 0 && <View style={[styles.stepLine, index <= currentIndex && styles.stepLineDone]} />}
             <View style={styles.step}>
               <View style={[styles.stepCircle, isDone && styles.stepCircleDone, isCurrent && styles.stepCircleCurrent, !isDone && !isCurrent && styles.stepCircleFuture]}>
-                {isDone ? <Feather name="check" size={14} color={colors.onPrimary} /> : <Text style={[styles.stepNumber, isCurrent && styles.stepNumberCurrent]}>{index + 1}</Text>}
+                {isDone ? <Icon name="check" size={14} color={colors.onPrimary} /> : <Text style={[styles.stepNumber, isCurrent && styles.stepNumberCurrent]}>{index + 1}</Text>}
               </View>
               <Text style={[styles.stepLabel, isCurrent && styles.stepLabelCurrent]}>{step.label}</Text>
             </View>
@@ -194,7 +194,7 @@ export default function ImportScreen() {
         <Stepper current="done" />
         <View style={styles.doneBody}>
           <View style={styles.doneIcon}>
-            <Feather name="check" size={36} color={colors.onPrimary} />
+            <Icon name="check" size={36} color={colors.onPrimary} />
           </View>
           <Text style={styles.doneTitle}>{importedCount}語を取り込みました</Text>
         </View>
@@ -223,7 +223,7 @@ export default function ImportScreen() {
 
           <View style={styles.section}>
             <View style={styles.sectionTitleRow}>
-              <Feather name="clipboard" size={22} color={colors.primary} />
+              <Icon name="clipboard" size={22} color={colors.primary} />
               <Text style={styles.sectionTitle}>表を貼り付ける</Text>
             </View>
             <Text style={styles.sectionHelp}>スプレッドシートや Excel で、表の範囲をコピーしてから押してください。</Text>
@@ -255,7 +255,7 @@ export default function ImportScreen() {
 
           <View style={styles.section}>
             <View style={styles.sectionTitleRow}>
-              <Feather name="file-text" size={22} color={colors.primary} />
+              <Icon name="file-text" size={22} color={colors.primary} />
               <Text style={styles.sectionTitle}>CSV ファイルを選ぶ</Text>
             </View>
             <Text style={styles.sectionHelp}>スプレッドシートを「CSV でダウンロード」したファイルや、このアプリで書き出したファイル</Text>

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { Icon } from "@/components/Icon";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { colors } from "@/components/theme";
@@ -52,7 +52,7 @@ export default function LicensesScreen() {
             <Text style={styles.rowTitle}>{title}</Text>
             <Text style={styles.rowDetail}>{detail}</Text>
           </View>
-          <Feather name={expanded ? "chevron-up" : "chevron-down"} size={20} color={colors.inputBorder} />
+          <Icon name={expanded ? "chevron-up" : "chevron-down"} size={20} color={colors.inputBorder} />
         </TouchableOpacity>
         {expanded && <View style={styles.rowBody}>{body}</View>}
       </View>
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
   header: { gap: 8, marginBottom: 8 },
   sectionTitle: { fontSize: 13, fontWeight: "600", color: colors.secondary, paddingHorizontal: 16 },
   sectionGap: { marginTop: 16 },
-  group: { backgroundColor: colors.surface, borderRadius: 12, overflow: "hidden" },
+  group: { backgroundColor: colors.surface, borderRadius: 24, overflow: "hidden" },
   groupDivider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.inputBorder, marginLeft: 16 },
   note: { fontSize: 15, lineHeight: 22, color: colors.text, padding: 16 },
   listItem: { backgroundColor: colors.surface },
