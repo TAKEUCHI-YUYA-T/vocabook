@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ToastAndroid } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/ScreenHeader";
@@ -47,7 +47,9 @@ export default function CaptureScreen() {
     if (isSaving || !deck) return;
     setIsSaving(true);
     try {
-      await repository.addCard(deck.id, value);
+      const card = await repository.addCard(deck.id, value);
+      // 元のアプリに戻ったあとも見えるよう、Android 標準のトーストで知らせる
+      ToastAndroid.show(`「${card.term}」を Vocabook に登録しました`, ToastAndroid.SHORT);
       finish();
     } catch (e) {
       setError(e instanceof ValidationError ? e.message : "保存できませんでした");

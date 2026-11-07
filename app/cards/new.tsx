@@ -1,9 +1,8 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState } from "react";
 import { View, Text, StyleSheet, ScrollView, Switch } from "react-native";
-import { Feather } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AdBanner } from "@/components/AdBanner";
 import { HeaderTextButton, ScreenHeader } from "@/components/ScreenHeader";
+import { useToast } from "@/components/Toast";
 import { colors } from "@/components/theme";
 import { useRepository } from "@/db/AppDatabase";
 import { ValidationError } from "@/db/repository";
@@ -14,16 +13,13 @@ import { useDuplicateWarning } from "@/hooks/useDuplicateWarning";
 import { useGoBack } from "@/hooks/useGoBack";
 import { useSpellingWarning } from "@/hooks/useSpellingWarning";
 
-/** 「追加しました」の表示を出しておく時間（ミリ秒） */
-const NOTICE_MS = 2500;
-
 /**
  * 単語の追加画面
  * 「保存したら、続けて追加する」がオンなら、保存のあとも画面に残り、品詞を引き継いで次の単語を入力できる
  */
 export default function NewCardScreen() {
   const repository = useRepository();
-  const insets = useSafeAreaInsets();
+  const toast = useToast();
   const goBack = useGoBack("/words");
   const { deck, error: deckError } = useDefaultDeck();
 
@@ -31,24 +27,10 @@ export default function NewCardScreen() {
   const [formKey, setFormKey] = useState(0);
   const [continueAdding, setContinueAdding] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const duplicateWarning = useDuplicateWarning(repository, deck?.id, value.term);
   const autoFill = useCardAutoFill(value, setValue);
   const spellingWarning = useSpellingWarning(value.term);
-
-  useEffect(() => {
-    return () => {
-      if (noticeTimer.current) clearTimeout(noticeTimer.current);
-    };
-  }, []);
-
-  const showNotice = (text: string) => {
-    if (noticeTimer.current) clearTimeout(noticeTimer.current);
-    setNotice(text);
-    noticeTimer.current = setTimeout(() => setNotice(null), NOTICE_MS);
-  };
 
   const save = async () => {
     if (isSaving || !deck) return;
@@ -56,8 +38,8 @@ export default function NewCardScreen() {
     try {
       const card = await repository.addCard(deck.id, value);
       setError(null);
+      toast.show({ message: `「${card.term}」を追加しました` });
       if (continueAdding) {
-        showNotice(`「${card.term}」を追加しました`);
         // 品詞は、あなたが選んだものだけを引き継ぐ（自動で入った品詞は、次の単語で推定し直す）
         setValue(emptyCardForm(value.partOfSpeech === autoFill.autoPartOfSpeech ? null : value.partOfSpeech));
         autoFill.reset();
@@ -102,12 +84,6 @@ export default function NewCardScreen() {
         </View>
       </ScrollView>
 
-      {!!notice && (
-        <View style={[styles.snackbar, { bottom: insets.bottom + 28 }]} accessibilityRole="alert">
-          <Feather name="check-circle" size={20} color={colors.primarySoft} />
-          <Text style={styles.snackbarText}>{notice}</Text>
-        </View>
-      )}
     </View>
   );
 }
@@ -126,18 +102,4 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   switchLabel: { flex: 1, fontSize: 17, color: colors.text },
-  snackbar: {
-    position: "absolute",
-    left: 16,
-    right: 16,
-    minHeight: 52,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingHorizontal: 16,
-    borderRadius: 14,
-    backgroundColor: colors.textMuted,
-    elevation: 6,
-  },
-  snackbarText: { flex: 1, fontSize: 15, color: "white" },
 });

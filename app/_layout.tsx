@@ -8,6 +8,7 @@ import { DriveBackupRunner } from '@/components/DriveBackupRunner';
 import { SelectedTextRouter } from '@/components/SelectedTextRouter';
 import { colors } from '@/components/theme';
 import { AppDatabase } from '@/db/AppDatabase';
+import { ToastProvider } from '@/components/Toast';
 import { startAds } from '@/lib/ads';
 import { scheduleDailyReminder } from '@/lib/reminder';
 
@@ -37,12 +38,14 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={DefaultTheme}>
       <AppDatabase>
-        <SelectedTextRouter />
-        <DriveBackupRunner />
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="+not-found" />
-        </Stack>
+        <ToastProvider>
+          <SelectedTextRouter />
+          <DriveBackupRunner />
+          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="+not-found" />
+          </Stack>
+        </ToastProvider>
       </AppDatabase>
       <StatusBar style="dark" />
     </ThemeProvider>

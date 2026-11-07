@@ -375,6 +375,22 @@ describe("単語帳と単語の読み書き", () => {
     expect(await repo.listCards(defaultDeck.id)).toHaveLength(0);
   });
 
+  it("削除した単語は、元に戻せる（例文・フラグ・学習の記録も、そのまま戻る）", async () => {
+    const { repo, defaultDeck } = await setup();
+    const card = await repo.addCard(defaultDeck.id, { term: "restore", meaning: "戻す", examples: [{ text: "Restore it.", translation: "戻して。" }], flag: "review" });
+    await repo.recordStudied(card.id, "2026-11-07");
+    await repo.deleteCard(card.id);
+    expect(await repo.getCard(card.id)).toBeNull();
+
+    await repo.restoreCard(card.id);
+    expect(await repo.getCard(card.id)).toMatchObject({ term: "restore", flag: "review", examples: [{ text: "Restore it.", translation: "戻して。" }] });
+    expect(await repo.dailyStats(["2026-11-07"])).toEqual([{ day: "2026-11-07", studied: 1, learned: 0 }]);
+    // 削除していない単語や、存在しない単語に使っても、何も起きない
+    await repo.restoreCard(card.id);
+    await repo.restoreCard("none");
+    expect(await repo.listCards(defaultDeck.id)).toHaveLength(1);
+  });
+
   it("同梱の ing or to は編集・削除できない", async () => {
     const { repo } = await setup();
     await expect(repo.addCard(PRESET_ING_OR_TO_DECK_ID, { term: "x", meaning: "y" })).rejects.toThrow("この単語帳は編集できません");

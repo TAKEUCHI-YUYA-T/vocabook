@@ -4,6 +4,7 @@ import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { HeaderTextButton, ScreenHeader } from "@/components/ScreenHeader";
+import { useToast } from "@/components/Toast";
 import { colors } from "@/components/theme";
 import { useRepository } from "@/db/AppDatabase";
 import { ValidationError } from "@/db/repository";
@@ -13,6 +14,7 @@ import { useCardAutoFill } from "@/hooks/useCardAutoFill";
 import { useDuplicateWarning } from "@/hooks/useDuplicateWarning";
 import { useGoBack } from "@/hooks/useGoBack";
 import { useSpellingWarning } from "@/hooks/useSpellingWarning";
+import { notifyDataChanged } from "@/lib/dataEvents";
 
 const toFormValue = (card: Card): CardFormValue => ({
   term: card.term,
@@ -70,6 +72,7 @@ export default function EditCardScreen() {
 function EditCardForm({ card, editable, goBack }: { card: Card; editable: boolean; goBack: () => void }) {
   const repository = useRepository();
   const insets = useSafeAreaInsets();
+  const toast = useToast();
 
   const [value, setValue] = useState<CardFormValue>(() => toFormValue(card));
   const [error, setError] = useState<string | null>(null);
@@ -93,7 +96,8 @@ function EditCardForm({ card, editable, goBack }: { card: Card; editable: boolea
 
   const save = () =>
     run(async () => {
-      await repository.updateCard(card.id, value);
+      const saved = await repository.updateCard(card.id, value);
+      toast.show({ message: `「${saved.term}」を保存しました` });
       goBack();
     });
 
@@ -106,6 +110,22 @@ function EditCardForm({ card, editable, goBack }: { card: Card; editable: boolea
         onPress: () =>
           void run(async () => {
             await repository.deleteCard(card.id);
+            toast.show({
+              message: `「${card.term}」を削除しました`,
+              icon: "trash-2",
+              action: {
+                label: "元に戻す",
+                onPress: () => {
+                  repository
+                    .restoreCard(card.id)
+                    .then(() => {
+                      notifyDataChanged();
+                      toast.show({ message: `「${card.term}」を元に戻しました`, icon: "undo-2" });
+                    })
+                    .catch(() => toast.show({ message: "元に戻せませんでした", icon: "circle-alert" }));
+                },
+              },
+            });
             goBack();
           }),
       },

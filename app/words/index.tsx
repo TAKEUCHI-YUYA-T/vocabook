@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, TextInput, ScrollView, Modal, Pressable } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -15,6 +15,7 @@ import { ValidationError } from "@/db/repository";
 import { ingOrToLabel, partOfSpeechLabel, PARTS_OF_SPEECH, type Card, type Deck } from "@/db/types";
 import { useDefaultDeck } from "@/hooks/useDefaultDeck";
 import { useGoBack } from "@/hooks/useGoBack";
+import { subscribeDataChanged } from "@/lib/dataEvents";
 
 /** 画面に一度に出す単語数。単語が多くても軽く表示できるよう、少しずつ表示を増やす */
 const PAGE_SIZE = 50;
@@ -39,6 +40,9 @@ export default function WordsScreen() {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [menuOpen, setMenuOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  // 「元に戻す」などで、単語が画面の外から変わったら、一覧を読み直す
+  const [reloadKey, setReloadKey] = useState(0);
+  useEffect(() => subscribeDataChanged(() => setReloadKey((n) => n + 1)), []);
 
   /** 単語と、品詞ごとの数を読み込む。単語を追加・編集して戻ってきたときも読み直す */
   const load = useCallback(() => {
@@ -54,7 +58,7 @@ export default function WordsScreen() {
     return () => {
       active = false;
     };
-  }, [repository, deck, query]);
+  }, [repository, deck, query, reloadKey]);
 
   useFocusEffect(load);
 

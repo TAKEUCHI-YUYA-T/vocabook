@@ -293,6 +293,11 @@ export function createRepository(db: Db) {
       await db.runAsync("UPDATE cards SET deleted_at = ?, updated_at = ? WHERE id = ?", [timestamp, timestamp, id]);
     },
 
+    /** 削除した単語を、元に戻す（削除は印を付けて隠しているだけなので、例文も学習の記録も、そのまま戻る） */
+    async restoreCard(id: string): Promise<void> {
+      await db.runAsync("UPDATE cards SET deleted_at = NULL, updated_at = ? WHERE id = ? AND type = 'basic' AND deleted_at IS NOT NULL", [now(), id]);
+    },
+
     /** 出題用に、条件に合う単語（basic のみ）を取り出す。順番は呼び出し側でシャッフルする */
     async listStudyCards(filter: StudyFilter): Promise<Card[]> {
       if (filter.deckIds.length === 0) return [];
