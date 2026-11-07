@@ -1,13 +1,18 @@
-import React, { useCallback, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Image, ScrollView, useWindowDimensions } from "react-native";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Animated, AppState, Image, ScrollView, useWindowDimensions } from "react-native";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter, type Href } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AdBanner } from "@/components/AdBanner";
+import { SkeletonBox, SkeletonSlot } from "@/components/Skeleton";
 import { colors } from "@/components/theme";
 import { useRepository } from "@/db/AppDatabase";
 import { localDay } from "@/db/day";
 import type { HomeStats, Tip } from "@/db/types";
+
+/** 読み込み中に、場所だけ確保しておく高さ（読み込み後の、記録とヒントの大きさに合わせる） */
+const STATS_HEIGHT = 98;
+const TIP_HEIGHT = 140;
 
 type MenuItem = { label: string; icon: React.ComponentProps<typeof Feather>["name"]; href: Href; color: string; count?: "total" };
 
@@ -32,6 +37,20 @@ export default function Home() {
   const { width, height } = useWindowDimensions();
   const [tip, setTip] = useState<Tip | null>(null);
   const [stats, setStats] = useState<HomeStats | null>(null);
+  const [tipLoaded, setTipLoaded] = useState(false);
+  // アプリを開いたまま日付が変わったら、「今日の学習」を読み直す
+  const [dayKey, setDayKey] = useState(localDay());
+  const shownDay = useRef(dayKey);
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (state) => {
+      const today = localDay();
+      if (state === "active" && today !== shownDay.current) {
+        shownDay.current = today;
+        setDayKey(today);
+      }
+    });
+    return () => subscription.remove();
+  }, []);
   const [dogs, setDogs] = useState<{ id: number; x: number; anim: Animated.Value }[]>([]);
 
   /** 画面に戻るたびに、ヒントを選び直し、今日の学習の記録を読み直す */
@@ -40,8 +59,15 @@ export default function Home() {
       let active = true;
       repository
         .randomTip()
-        .then((next) => active && setTip(next))
-        .catch((error) => console.warn("ヒントを読み込めませんでした", error));
+        .then((next) => {
+          if (!active) return;
+          setTip(next);
+          setTipLoaded(true);
+        })
+        .catch((error) => {
+          console.warn("ヒントを読み込めませんでした", error);
+          if (active) setTipLoaded(true);
+        });
       repository
         .homeStats(localDay())
         .then((next) => active && setStats(next))
@@ -49,7 +75,7 @@ export default function Home() {
       return () => {
         active = false;
       };
-    }, [repository])
+    }, [repository, dayKey])
   );
 
   /**
@@ -87,7 +113,13 @@ export default function Home() {
           </TouchableOpacity>
         </View>
 
-        {/* 今日の学習の記録 */}
+        {/* 今日の学習の記録（読み込み中は、同じ大きさの場所を確保して、下がずれないようにする） */}
+        {!stats && (
+          <SkeletonSlot active height={STATS_HEIGHT} groupStyle={styles.skeletonStats}>
+            <SkeletonBox width="48%" height={STATS_HEIGHT} radius={16} />
+            <SkeletonBox width="48%" height={STATS_HEIGHT} radius={16} />
+          </SkeletonSlot>
+        )}
         {stats && (
           <TouchableOpacity
             accessibilityRole="button"
@@ -119,6 +151,11 @@ export default function Home() {
         )}
 
         {/* ヒント */}
+        {!tipLoaded && (
+          <SkeletonSlot active height={TIP_HEIGHT}>
+            <SkeletonBox height={TIP_HEIGHT} radius={16} />
+          </SkeletonSlot>
+        )}
         {tip && (
           <View style={styles.tip} accessibilityLabel="今日のヒント">
             <View style={styles.tipHeading}>
@@ -178,6 +215,7 @@ const styles = StyleSheet.create({
   logo: { width: 135, height: 60, resizeMode: "contain" },
   aboutButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.fillStrong, alignItems: "center", justifyContent: "center" },
   stats: { flexDirection: "row", gap: 12 },
+  skeletonStats: { flexDirection: "row", justifyContent: "space-between" },
   stat: { flex: 1, backgroundColor: colors.surface, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 16, gap: 6 },
   statHeading: { flexDirection: "row", alignItems: "center", gap: 6 },
   statLabel: { fontSize: 13, fontWeight: "600", color: colors.primary },

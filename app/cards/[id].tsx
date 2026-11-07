@@ -4,6 +4,7 @@ import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { HeaderTextButton, ScreenHeader } from "@/components/ScreenHeader";
+import { SkeletonBox, SkeletonSlot } from "@/components/Skeleton";
 import { useToast } from "@/components/Toast";
 import { colors } from "@/components/theme";
 import { useRepository } from "@/db/AppDatabase";
@@ -60,7 +61,18 @@ export default function EditCardScreen() {
     return (
       <View style={styles.container}>
         <ScreenHeader title="単語を編集" onBack={goBack} backLabel="戻る" backText="単語帳" />
-        <Text style={styles.message}>{error ?? (isLoaded ? "この単語は見つかりませんでした（削除された可能性があります）" : "読み込み中...")}</Text>
+        {error || isLoaded ? (
+          <Text style={styles.message}>{error ?? "この単語は見つかりませんでした（削除された可能性があります）"}</Text>
+        ) : (
+          <SkeletonSlot active height={240} style={styles.skeletons} groupStyle={styles.skeletonGroup}>
+            <SkeletonBox width={80} height={14} />
+            <SkeletonBox height={52} radius={12} />
+            <SkeletonBox width={80} height={14} />
+            <SkeletonBox height={52} radius={12} />
+            <SkeletonBox width={80} height={14} />
+            <SkeletonBox height={96} radius={12} />
+          </SkeletonSlot>
+        )}
       </View>
     );
   }
@@ -171,6 +183,8 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: 16, paddingTop: 14, gap: 14 },
   message: { fontSize: 16, color: colors.secondary, textAlign: "center", marginTop: 40, paddingHorizontal: 16 },
+  skeletons: { padding: 16 },
+  skeletonGroup: { gap: 14 },
   readonlyNote: { fontSize: 15, color: colors.secondary },
   error: { color: colors.danger, fontSize: 15 },
   deleteButton: { minHeight: 52, marginTop: 10, alignItems: "center", justifyContent: "center", borderRadius: 12, backgroundColor: colors.surface },

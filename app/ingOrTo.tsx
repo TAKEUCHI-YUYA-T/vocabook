@@ -40,7 +40,7 @@ export default function IngOrToScreen() {
     setIsAnswerVisible(false);
   };
 
-  const message = error ?? (!quiz ? "読み込み中..." : current ? null : "データなし");
+  const message = error ?? (!quiz ? null : current ? null : "データなし");
 
   return (
     <QuizFrame
@@ -51,6 +51,7 @@ export default function IngOrToScreen() {
       progress={quiz && current ? progress(quiz) : null}
       action={current ? (isAnswerVisible ? { kind: "next", onPress: handleNext } : { kind: "reveal", onPress: () => setIsAnswerVisible(true) }) : null}
       message={message}
+      loading={!quiz && !error}
     >
       {!!current && (
         <>

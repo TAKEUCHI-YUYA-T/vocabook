@@ -119,7 +119,7 @@ export default function LearnScreen() {
     next();
   };
 
-  const message = error ?? (!quiz ? "読み込み中..." : current ? null : "この条件に合う単語がありません");
+  const message = error ?? (!quiz ? null : current ? null : "この条件に合う単語がありません");
 
   const answerFooter = current && (
     // 左から 要復習・次へ・覚えた（正反対の2つを離して、押し間違いを防ぐ）。3つとも同じ形と重さ。今のフラグのボタンだけ、塗りつぶす
@@ -163,6 +163,7 @@ export default function LearnScreen() {
       action={current && !isAnswerVisible ? { kind: "reveal", onPress: reveal } : null}
       footer={current && isAnswerVisible ? answerFooter : undefined}
       message={message}
+      loading={!quiz && !error}
     >
       {!!current && (
         <>

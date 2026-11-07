@@ -4,6 +4,7 @@ import { useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BarChart, type BarDatum } from "@/components/BarChart";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { SkeletonBox, SkeletonSlot } from "@/components/Skeleton";
 import { colors } from "@/components/theme";
 import { useRepository } from "@/db/AppDatabase";
 import { lastDays } from "@/db/day";
@@ -14,6 +15,9 @@ const PERIODS = [
   { days: 7, label: "1週間" },
   { days: 30, label: "30日" },
 ];
+
+/** グラフを読み込んでいる間に、場所だけ確保しておく高さ */
+const CHART_PLACEHOLDER_HEIGHT = 190;
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
 
@@ -44,6 +48,7 @@ export default function StatsScreen() {
   const [period, setPeriod] = useState(PERIODS[0].days);
   const [rows, setRows] = useState<DailyRow[]>([]);
   const [selected, setSelected] = useState(PERIODS[0].days - 1);
+  const [loaded, setLoaded] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -54,8 +59,12 @@ export default function StatsScreen() {
           if (!active) return;
           setRows(next);
           setSelected(next.length - 1); // 今日を選んでおく
+          setLoaded(true);
         })
-        .catch((error) => console.warn("学習の記録を読み込めませんでした", error));
+        .catch((error) => {
+          console.warn("学習の記録を読み込めませんでした", error);
+          if (active) setLoaded(true);
+        });
       return () => {
         active = false;
       };
@@ -104,7 +113,13 @@ export default function StatsScreen() {
             <Text style={styles.readoutValue}>{current?.studied ?? 0}</Text>
             <Text style={styles.readoutUnit}> 語</Text>
           </Text>
-          <BarChart data={studiedData} selectedIndex={selected} onSelect={setSelected} />
+          {loaded ? (
+            <BarChart data={studiedData} selectedIndex={selected} onSelect={setSelected} />
+          ) : (
+            <SkeletonSlot active height={CHART_PLACEHOLDER_HEIGHT}>
+              <SkeletonBox height={CHART_PLACEHOLDER_HEIGHT} radius={12} />
+            </SkeletonSlot>
+          )}
         </View>
 
         <View style={styles.card}>
@@ -114,7 +129,13 @@ export default function StatsScreen() {
             <Text style={styles.readoutValue}>{current?.learned ?? 0}</Text>
             <Text style={styles.readoutUnit}> 語</Text>
           </Text>
-          <BarChart data={learnedData} selectedIndex={selected} onSelect={setSelected} />
+          {loaded ? (
+            <BarChart data={learnedData} selectedIndex={selected} onSelect={setSelected} />
+          ) : (
+            <SkeletonSlot active height={CHART_PLACEHOLDER_HEIGHT}>
+              <SkeletonBox height={CHART_PLACEHOLDER_HEIGHT} radius={12} />
+            </SkeletonSlot>
+          )}
         </View>
       </ScrollView>
     </View>

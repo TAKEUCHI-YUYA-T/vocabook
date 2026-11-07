@@ -4,6 +4,7 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AdBanner } from "@/components/AdBanner";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { SkeletonBox, SkeletonSlot } from "@/components/Skeleton";
 import { colors } from "@/components/theme";
 import { useRepository } from "@/db/AppDatabase";
 import { countsByFlag, countsByPart, countTarget, encodeFlags, type BreakdownRow } from "@/db/studyRange";
@@ -191,7 +192,13 @@ export default function StudySelectScreen() {
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) + 16 }]}>
-        <Text style={styles.summary}>{canStart ? `${targetCount}語から出題します` : "この条件に合う単語がありません"}</Text>
+        {isLoaded ? (
+          <Text style={styles.summary}>{canStart ? `${targetCount}語から出題します` : "この条件に合う単語がありません"}</Text>
+        ) : (
+          <SkeletonSlot active height={22} groupStyle={styles.summarySkeleton}>
+            <SkeletonBox width={160} height={16} />
+          </SkeletonSlot>
+        )}
         <TouchableOpacity
           accessibilityRole="button"
           accessibilityState={{ disabled: !canStart }}
@@ -240,6 +247,7 @@ const styles = StyleSheet.create({
   emptyButtonText: { fontSize: 17, fontWeight: "600", color: colors.onPrimary },
   footer: { paddingHorizontal: 16, paddingTop: 12, gap: 8, backgroundColor: colors.background },
   summary: { textAlign: "center", fontSize: 13, color: colors.secondary },
+  summarySkeleton: { alignItems: "center", justifyContent: "center" },
   startButton: { minHeight: 56, borderRadius: 28, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
   startButtonDisabled: { backgroundColor: "#AEAEB2" },
   startText: { fontSize: 17, fontWeight: "600", color: colors.onPrimary },

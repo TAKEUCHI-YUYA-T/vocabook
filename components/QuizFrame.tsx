@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-nati
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenHeader } from "./ScreenHeader";
 import { AdBanner } from "./AdBanner";
+import { SkeletonBox, SkeletonSlot } from "./Skeleton";
 import { colors } from "./theme";
 
 type Props = {
@@ -21,6 +22,8 @@ type Props = {
   footer?: React.ReactNode;
   /** 読み込み中・エラー・単語なしのときの文章（カードの代わりに出す） */
   message?: string | null;
+  /** 読み込み中か（カードの形の、灰色の箱を出す。読み込みが一瞬なら、出さない） */
+  loading?: boolean;
   /** カードの中身 */
   children?: React.ReactNode;
 };
@@ -29,7 +32,7 @@ type Props = {
  * 出題画面の共通の枠（学習と ing or to。Apple 風）
  * ヘッダー・細い進み具合の線・広告・白い角丸のカード・下の大きなボタン。答えは、下のボタンだけで出す
  */
-export function QuizFrame({ title, onBack, backLabel, backText, progress, headerExtra, action, footer, message, children }: Props) {
+export function QuizFrame({ title, onBack, backLabel, backText, progress, headerExtra, action, footer, message, loading, children }: Props) {
   const insets = useSafeAreaInsets();
   return (
     <View style={styles.container}>
@@ -62,7 +65,20 @@ export function QuizFrame({ title, onBack, backLabel, backText, progress, header
       <AdBanner />
 
       <ScrollView style={styles.main} contentContainerStyle={styles.mainContent}>
-        {message ? <Text style={styles.message}>{message}</Text> : <View style={styles.card}>{children}</View>}
+        {message ? (
+          <Text style={styles.message}>{message}</Text>
+        ) : loading ? (
+          <View style={styles.card}>
+            <SkeletonSlot active height={200} groupStyle={styles.skeletons}>
+              <SkeletonBox width={72} height={22} radius={11} />
+              <SkeletonBox width={200} height={44} />
+              <SkeletonBox height={18} />
+              <SkeletonBox width="70%" height={18} />
+            </SkeletonSlot>
+          </View>
+        ) : (
+          <View style={styles.card}>{children}</View>
+        )}
       </ScrollView>
 
       {!!footer && <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12) + 12 }]}>{footer}</View>}
@@ -98,6 +114,7 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   message: { fontSize: 16, color: colors.secondary, textAlign: "center", marginTop: 40 },
+  skeletons: { gap: 16 },
   footer: { paddingHorizontal: 16, paddingTop: 12 },
   actionButton: { minHeight: 56, borderRadius: 28, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center" },
   actionText: { color: colors.onPrimary, fontSize: 17, fontWeight: "600" },

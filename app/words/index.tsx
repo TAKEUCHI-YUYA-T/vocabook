@@ -7,6 +7,7 @@ import { File, Paths } from "expo-file-system";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { FlagTag } from "@/components/FlagTag";
 import { HeaderIconButton, ScreenHeader } from "@/components/ScreenHeader";
+import { SkeletonRow, SkeletonSlot } from "@/components/Skeleton";
 import { colors } from "@/components/theme";
 import { useRepository } from "@/db/AppDatabase";
 import { AdBanner } from "@/components/AdBanner";
@@ -16,6 +17,9 @@ import { ingOrToLabel, partOfSpeechLabel, PARTS_OF_SPEECH, type Card, type Deck 
 import { useDefaultDeck } from "@/hooks/useDefaultDeck";
 import { useGoBack } from "@/hooks/useGoBack";
 import { subscribeDataChanged } from "@/lib/dataEvents";
+
+/** 読み込み中に出す、単語の行の形の数 */
+const SKELETON_ROWS = 8;
 
 /** 画面に一度に出す単語数。単語が多くても軽く表示できるよう、少しずつ表示を増やす */
 const PAGE_SIZE = 50;
@@ -40,6 +44,7 @@ export default function WordsScreen() {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [menuOpen, setMenuOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
   // 「元に戻す」などで、単語が画面の外から変わったら、一覧を読み直す
   const [reloadKey, setReloadKey] = useState(0);
   useEffect(() => subscribeDataChanged(() => setReloadKey((n) => n + 1)), []);
@@ -53,6 +58,7 @@ export default function WordsScreen() {
         if (!active) return;
         setCards(nextCards);
         setCounts(nextCounts);
+        setLoaded(true);
       })
       .catch(() => active && setMessage("読み込めませんでした"));
     return () => {
@@ -185,7 +191,17 @@ export default function WordsScreen() {
             <Feather name="chevron-right" size={20} color={colors.inputBorder} />
           </TouchableOpacity>
         )}
-        ListEmptyComponent={<Text style={styles.empty}>{deckError ?? message ?? (query || pos !== "all" ? "見つかりませんでした" : deck ? "単語がありません" : "読み込み中...")}</Text>}
+        ListEmptyComponent={
+          !loaded && !deckError && !message ? (
+            <SkeletonSlot active height={SKELETON_ROWS * 64} style={styles.skeletonList}>
+              {Array.from({ length: SKELETON_ROWS }, (_, i) => (
+                <SkeletonRow key={i} divider={i < SKELETON_ROWS - 1} />
+              ))}
+            </SkeletonSlot>
+          ) : (
+            <Text style={styles.empty}>{deckError ?? message ?? (query || pos !== "all" ? "見つかりませんでした" : "単語がありません")}</Text>
+          )
+        }
       />
 
       {!!message && cards.length > 0 && <Text style={styles.error}>{message}</Text>}
@@ -258,6 +274,7 @@ const styles = StyleSheet.create({
   tagText: { fontSize: 12, fontWeight: "600", color: colors.textMuted },
   tagInfo: { backgroundColor: colors.infoSoft },
   tagInfoText: { color: colors.info },
+  skeletonList: { backgroundColor: colors.surface, borderRadius: 12, overflow: "hidden" },
   empty: { fontSize: 16, color: colors.secondary, textAlign: "center", marginTop: 24, paddingHorizontal: 16 },
   error: { color: colors.danger, fontSize: 15, textAlign: "center", paddingVertical: 8, paddingHorizontal: 16 },
   toolbar: { minHeight: 56, flexDirection: "row", alignItems: "center", paddingHorizontal: 8, paddingTop: 6, backgroundColor: "#F9F9F9", borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.inputBorder },
