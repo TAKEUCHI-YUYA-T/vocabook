@@ -80,6 +80,9 @@ function guessInflected(word: string, dictionary: PosDictionary): PartOfSpeech |
   return null;
 }
 
+/** 前置詞・接続詞・助動詞の一覧にある語か（原形の候補は出さない） */
+export const isClosedClassWord = (word: string): boolean => CLOSED_CLASS.has(word);
+
 /** 辞書・前置詞などの一覧・変化形のどれかで、知っている語か（綴りの確認用。品詞は問わない） */
 export function isKnownWord(word: string, dictionary: PosDictionary): boolean {
   return CLOSED_CLASS.has(word) || dictionary.has(word) || guessInflected(word, dictionary) !== null;

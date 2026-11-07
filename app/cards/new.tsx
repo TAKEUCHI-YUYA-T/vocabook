@@ -11,6 +11,7 @@ import { useCardAutoFill } from "@/hooks/useCardAutoFill";
 import { useDefaultDeck } from "@/hooks/useDefaultDeck";
 import { useDuplicateWarning } from "@/hooks/useDuplicateWarning";
 import { useGoBack } from "@/hooks/useGoBack";
+import { useBaseFormSuggestion } from "@/hooks/useBaseFormSuggestion";
 import { useSpellingWarning } from "@/hooks/useSpellingWarning";
 
 /**
@@ -31,6 +32,7 @@ export default function NewCardScreen() {
   const duplicateWarning = useDuplicateWarning(repository, deck?.id, value.term);
   const autoFill = useCardAutoFill(value, setValue);
   const spellingWarning = useSpellingWarning(value.term);
+  const baseFormSuggestions = useBaseFormSuggestion(value.term);
 
   const save = async () => {
     if (isSaving || !deck) return;
@@ -68,7 +70,7 @@ export default function NewCardScreen() {
       <AdBanner />
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <CardForm key={formKey} value={value} onChange={setValue} editable autoFocus duplicateWarning={duplicateWarning} spellingWarning={spellingWarning} autoFill={autoFill} />
+        <CardForm key={formKey} value={value} onChange={setValue} editable autoFocus duplicateWarning={duplicateWarning} spellingWarning={spellingWarning} baseFormSuggestions={baseFormSuggestions} autoFill={autoFill} />
 
         {!!(error ?? deckError) && <Text style={styles.error}>{error ?? deckError}</Text>}
 

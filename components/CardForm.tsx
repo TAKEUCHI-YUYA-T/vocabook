@@ -5,7 +5,9 @@ import type { CardAutoFillState } from "@/db/autofill";
 import { MAX_EXAMPLES, type Example } from "@/db/examples";
 import { LIMITS } from "@/db/repository";
 import { FLAG_LABELS, ING_OR_TO_LABELS, PARTS_OF_SPEECH, type CardFlag, type IngOrToAnswer, type PartOfSpeech } from "@/db/types";
+import type { BaseFormSuggestion } from "@/db/lemma";
 import type { SpellingWarning } from "@/hooks/useSpellingWarning";
+import { Icon } from "./Icon";
 import { SpeakButton } from "./SpeakButton";
 import { colors } from "./theme";
 
@@ -63,6 +65,8 @@ type Props = {
   duplicateWarning?: string | null;
   /** 綴りミスの疑い（辞書にない語と、近い綴りの候補）。候補を押すと、単語の綴りを直す。登録は止めない */
   spellingWarning?: SpellingWarning | null;
+  /** 過去形・複数形などのときの、原形の候補（自動では直さない。押したときだけ、単語を原形に置き換える） */
+  baseFormSuggestions?: BaseFormSuggestion[];
   autoFocus?: boolean;
   /** 品詞・例文・メモを、最初から開いておく（編集画面） */
   expanded?: boolean;
@@ -76,7 +80,7 @@ type Props = {
  * 単語の入力フォーム（追加・編集・他のアプリから登録で共通）
  * 必須は「単語」と「意味」だけ。品詞・例文・メモは「詳細」に折りたたむ
  */
-export function CardForm({ value, onChange, editable, duplicateWarning, spellingWarning, autoFocus, expanded, showFlag, autoFill }: Props) {
+export function CardForm({ value, onChange, editable, duplicateWarning, spellingWarning, baseFormSuggestions, autoFocus, expanded, showFlag, autoFill }: Props) {
   const meaningRef = useRef<React.ComponentRef<typeof TextInput>>(null);
   const hasDetails = !!(value.partOfSpeech || value.examples.some((e) => e.text || e.translation) || value.note || value.answer);
   // ing or to の問題は、動詞と熟語のときに選べる（すでに選んであれば、品詞を変えても、外せるよう出しておく）
@@ -124,6 +128,28 @@ export function CardForm({ value, onChange, editable, duplicateWarning, spelling
           placeholder="例: abolish"
         />
       </View>
+
+      {!spellingWarning && !!baseFormSuggestions && baseFormSuggestions.length > 0 && (
+        <View style={styles.baseForm}>
+          <Icon name="info" size={18} color={colors.secondary} style={styles.warningIcon} />
+          <Text style={styles.baseFormText}>
+            {baseFormSuggestions[0].kind}
+            {baseFormSuggestions[0].isHeadword ? "でもあります" : "です"}。原形は
+          </Text>
+          {baseFormSuggestions.map((suggestion) => (
+            <TouchableOpacity
+              key={suggestion.lemma}
+              accessibilityRole="button"
+              accessibilityLabel={`${suggestion.word}を原形の ${suggestion.lemma} にする`}
+              disabled={!editable}
+              style={styles.baseFormChip}
+              onPress={() => onChange({ ...value, term: replaceWord(value.term, suggestion.word, suggestion.lemma) })}
+            >
+              <Text style={styles.suggestionText}>{suggestion.lemma}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
 
       {!!spellingWarning && (
         <View style={styles.warning} accessibilityRole="alert">
@@ -392,6 +418,9 @@ const styles = StyleSheet.create({
   warningIcon: { marginTop: 2 },
   warningText: { fontSize: 15, lineHeight: 22, color: colors.warning },
   spellingBody: { flex: 1, gap: 6 },
+  baseForm: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8, paddingHorizontal: 4 },
+  baseFormText: { fontSize: 15, lineHeight: 21, color: colors.textMuted },
+  baseFormChip: { minHeight: 44, paddingHorizontal: 18, borderRadius: 22, backgroundColor: colors.primarySoft, justifyContent: "center" },
   suggestionRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8 },
   suggestionChip: { minHeight: 36, paddingHorizontal: 14, borderRadius: 18, backgroundColor: colors.surface, justifyContent: "center" },
   suggestionText: { fontSize: 15, fontWeight: "600", color: colors.primary },

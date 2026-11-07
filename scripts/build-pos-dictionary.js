@@ -2,11 +2,13 @@
  * 品詞の推定に使う辞書を、WordNet 3.0（Princeton 大学）から作る
  *
  * 使い方: node scripts/build-pos-dictionary.js <WordNet の dict フォルダ>
- *   dict フォルダは、https://wordnetcode.princeton.edu/3.0/WNdb-3.0.tar.gz を展開したもの
- *   （index.sense と index.noun を読む）
+ *   dict フォルダは、https://wordnetcode.princeton.edu/3.0/WordNet-3.0.tar.gz を展開した WordNet-3.0/dict
+ *   （index.sense・index.noun と、不規則な変化の表 noun.exc・verb.exc を読む）
  *
  * 出力:
  *   assets/dictionary/pos.json              1語の見出し語を、主な品詞ごとに改行区切りで並べたもの（ライセンス文も含む）
+ *   assets/dictionary/inflections.json      不規則な変化の表（children → child、went → go）と、主な品詞以外でも名詞・動詞になる語の一覧
+ *                                           （原形の候補を出すために使う。db/lemma.ts）
  *   assets/dictionary/wordnet-license.json  WordNet のライセンス文（アプリの「ライセンス」画面に表示する）
  *   assets/dictionary/WORDNET-LICENSE.txt   同じ文（ライセンスの条件により、データの写しには必ず添える）
  *
@@ -32,6 +34,8 @@ const WORD = /^[a-z0-9][a-z0-9'.-]*$/;
 
 // 見出し語ごとに、品詞別の出現回数と意味の数を数える
 const stats = new Map();
+/** 見出し語ごとの、品詞の集合（主な品詞以外も含む） */
+const posSets = new Map();
 for (const line of fs.readFileSync(path.join(DICT, "index.sense"), "utf8").split("\n")) {
   if (!line) continue;
   // 形式: lemma%ss_type:lex_filenum:lex_id:head_word:head_id synset_offset sense_number tag_cnt
@@ -41,6 +45,8 @@ for (const line of fs.readFileSync(path.join(DICT, "index.sense"), "utf8").split
   const pos = SS_TYPE[senseKey[at + 1]];
   if (!pos || !WORD.test(lemma)) continue;
   if (!stats.has(lemma)) stats.set(lemma, {});
+  if (!posSets.has(lemma)) posSets.set(lemma, new Set());
+  posSets.get(lemma).add(pos);
   const entry = (stats.get(lemma)[pos] ??= { tags: 0, senses: 0 });
   entry.tags += Number(tagCount) || 0;
   entry.senses += 1;
@@ -54,6 +60,26 @@ const dominant = (byPos) =>
 const lists = { noun: [], verb: [], adjective: [], adverb: [] };
 for (const [lemma, byPos] of stats) lists[dominant(byPos)].push(lemma);
 for (const words of Object.values(lists)) words.sort();
+
+// 不規則な変化の表（形 原形 [原形...]）。1語どうしだけ入れる（空白・ハイフンを含む形は、アプリでは熟語として扱う）
+function readExceptions(file) {
+  const lines = [];
+  for (const line of fs.readFileSync(path.join(DICT, file), "utf8").split("\n")) {
+    const [form, ...lemmas] = line.trim().split(" ");
+    if (!form || !WORD_ONLY.test(form)) continue;
+    const kept = lemmas.filter((lemma) => WORD_ONLY.test(lemma) && lemma !== form);
+    if (kept.length > 0) lines.push([form, ...kept].join(" "));
+  }
+  return lines.sort().join("\n");
+}
+const WORD_ONLY = /^[a-z]+$/;
+// 主な品詞が名詞・動詞ではないが、名詞・動詞としても使える語（原形かどうかを確かめるために使う）
+const alsoPos = (pos) => [...posSets].filter(([lemma, set]) => WORD_ONLY.test(lemma) && set.has(pos) && !lists[pos].includes(lemma)).map(([lemma]) => lemma).sort().join("\n");
+fs.mkdirSync(OUT_DIR, { recursive: true });
+fs.writeFileSync(
+  path.join(OUT_DIR, "inflections.json"),
+  JSON.stringify({ source: "WordNet 3.0", nounExceptions: readExceptions("noun.exc"), verbExceptions: readExceptions("verb.exc"), alsoNoun: alsoPos("noun"), alsoVerb: alsoPos("verb") }) + "\n"
+);
 
 // ライセンス文は、配布ファイル（index.noun）の先頭の「  番号 本文」の行から取り出す（手で写さない）
 const license = [];

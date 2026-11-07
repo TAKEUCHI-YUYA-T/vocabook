@@ -71,7 +71,7 @@ export default function LicensesScreen() {
             <Text style={styles.sectionTitle}>辞書と翻訳</Text>
             <View style={styles.group}>
               <Text style={styles.note}>
-                品詞の自動判定と綴りの確認には、Princeton 大学の WordNet 3.0 の見出し語を使用します。意味と例文の自動翻訳には、Google ML Kit の端末内の翻訳を使用します。
+                品詞の自動判定・綴りの確認・原形の候補には、Princeton 大学の WordNet 3.0 の見出し語と変化の表を使用します。意味と例文の自動翻訳には、Google ML Kit の端末内の翻訳を使用します。
               </Text>
               <View style={styles.groupDivider} />
               {row(
