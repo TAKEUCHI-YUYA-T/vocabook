@@ -37,8 +37,8 @@
       "extends": "production",
       "channel": "closedtest",
       "env": {
-        "EXPO_PUBLIC_ADMOB_BANNER_UNIT_ID": "",
-        "EXPO_PUBLIC_ADMOB_INTERSTITIAL_UNIT_ID": ""
+        "EXPO_PUBLIC_ADMOB_BANNER_UNIT_ID": "ca-app-pub-3940256099942544/6300978111",
+        "EXPO_PUBLIC_ADMOB_INTERSTITIAL_UNIT_ID": "ca-app-pub-3940256099942544/1033173712"
       }
     },
     "production": {
