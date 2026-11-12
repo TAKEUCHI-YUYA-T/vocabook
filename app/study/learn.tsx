@@ -17,6 +17,8 @@ import { groupByTerm, oneCardPerTerm, otherPartsOfSpeech, sameTermCards } from "
 import { decodeDirection, decodeFlags } from "@/db/studyRange";
 import { partOfSpeechLabel, PARTS_OF_SPEECH, type Card, type CardFlag, type PartOfSpeech } from "@/db/types";
 import { useGoBack } from "@/hooks/useGoBack";
+import { useInterstitialExit } from "@/hooks/useInterstitialExit";
+import { WaitOverlay } from "@/components/WaitOverlay";
 import { speakEnglish, stopSpeaking } from "@/lib/speech";
 import { spellingProblemsOnDevice } from "@/db/posDictionary";
 
@@ -34,6 +36,7 @@ export default function LearnScreen() {
   const router = useRouter();
   const repository = useRepository();
   const goBack = useGoBack("/study");
+  const { countReveal, requestExit, waiting } = useInterstitialExit(goBack);
   const params = useLocalSearchParams<{ decks?: string; parts?: string; flags?: string; dir?: string }>();
   const { decks, parts, flags } = params;
   const direction = decodeDirection(params.dir);
@@ -105,6 +108,7 @@ export default function LearnScreen() {
   /** 答えを見る。見た単語として、今日の記録に残す（記録に失敗しても、学習は続けられる） */
   const reveal = () => {
     setIsAnswerVisible(true);
+    countReveal();
     for (const id of targetIds) repository.recordStudied(id, localDay()).catch((e) => console.warn("[study] 学習の記録に失敗:", e));
   };
 
@@ -150,9 +154,10 @@ export default function LearnScreen() {
   );
 
   return (
+    <View style={styles.root}>
     <QuizFrame
       title="学習"
-      onBack={goBack}
+      onBack={requestExit}
       backLabel="学習の範囲に戻る"
       backText="範囲"
       progress={quiz && current ? progress(quiz) : null}
@@ -272,10 +277,13 @@ export default function LearnScreen() {
         </>
       )}
     </QuizFrame>
+    {waiting && <WaitOverlay />}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  root: { flex: 1 },
   tags: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 24 },
   tag: { borderRadius: 999, paddingVertical: 2, paddingHorizontal: 10, backgroundColor: colors.panel },
   tagText: { fontSize: 13, fontWeight: "600", color: colors.textMuted },

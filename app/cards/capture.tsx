@@ -51,7 +51,7 @@ export default function CaptureScreen() {
     try {
       const card = await repository.addCard(deck.id, value);
       // 元のアプリに戻ったあとも見えるよう、Android 標準のトーストで知らせる
-      ToastAndroid.show(`「${card.term}」を Vocabook に登録しました`, ToastAndroid.SHORT);
+      ToastAndroid.show(`「${card.term}」を vocabook に登録しました`, ToastAndroid.SHORT);
       finish();
     } catch (e) {
       setError(e instanceof ValidationError ? e.message : "保存できませんでした");
@@ -63,7 +63,7 @@ export default function CaptureScreen() {
   const notes = [
     selection.kind === "fragment" && "共有された URL から、選んだ単語を取り出しました。",
     selection.kind === "url-only" &&
-      "URL だけが共有され、単語を取り出せませんでした。単語を選び直して、選択メニューの「Vocabook」から送ると、確実に単語だけが届きます。",
+      "URL だけが共有され、単語を取り出せませんでした。単語を選び直して、選択メニューの「vocabook」から送ると、確実に単語だけが届きます。",
     looksJapanese(initialTerm) && "日本語の文字を含んでいます。英語の単語を選んだ場合は、選び直してください。",
     looksLikeSentence(initialTerm) && "文のように長いです。単語や熟語だけにするか、例文の欄に移してください。",
   ].filter((note): note is string => !!note);

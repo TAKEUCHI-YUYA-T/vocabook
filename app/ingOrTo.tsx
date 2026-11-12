@@ -6,6 +6,8 @@ import { useRepository } from "@/db/AppDatabase";
 import { nextQuestion, progress, startQuiz, type QuizState } from "@/db/quiz";
 import { ingOrToLabel, type Card } from "@/db/types";
 import { useGoBack } from "@/hooks/useGoBack";
+import { useInterstitialExit } from "@/hooks/useInterstitialExit";
+import { WaitOverlay } from "@/components/WaitOverlay";
 
 /**
  * ing or to の画面
@@ -16,6 +18,7 @@ import { useGoBack } from "@/hooks/useGoBack";
 export default function IngOrToScreen() {
   const repository = useRepository();
   const goBack = useGoBack("/");
+  const { countReveal, requestExit, waiting } = useInterstitialExit(goBack);
 
   const [quiz, setQuiz] = useState<QuizState<Card> | null>(null);
   const [isAnswerVisible, setIsAnswerVisible] = useState(false);
@@ -43,13 +46,14 @@ export default function IngOrToScreen() {
   const message = error ?? (!quiz ? null : current ? null : "データなし");
 
   return (
+    <View style={styles.root}>
     <QuizFrame
       title="ing or to"
-      onBack={goBack}
+      onBack={requestExit}
       backLabel="ホームに戻る"
       backText="ホーム"
       progress={quiz && current ? progress(quiz) : null}
-      action={current ? (isAnswerVisible ? { kind: "next", onPress: handleNext } : { kind: "reveal", onPress: () => setIsAnswerVisible(true) }) : null}
+      action={current ? (isAnswerVisible ? { kind: "next", onPress: handleNext } : { kind: "reveal", onPress: () => { setIsAnswerVisible(true); countReveal(); } }) : null}
       message={message}
       loading={!quiz && !error}
     >
@@ -80,10 +84,13 @@ export default function IngOrToScreen() {
         </>
       )}
     </QuizFrame>
+    {waiting && <WaitOverlay />}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  root: { flex: 1 },
   prompt: { fontSize: 15, fontWeight: "600", color: colors.secondary },
   questionRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 12 },
   term: { fontSize: 40, fontWeight: "bold", lineHeight: 48, letterSpacing: -0.5, color: colors.text },

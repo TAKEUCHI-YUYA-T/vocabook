@@ -4,10 +4,13 @@
  * - 開発中や、ID が未設定のビルドは、Google のテスト広告を出す
  *   （自分の広告を、開発中に押すと、不正なクリックとして、アカウントが止められるため）
  */
-export function pickBannerUnitId(options: { isDev: boolean; productionId: string | undefined; testId: string }): string {
+export function pickAdUnitId(options: { isDev: boolean; productionId: string | undefined; testId: string }): string {
   const production = options.productionId?.trim();
   return !options.isDev && production ? production : options.testId;
 }
+
+/** バナーと全画面の広告で、同じ選び方を使う */
+export const pickBannerUnitId = pickAdUnitId;
 
 /** 広告を出すか。アプリの設定（extra.adsEnabled）が false のビルド（自分用）だけ、出さない */
 export const isAdsEnabled = (extra: { adsEnabled?: unknown } | null | undefined): boolean => extra?.adsEnabled !== false;

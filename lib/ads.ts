@@ -1,6 +1,6 @@
 import Constants from "expo-constants";
 import mobileAds, { AdsConsent, AdsConsentPrivacyOptionsRequirementStatus, MaxAdContentRating, TestIds } from "react-native-google-mobile-ads";
-import { isAdsEnabled, pickBannerUnitId } from "./adConfig";
+import { isAdsEnabled, pickAdUnitId, pickBannerUnitId } from "./adConfig";
 
 /**
  * 広告（Google AdMob）の準備
@@ -17,6 +17,13 @@ export const bannerUnitId = pickBannerUnitId({
   isDev: __DEV__,
   productionId: process.env.EXPO_PUBLIC_ADMOB_BANNER_UNIT_ID,
   testId: TestIds.BANNER,
+});
+
+/** 全画面の広告（インタースティシャル）のユニット ID（本番の ID は、ビルド時の環境変数 EXPO_PUBLIC_ADMOB_INTERSTITIAL_UNIT_ID で渡す。未設定ならテスト広告） */
+export const interstitialUnitId = pickAdUnitId({
+  isDev: __DEV__,
+  productionId: process.env.EXPO_PUBLIC_ADMOB_INTERSTITIAL_UNIT_ID,
+  testId: TestIds.INTERSTITIAL,
 });
 
 let started: Promise<boolean> | null = null;

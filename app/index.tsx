@@ -108,7 +108,7 @@ export default function Home() {
       </View>
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 96 }]}>
         <View style={styles.topRow}>
-          <Image source={require("../assets/images/logo.png")} style={styles.logo} accessibilityLabel="Vocabook" />
+          <Image source={require("../assets/images/logo.png")} style={styles.logo} accessibilityLabel="vocabook" />
           <GlassIconButton icon="settings" label="設定" onPress={() => router.push("/settings")} />
         </View>
 

@@ -33,6 +33,14 @@
         "APP_VARIANT": "personal"
       }
     },
+    "closedtest": {
+      "extends": "production",
+      "channel": "closedtest",
+      "env": {
+        "EXPO_PUBLIC_ADMOB_BANNER_UNIT_ID": "",
+        "EXPO_PUBLIC_ADMOB_INTERSTITIAL_UNIT_ID": ""
+      }
+    },
     "production": {
       "autoIncrement": true,
       "channel": "production",
