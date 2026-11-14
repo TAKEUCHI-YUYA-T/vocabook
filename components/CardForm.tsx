@@ -4,7 +4,7 @@ import { Icon } from "./Icon";
 import type { CardAutoFillState } from "@/db/autofill";
 import { MAX_EXAMPLES, type Example } from "@/db/examples";
 import { LIMITS } from "@/db/repository";
-import { FLAG_LABELS, ING_OR_TO_LABELS, PARTS_OF_SPEECH, type CardFlag, type IngOrToAnswer, type PartOfSpeech } from "@/db/types";
+import { FLAG_LABELS, PARTS_OF_SPEECH, type CardFlag, type IngOrToAnswer, type PartOfSpeech } from "@/db/types";
 import type { BaseFormSuggestion } from "@/db/lemma";
 import type { SpellingWarning } from "@/hooks/useSpellingWarning";
 import { SpeakButton } from "./SpeakButton";
@@ -20,7 +20,10 @@ export type CardFormValue = {
   /** 例文（20個まで。英文と、その和訳の対。空の例文は、保存のときに除かれる） */
   examples: FormExample[];
   note: string;
-  /** ing or to の問題にも出すときの答え（null なら出さない） */
+  /**
+   * ing or to の問題にも出すときの答え（null なら出さない）
+   * 画面には出さない（自動で判定できないため、公開前に外した）。以前の版や CSV の取り込みで付いた答えを、保存で消さないよう持ち回る
+   */
   answer: IngOrToAnswer | null;
   /** 学習のフラグ（編集画面で付け外しする。追加では未設定） */
   flag: CardFlag;
@@ -60,13 +63,6 @@ const FLAG_CHOICES: { key: CardFlag; label: string }[] = [
   { key: "review", label: FLAG_LABELS.review },
 ];
 
-/** ing or to の問題の選択肢（出さない・～ing・to～） */
-const ING_OR_TO_CHOICES: { key: IngOrToAnswer | null; label: string }[] = [
-  { key: null, label: "出さない" },
-  { key: "ing", label: ING_OR_TO_LABELS.ing },
-  { key: "to", label: ING_OR_TO_LABELS.to },
-];
-
 type Props = {
   value: CardFormValue;
   onChange: (value: CardFormValue) => void;
@@ -92,9 +88,7 @@ type Props = {
  */
 export function CardForm({ value, onChange, editable, duplicateWarning, spellingWarning, baseFormSuggestions, autoFocus, expanded, showFlag, autoFill }: Props) {
   const meaningRef = useRef<React.ComponentRef<typeof TextInput>>(null);
-  const hasDetails = !!(value.partOfSpeech || value.examples.some((e) => e.text || e.translation) || value.note || value.answer);
-  // ing or to の問題は、動詞と熟語のときに選べる（すでに選んであれば、品詞を変えても、外せるよう出しておく）
-  const showIngOrTo = value.partOfSpeech === "verb" || value.partOfSpeech === "idiom" || value.answer !== null;
+  const hasDetails = !!(value.partOfSpeech || value.examples.some((e) => e.text || e.translation) || value.note);
   const [showDetails, setShowDetails] = useState(hasDetails);
   const [termFocused, setTermFocused] = useState(false);
 
@@ -276,30 +270,6 @@ export function CardForm({ value, onChange, editable, duplicateWarning, spelling
               })}
             </View>
           </View>
-
-          {showIngOrTo && (
-            <View style={styles.field}>
-              <Text style={styles.label}>ing or to の問題</Text>
-              <View style={styles.chips}>
-                {ING_OR_TO_CHOICES.map((choice) => {
-                  const selected = value.answer === choice.key;
-                  return (
-                    <TouchableOpacity
-                      key={choice.label}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected }}
-                      disabled={!editable}
-                      style={[styles.chip, selected && styles.chipSelected]}
-                      onPress={() => set("answer", choice.key)}
-                    >
-                      <ChipLabel selected={selected} label={choice.label} />
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-              <Text style={styles.hint}>後ろに続く形を選ぶと、ing or to の問題にも出ます。</Text>
-            </View>
-          )}
 
           {exampleBlocks.map((example, index) => {
             const isAutoTranslation = example.translation !== "" && example.translation === example.draft;

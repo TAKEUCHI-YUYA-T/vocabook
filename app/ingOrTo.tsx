@@ -12,7 +12,7 @@ import { WaitOverlay } from "@/components/WaitOverlay";
 /**
  * ing or to の画面
  * 動詞のあとに ing と to のどちらが続くかを答える。問題は DB から読む
- * （アプリに同梱した問題と、単語帳で「ing or to の問題」に答えを付けた自分の単語）
+ * （アプリに同梱した問題と、以前の版や CSV の取り込みで、ing or to の答えを付けた自分の単語）
  * 答えを出す操作は、下の「答えを見る」ボタンだけ。見たあとは同じボタンが「次へ」になる
  */
 export default function IngOrToScreen() {
