@@ -9,6 +9,7 @@ import { SkeletonBox, SkeletonSlot } from "@/components/Skeleton";
 import { colors } from "@/components/theme";
 import { useRepository } from "@/db/AppDatabase";
 import { localDay } from "@/db/day";
+import { ING_OR_TO_ENABLED } from "@/lib/features";
 import type { HomeStats, Tip } from "@/db/types";
 
 /** 読み込み中に、場所だけ確保しておく高さ（読み込み後の、記録とヒントの大きさに合わせる） */
@@ -17,9 +18,9 @@ const TIP_HEIGHT = 140;
 
 type MenuItem = { label: string; icon: IconName; href: Href; color: string; count?: "total" };
 
-/** 「単語を覚える」の下の、3つの入口。iOS の「設定」のように、色つきの小さなアイコンと、右の矢印 */
+/** 「単語を覚える」の下の入口（ing or to は、lib/features.ts のスイッチで出し分ける）。iOS の「設定」のように、色つきの小さなアイコンと、右の矢印 */
 const MENU: MenuItem[] = [
-  { label: "ing or to", icon: "circle-help", href: "/ingOrTo", color: colors.warning },
+  ...(ING_OR_TO_ENABLED ? [{ label: "ing or to", icon: "circle-help", href: "/ingOrTo", color: colors.warning } as MenuItem] : []),
   { label: "単語帳", icon: "book-open", href: "/words", color: colors.info, count: "total" },
   { label: "単語を追加", icon: "plus", href: "/cards/new", color: colors.purple },
 ];

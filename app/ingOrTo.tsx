@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Redirect } from "expo-router";
 import { View, Text, StyleSheet } from "react-native";
 import { QuizFrame } from "@/components/QuizFrame";
 import { colors } from "@/components/theme";
@@ -6,6 +7,7 @@ import { useRepository } from "@/db/AppDatabase";
 import { nextQuestion, progress, startQuiz, type QuizState } from "@/db/quiz";
 import { ingOrToLabel, type Card } from "@/db/types";
 import { useGoBack } from "@/hooks/useGoBack";
+import { ING_OR_TO_ENABLED } from "@/lib/features";
 import { useInterstitialExit } from "@/hooks/useInterstitialExit";
 import { WaitOverlay } from "@/components/WaitOverlay";
 
@@ -15,7 +17,13 @@ import { WaitOverlay } from "@/components/WaitOverlay";
  * （アプリに同梱した問題と、以前の版や CSV の取り込みで、ing or to の答えを付けた自分の単語）
  * 答えを出す操作は、下の「答えを見る」ボタンだけ。見たあとは同じボタンが「次へ」になる
  */
-export default function IngOrToScreen() {
+export default function IngOrToRoute() {
+  // 入口を隠している間は、直接開かれても（リンクなど）、ホームへ戻す
+  if (!ING_OR_TO_ENABLED) return <Redirect href="/" />;
+  return <IngOrToScreen />;
+}
+
+function IngOrToScreen() {
   const repository = useRepository();
   const goBack = useGoBack("/");
   const { countReveal, requestExit, waiting } = useInterstitialExit(goBack);

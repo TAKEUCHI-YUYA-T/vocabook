@@ -13,6 +13,7 @@ import { useRepository } from "@/db/AppDatabase";
 import { AdBanner } from "@/components/AdBanner";
 import { cardsToCsv, exportFileName } from "@/db/importing";
 import { ValidationError } from "@/db/repository";
+import { ING_OR_TO_ENABLED } from "@/lib/features";
 import { ingOrToLabel, partOfSpeechLabel, PARTS_OF_SPEECH, type Card, type Deck } from "@/db/types";
 import { useDefaultDeck } from "@/hooks/useDefaultDeck";
 import { useGoBack } from "@/hooks/useGoBack";
@@ -178,7 +179,7 @@ export default function WordsScreen() {
                   <Text style={styles.tagText}>{partOfSpeechLabel(item.partOfSpeech)}</Text>
                 </View>
               )}
-              {!!ingOrToLabel(item.answer) && (
+              {ING_OR_TO_ENABLED && !!ingOrToLabel(item.answer) && (
                 <View style={[styles.tag, styles.tagInfo]} accessibilityLabel={`ing or to の問題: ${ingOrToLabel(item.answer)}`}>
                   <Text style={[styles.tagText, styles.tagInfoText]}>{ingOrToLabel(item.answer)}</Text>
                 </View>
