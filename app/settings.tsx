@@ -13,6 +13,7 @@ import { useGoBack } from "@/hooks/useGoBack";
 import { adsEnabled, privacyOptionsRequired, showPrivacyOptions } from "@/lib/ads";
 import { applyRestore, pickBackupFile, shareBackupFile } from "@/lib/backup";
 import { backupToDrive, driveEmail, fetchDriveBackup, isDriveBackupEnabled, lastDriveBackup, setDriveBackupEnabled, DriveError } from "@/lib/driveBackup";
+import { DRIVE_BACKUP_ENABLED } from "@/lib/features";
 import { CONTACT_URL, COPYRIGHT_YEAR, DEVELOPER_NAME, PRIVACY_POLICY_URL } from "@/lib/links";
 
 /** 日時を「2026/10/26 18:35」の形にする（端末の時刻） */
@@ -155,14 +156,20 @@ export default function SettingsScreen() {
 
         <Text style={styles.sectionTitle}>バックアップ</Text>
         <View style={styles.group}>
-          <Text style={styles.groupText}>
-            「Google ドライブにバックアップ」をオンにすると、単語や学習の記録が、あなたの Google ドライブのアプリ専用の場所に、1日に1回、自動で保存されます。機種変更のときは、新しい端末で同じ Google アカウントを選んで、「Google ドライブから復元」を押してください。保存した内容は、開発者には届きません。
-          </Text>
-          <Row label="Google ドライブにバックアップ" value={driveOn ? "オン" : "オフ"} onPress={toggleDrive} disabled={!!busy} busy={busy === "drive"} />
-          {driveOn && !!email && <Row label="保存先のアカウント" value={email} />}
-          {driveOn && <Row label="今すぐバックアップ" value={driveLast ? formatDateTime(new Date(driveLast)) : "まだ"} onPress={backupNow} disabled={!!busy} />}
-          <Row label="Google ドライブから復元" onPress={restoreFromDrive} disabled={!!busy} arrow />
-          <Row label="バックアップを書き出す" onPress={share} arrow />
+          {DRIVE_BACKUP_ENABLED ? (
+            <Text style={styles.groupText}>
+              「Google ドライブにバックアップ」をオンにすると、単語や学習の記録が、あなたの Google ドライブのアプリ専用の場所に、1日に1回、自動で保存されます。機種変更のときは、新しい端末で同じ Google アカウントを選んで、「Google ドライブから復元」を押してください。保存した内容は、開発者には届きません。
+            </Text>
+          ) : (
+            <Text style={styles.groupText}>
+              単語や学習の記録を、ファイルに書き出して、保存できます。機種変更のときは、書き出したファイルを新しい端末に移して、「バックアップから復元」を押してください。
+            </Text>
+          )}
+          {DRIVE_BACKUP_ENABLED && <Row label="Google ドライブにバックアップ" value={driveOn ? "オン" : "オフ"} onPress={toggleDrive} disabled={!!busy} busy={busy === "drive"} />}
+          {DRIVE_BACKUP_ENABLED && driveOn && !!email && <Row label="保存先のアカウント" value={email} />}
+          {DRIVE_BACKUP_ENABLED && driveOn && <Row label="今すぐバックアップ" value={driveLast ? formatDateTime(new Date(driveLast)) : "まだ"} onPress={backupNow} disabled={!!busy} />}
+          {DRIVE_BACKUP_ENABLED && <Row label="Google ドライブから復元" onPress={restoreFromDrive} disabled={!!busy} arrow />}
+          <Row label="バックアップを書き出す" onPress={share} arrow first={!DRIVE_BACKUP_ENABLED} />
           <Row label="バックアップから復元" onPress={restore} disabled={!!busy} busy={busy === "restore"} arrow />
         </View>
         <Text style={styles.footnote}>書き出したファイルは、Google ドライブなど、好きな場所に保存できます。手元にも残したいときや、別の Google アカウントへ移すときに使います。学習の記録も含みます。</Text>

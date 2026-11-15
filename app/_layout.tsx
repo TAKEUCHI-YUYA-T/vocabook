@@ -10,6 +10,7 @@ import { colors } from '@/components/theme';
 import { AppDatabase } from '@/db/AppDatabase';
 import { ToastProvider } from '@/components/Toast';
 import { startAds } from '@/lib/ads';
+import { DRIVE_BACKUP_ENABLED } from '@/lib/features';
 import { scheduleDailyReminder } from '@/lib/reminder';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -40,7 +41,7 @@ export default function RootLayout() {
       <AppDatabase>
         <ToastProvider>
           <SelectedTextRouter />
-          <DriveBackupRunner />
+          {DRIVE_BACKUP_ENABLED && <DriveBackupRunner />}
           <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
             <Stack.Screen name="index" />
             <Stack.Screen name="+not-found" />
